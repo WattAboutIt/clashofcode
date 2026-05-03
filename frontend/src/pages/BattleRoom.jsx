@@ -35,71 +35,123 @@ function CountdownTimer({ startedAt, limitMinutes }) {
     return () => clearInterval(id);
   }, [startedAt, limitMinutes]);
 
-  return <span className="font-display">{remaining || "--:--"}</span>;
+  return <span className="battle-room__timer">{remaining || "--:--"}</span>;
+}
+
+function ProblemSection({ title, children, aside = null }) {
+  return (
+    <section className="battle-room__section">
+      <div className="battle-room__section-header">
+        <h3>{title}</h3>
+        {aside}
+      </div>
+      <div className="battle-room__section-body">{children}</div>
+    </section>
+  );
 }
 
 function QuestionPanel({ question, difficulty }) {
   if (!question) return null;
 
   return (
-    <div className="room-question">
-      <div className="room-question__header">
-        <div>
-          <p className="label-text">Problem</p>
-          <h2>{question.title}</h2>
-        </div>
-        <div className="room-badge-row">
-          <span className="room-badge room-badge--soft">{DIFF_LABELS[difficulty] || difficulty}</span>
-          <span className="room-badge room-badge--accent">{question.points} pts</span>
-        </div>
+    <div className="battle-room__problem-shell">
+      <div className="battle-room__panel-tabs" aria-hidden="true">
+        <span className="battle-room__panel-tab battle-room__panel-tab--active">Description</span>
+        <span className="battle-room__panel-tab">Examples</span>
+        <span className="battle-room__panel-tab">Constraints</span>
       </div>
 
-      <div className="room-question__description">{question.description}</div>
-
-      {question.examples?.length > 0 && (
-        <div>
-          <p className="label-text">Examples</p>
-          <div className="room-example-list">
-            {question.examples.map((example, index) => (
-              <div key={`${question.id}-${index}`} className="room-example">
-                <p><strong>Input:</strong> <span className="font-mono">{example.input}</span></p>
-                <p><strong>Output:</strong> <span className="font-mono">{example.output}</span></p>
-                {example.explanation && <p className="muted-text">{example.explanation}</p>}
-              </div>
-            ))}
+      <div className="battle-room__problem-scroll">
+        <div className="battle-room__problem-header">
+          <div>
+            <p className="label-text">Problem</p>
+            <h2 className="battle-room__problem-title">{question.title}</h2>
+          </div>
+          <div className="battle-room__chip-row">
+            <span className="battle-room__chip battle-room__chip--difficulty">
+              {DIFF_LABELS[difficulty] || difficulty}
+            </span>
+            <span className="battle-room__chip battle-room__chip--points">
+              {question.points} pts
+            </span>
           </div>
         </div>
-      )}
 
-      {question.constraints && (
-        <div>
-          <p className="label-text">Constraints</p>
-          <p className="muted-text">{question.constraints}</p>
-        </div>
-      )}
+        <ProblemSection title="Description">
+          <div className="battle-room__copy">
+            {question.description}
+          </div>
+        </ProblemSection>
+
+        {question.examples?.length > 0 && (
+          <ProblemSection
+            title="Examples"
+            aside={<span className="battle-room__section-count">{question.examples.length} sample cases</span>}
+          >
+            <div className="battle-room__example-grid">
+              {question.examples.map((example, index) => (
+                <article key={`${question.id}-${index}`} className="battle-room__example-card">
+                  <div className="battle-room__example-head">
+                    <span className="battle-room__example-index">Example {index + 1}</span>
+                  </div>
+                  <p><strong>Input:</strong> <span className="font-mono">{example.input}</span></p>
+                  <p><strong>Output:</strong> <span className="font-mono">{example.output}</span></p>
+                  {example.explanation && <p className="muted-text">{example.explanation}</p>}
+                </article>
+              ))}
+            </div>
+          </ProblemSection>
+        )}
+
+        {question.constraints && (
+          <ProblemSection title="Constraints">
+            <div className="battle-room__constraint-box">
+              {question.constraints}
+            </div>
+          </ProblemSection>
+        )}
+      </div>
     </div>
   );
 }
 
 function CodeEditor({ value, onChange, language = "python" }) {
   const extension = language === "python" ? "py" : language === "javascript" ? "js" : language === "java" ? "java" : "cpp";
+  const gutterRef = useRef(null);
+  const lineCount = Math.max(value.split("\n").length, 18);
+  const lines = Array.from({ length: lineCount }, (_, index) => index + 1);
+
+  const syncScroll = (event) => {
+    if (gutterRef.current) {
+      gutterRef.current.scrollTop = event.target.scrollTop;
+    }
+  };
 
   return (
-    <div className="room-code-shell">
-      <div className="room-code-shell__bar">
-        <span className="terminal-dot terminal-dot--rose" />
-        <span className="terminal-dot terminal-dot--gold" />
-        <span className="terminal-dot terminal-dot--green" />
-        <span className="room-code-shell__name">solution.{extension}</span>
-        <span className="room-code-shell__status">Editing</span>
+    <div className="battle-room__editor-shell">
+      <div className="battle-room__editor-bar">
+        <div className="battle-room__editor-file">
+          <span className="battle-room__editor-pill">{language}</span>
+          <span className="battle-room__editor-name">solution.{extension}</span>
+        </div>
+        <span className="battle-room__editor-state">Editing</span>
       </div>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        spellCheck={false}
-        className="room-textarea"
-        placeholder={`# Write your ${language} solution here...\n`}
-      />
+
+      <div className="battle-room__editor-body">
+        <div ref={gutterRef} className="battle-room__editor-gutter" aria-hidden="true">
+          {lines.map((line) => (
+            <span key={line} className="battle-room__editor-line">{line}</span>
+          ))}
+        </div>
+        <textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onScroll={syncScroll}
+          spellCheck={false}
+          className="battle-room__editor-textarea"
+          placeholder={`# Write your ${language} solution here...\n`}
+        />
+      </div>
     </div>
   );
 }
@@ -108,19 +160,19 @@ function PlayerRow({ player, isMe, host }) {
   const isHost = player.username === host;
 
   return (
-    <div className={`room-player ${isMe ? "room-player--me" : ""}`}>
-      <div className="room-player__main">
-        <div className="room-player__avatar">{player.username.slice(0, 2).toUpperCase()}</div>
-        <div className="room-player__meta">
+    <div className={`battle-room__player ${isMe ? "battle-room__player--me" : ""}`}>
+      <div className="battle-room__player-main">
+        <div className="battle-room__player-avatar">{player.username.slice(0, 2).toUpperCase()}</div>
+        <div className="battle-room__player-meta">
           <p>
             <strong>{player.username}</strong>
-            {isHost && <span className="room-player__tag">Host</span>}
-            {isMe && <span className="room-player__you">you</span>}
+            {isHost && <span className="battle-room__player-tag">Host</span>}
+            {isMe && <span className="battle-room__player-you">you</span>}
           </p>
           <p className="muted-text">{player.status}</p>
         </div>
       </div>
-      <span className="room-player__score">
+      <span className="battle-room__player-score">
         {player.status === "submitted" ? `${player.score} pts` : player.status}
       </span>
     </div>
@@ -206,9 +258,9 @@ function BattleRoom() {
   if (loading) {
     return (
       <section className="page-shell">
-        <div className="page-container room-page">
+        <div className="page-container battle-room">
           <div className="skeleton loading-slab loading-slab--banner" />
-          <div className="room-grid">
+          <div className="battle-room__workspace">
             <div className="skeleton loading-slab loading-slab--panel" />
             <div className="skeleton loading-slab loading-slab--panel" />
           </div>
@@ -217,145 +269,172 @@ function BattleRoom() {
     );
   }
 
+  const questionTitle = room?.question?.title || "Battle Workspace";
+  const roomStatus = room?.status || "waiting";
+  const difficultyLabel = DIFF_LABELS[room?.difficulty] || room?.difficulty || "Open";
+
   return (
     <section className="page-shell page-enter">
-      <div className="page-container room-page">
-        <Card className="room-banner">
-          <div className="room-banner__row">
-            <div className="room-banner__meta">
+      <div className="page-container battle-room">
+        <Card className="battle-room__topbar">
+          <div className="battle-room__topbar-row">
+            <div className="battle-room__headline">
               <div>
-                <p className="label-text">Room Code</p>
-                <h2 className="font-mono">{roomCode}</h2>
+                <p className="label-text">Battle Room</p>
+                <h1 className="battle-room__title">{questionTitle}</h1>
               </div>
-              <div>
-                <p className="label-text">Host</p>
-                <p>{room?.host}</p>
-              </div>
+              <span className="battle-room__room-code">#{roomCode}</span>
             </div>
-            <div className="room-badge-row">
+
+            <div className="battle-room__status-strip">
               {room?.status === "active" && room?.started_at && (
-                <span className="room-badge room-badge--soft">
+                <div className="battle-room__status-card battle-room__status-card--timer">
+                  <span className="battle-room__status-label">Time Left</span>
                   <CountdownTimer startedAt={room.started_at} limitMinutes={room.time_limit_minutes} />
-                </span>
+                </div>
               )}
-              <span className="room-badge room-badge--accent">{room?.status || "waiting"}</span>
-              {room?.difficulty && (
-                <span className="room-badge room-badge--soft">{DIFF_LABELS[room.difficulty] || room.difficulty}</span>
-              )}
+              <div className="battle-room__status-card">
+                <span className="battle-room__status-label">Status</span>
+                <strong>{roomStatus}</strong>
+              </div>
+              <div className="battle-room__status-card">
+                <span className="battle-room__status-label">Difficulty</span>
+                <strong>{difficultyLabel}</strong>
+              </div>
+              <div className="battle-room__status-card">
+                <span className="battle-room__status-label">Host</span>
+                <strong>{room?.host}</strong>
+              </div>
             </div>
           </div>
-          {error && <div className="room-error">{error}</div>}
         </Card>
 
-        <div className="room-grid">
-          <div className="room-main">
-            {room?.status === "waiting" ? (
-              <Card className="room-waiting">
-                <div className="room-icon-badge" aria-hidden="true">⚔️</div>
-                <h2>{isHost ? "You're the host" : "Waiting for host"}</h2>
-                <p className="section-subtitle">
-                  {isHost
-                    ? "When all players are ready, hit Start to begin the battle."
-                    : "The host will start the battle soon. Get your fingers ready!"}
-                </p>
-                {isHost && (
-                  <Button onClick={handleStart} disabled={starting} size="lg">
-                    {starting ? "Starting..." : "Start Battle"}
-                  </Button>
+        {error && <div className="room-error">{error}</div>}
+
+        {room?.status === "waiting" ? (
+          <Card className="battle-room__waiting-panel">
+            <div className="battle-room__waiting-copy">
+              <p className="label-text">Lobby</p>
+              <h2>{isHost ? "Start the battle when everyone is ready" : "Waiting for the host to start"}</h2>
+              <p className="section-subtitle">
+                {isHost
+                  ? "This room is ready. Launch the challenge to open the coding workspace."
+                  : "The LeetCode-style coding workspace will appear as soon as the host starts the match."}
+              </p>
+            </div>
+            <div className="battle-room__waiting-actions">
+              <span className="battle-room__chip battle-room__chip--ghost">
+                {room?.players?.length ?? 0} players in lobby
+              </span>
+              {isHost && (
+                <Button onClick={handleStart} disabled={starting} size="lg">
+                  {starting ? "Starting..." : "Start Battle"}
+                </Button>
+              )}
+            </div>
+          </Card>
+        ) : (
+          <div className="battle-room__workspace">
+            <Card className="battle-room__problem-panel">
+              <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
+            </Card>
+
+            <div className="battle-room__editor-stack">
+              <Card className="battle-room__editor-panel">
+                <div className="battle-room__editor-top">
+                  <div>
+                    <p className="label-text">Code</p>
+                    <h2 className="battle-room__editor-title">Submit your solution</h2>
+                  </div>
+
+                  <div className="battle-room__editor-controls">
+                    <span className="battle-room__chip battle-room__chip--ghost">
+                      {myPlayer?.status === "submitted" ? "Submitted" : "In progress"}
+                    </span>
+                    <select
+                      value={language}
+                      onChange={(event) => setLanguage(event.target.value)}
+                      className="battle-room__language-select"
+                    >
+                      <option value="python">Python</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                    </select>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={submitting || myPlayer?.status === "submitted"}
+                      size="sm"
+                    >
+                      {submitting ? "Submitting..." : myPlayer?.status === "submitted" ? "Submitted" : "Submit"}
+                    </Button>
+                  </div>
+                </div>
+
+                <CodeEditor value={code} onChange={setCode} language={language} />
+
+                {submissionResult && (
+                  <div className={`battle-room__result ${submissionResult.passed ? "battle-room__result--success" : "battle-room__result--pending"}`}>
+                    <strong>{submissionResult.passed ? "Accepted in battle" : "Submission received"}</strong>
+                    <p className="muted-text">
+                      Score: {submissionResult.score} pts · {submissionResult.test_results?.length ?? 0} test cases
+                    </p>
+                  </div>
                 )}
               </Card>
-            ) : (
-              <>
-                <Card className="room-panel">
-                  <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
-                </Card>
 
-                <Card className="room-editor-card">
-                  <div className="room-editor-card__top">
+              <div className="battle-room__dock-grid">
+                <Card className="battle-room__dock-card">
+                  <div className="battle-room__dock-header">
                     <div>
-                      <p className="label-text">Your Solution</p>
-                      <h2>Write and submit your code</h2>
-                    </div>
-                    <div className="room-editor-toolbar">
-                      <select
-                        value={language}
-                        onChange={(event) => setLanguage(event.target.value)}
-                        className="room-select"
-                      >
-                        <option value="python">Python</option>
-                        <option value="javascript">JavaScript</option>
-                        <option value="java">Java</option>
-                        <option value="cpp">C++</option>
-                      </select>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={submitting || myPlayer?.status === "submitted"}
-                        size="sm"
-                      >
-                        {submitting ? "Submitting..." : myPlayer?.status === "submitted" ? "Submitted" : "Submit"}
-                      </Button>
+                      <p className="label-text">Match Info</p>
+                      <h3>Battle details</h3>
                     </div>
                   </div>
-
-                  <CodeEditor value={code} onChange={setCode} language={language} />
-
-                  {submissionResult && (
-                    <div className={`room-result ${submissionResult.passed ? "room-result--success" : "room-result--pending"}`}>
-                      <div>
-                        <strong>{submissionResult.passed ? "All tests passed!" : "Submission received"}</strong>
-                        <p className="muted-text">
-                          Score: {submissionResult.score} pts · {submissionResult.test_results?.length ?? 0} test cases
-                        </p>
+                  <div className="battle-room__info-list">
+                    {[
+                      { label: "Room Code", value: roomCode },
+                      { label: "Time Limit", value: `${room?.time_limit_minutes ?? 0} min` },
+                      { label: "Difficulty", value: difficultyLabel },
+                      { label: "Points", value: room?.question?.points ?? "—" },
+                    ].map((row) => (
+                      <div key={row.label} className="battle-room__info-row">
+                        <span className="muted-text">{row.label}</span>
+                        <strong>{row.value}</strong>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </Card>
-              </>
-            )}
-          </div>
 
-          <div className="room-sidebar">
-            <Card className="room-sidebar-card">
-              <p className="label-text">Match Info</p>
-              <div className="room-sidebar-card__list">
-                {[
-                  { label: "Time Limit", value: `${room?.time_limit_minutes ?? 0} min` },
-                  { label: "Difficulty", value: DIFF_LABELS[room?.difficulty] || room?.difficulty || "—" },
-                  { label: "Points", value: room?.question?.points ?? "—" },
-                  { label: "Host", value: room?.host },
-                ].map((row) => (
-                  <div key={row.label} className="room-info-row">
-                    <span className="muted-text">{row.label}</span>
-                    <strong>{row.value}</strong>
+                <Card className="battle-room__dock-card">
+                  <div className="battle-room__dock-header">
+                    <div>
+                      <p className="label-text">Participants</p>
+                      <h3>{room?.players?.length ?? 0} coders</h3>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </Card>
 
-            <Card className="room-sidebar-card">
-              <div className="dashboard-banner__top">
-                <p className="label-text">Participants</p>
-                <span className="muted-text">{room?.players?.length ?? 0} coders</span>
-              </div>
-              <div className="room-player-list">
-                {room?.players?.length ? (
-                  room.players.map((player) => (
-                    <PlayerRow
-                      key={player.username}
-                      player={player}
-                      isMe={player.username === user?.username}
-                      host={room.host}
-                    />
-                  ))
-                ) : (
-                  <div className="room-empty">
-                    <p>Waiting for players to join...</p>
+                  <div className="battle-room__player-list">
+                    {room?.players?.length ? (
+                      room.players.map((player) => (
+                        <PlayerRow
+                          key={player.username}
+                          player={player}
+                          isMe={player.username === user?.username}
+                          host={room.host}
+                        />
+                      ))
+                    ) : (
+                      <div className="room-empty">
+                        <p>Waiting for players to join...</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </Card>
               </div>
-            </Card>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
