@@ -17,6 +17,10 @@ class LoginSchema(BaseModel):
     password: str
 
 
+class DeveloperLoginSchema(BaseModel):
+    username: str
+
+
 class QuestionExample(BaseModel):
     input: str
     output: str

@@ -56,6 +56,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const developerLogin = async (username) => {
+    setLoading(true);
+    try {
+      const response = await api.post("/auth/developer-login", { username });
+      setAuthState(response.data);
+      navigate("/dashboard", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (values) => {
     setLoading(true);
     try {
@@ -76,7 +87,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, developerLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

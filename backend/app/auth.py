@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+DEV_ALLOWED_USERNAMES = {"safal", "sparsha"}
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
@@ -38,6 +39,15 @@ def create_access_token(data: dict):
     )
 
     return encoded_jwt
+
+def normalize_developer_username(username: str) -> str:
+    return username.strip().lower()
+
+def is_developer_user(username: str) -> bool:
+    return normalize_developer_username(username) in DEV_ALLOWED_USERNAMES
+
+def get_developer_email(username: str) -> str:
+    return f"{normalize_developer_username(username)}@developer.local"
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),

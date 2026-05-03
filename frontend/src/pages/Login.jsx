@@ -7,8 +7,10 @@ import { useAuth } from "../context/AuthContext";
 import "../styles/auth.css";
 
 function Login() {
-  const { login, token, loading } = useAuth();
+  const { login, developerLogin, token, loading } = useAuth();
   const [form, setForm] = useState({ username: "", password: "" });
+  const [developerUsername, setDeveloperUsername] = useState("");
+  const [developerMode, setDeveloperMode] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -26,6 +28,20 @@ function Login() {
         err?.response?.data?.detail ||
         err?.response?.data?.message ||
         "Login failed. Check your credentials."
+      );
+    }
+  };
+
+  const handleDeveloperLogin = async (event) => {
+    event.preventDefault();
+    setError("");
+    try {
+      await developerLogin(developerUsername);
+    } catch (err) {
+      setError(
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "Developer login failed."
       );
     }
   };
@@ -65,6 +81,40 @@ function Login() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          <div className="auth-dev-login">
+            <div>
+              <p className="auth-dev-login__title">Developer access</p>
+              <p className="auth-dev-login__meta">Click below, enter a username, and continue with username-only access.</p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setDeveloperMode((current) => !current);
+                setError("");
+              }}
+              disabled={loading}
+            >
+              {developerMode ? "Hide Developer Login" : "Login as Developer"}
+            </Button>
+          </div>
+
+          {developerMode && (
+            <form className="auth-dev-form" onSubmit={handleDeveloperLogin}>
+              <Input
+                label="Developer Username"
+                type="text"
+                value={developerUsername}
+                onChange={(event) => setDeveloperUsername(event.target.value)}
+                placeholder="safal or sparsha"
+              />
+              <Button type="submit" className="w-full" size="md" disabled={loading || !developerUsername.trim()}>
+                Continue as Developer
+              </Button>
+            </form>
+          )}
 
           <div className="auth-divider"><span>or</span></div>
 

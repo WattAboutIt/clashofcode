@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_developer_email, is_developer_user, normalize_developer_username
 from app.database import get_db
 from app.models import CodingQuestion, MatchHistory, User
 
@@ -10,6 +10,17 @@ router = APIRouter(
     prefix="/user",
     tags=["User"],
 )
+
+DEV_STATS = {
+    "gamesPlayed": 0,
+    "wins": 0,
+    "losses": 0,
+    "totalPoints": 0,
+    "winRate": 0,
+    "currentStreak": 0,
+    "bestStreak": 0,
+    "rank": "Developer",
+}
 
 
 async def _get_user_by_username(db: AsyncSession, username: str) -> User:
@@ -53,6 +64,14 @@ async def profile(
     current_username: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if is_developer_user(current_username):
+        username = normalize_developer_username(current_username)
+        return {
+            "username": username,
+            "email": get_developer_email(username),
+            "createdAt": None,
+        }
+
     user = await _get_user_by_username(db, current_username)
     return {
         "username": user.username,
@@ -66,6 +85,9 @@ async def stats(
     current_username: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if is_developer_user(current_username):
+        return DEV_STATS
+
     user = await _get_user_by_username(db, current_username)
     return await _serialize_stats(db, user)
 
@@ -75,6 +97,13 @@ async def dashboard(
     current_username: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if is_developer_user(current_username):
+        return {
+            "stats": DEV_STATS,
+            "recentBattles": [],
+            "questionCounts": {"easy": 0, "medium": 0, "hard": 0},
+        }
+
     user = await _get_user_by_username(db, current_username)
     stats_payload = await _serialize_stats(db, user)
 
