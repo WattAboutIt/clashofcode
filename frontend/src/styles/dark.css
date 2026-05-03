@@ -1,11 +1,19 @@
-:root[data-theme="dark"] {
-  --bg: #020613;
-  --surface: rgba(12, 18, 33, 0.82);
-  --surface-soft: rgba(15, 23, 42, 0.86);
-  --surface-border: rgba(255, 255, 255, 0.08);
+:root[data-theme="dark"], :root {
+  --bg: #080b14;
+  --bg-secondary: #0c1120;
+  --surface: rgba(13, 17, 30, 0.85);
+  --surface-soft: rgba(17, 23, 40, 0.9);
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --surface-border-hover: rgba(34, 211, 238, 0.2);
   --text: #e2e8f0;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b;
+  --text-secondary: #94a3b8;
   --accent: #22d3ee;
+  --accent-rgb: 34, 211, 238;
   --accent-soft: #0ea5e9;
-  --shadow: rgba(15, 23, 42, 0.55);
+  --accent-violet: #818cf8;
+  --shadow: rgba(0, 0, 0, 0.7);
+  --input-bg: rgba(8, 11, 20, 0.8);
+  --card-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.6);
+  --card-shadow-hover: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,211,238,0.1);
 }
