@@ -37,12 +37,8 @@ function Login() {
     setError("");
     try {
       await developerLogin(developerUsername);
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        "Developer login failed."
-      );
+    } catch {
+      setError("Developer access denied.");
     }
   };
 
@@ -108,7 +104,7 @@ function Login() {
                 type="text"
                 value={developerUsername}
                 onChange={(event) => setDeveloperUsername(event.target.value)}
-                placeholder="safal or sparsha"
+                placeholder="Enter a username for developer access"
               />
               <Button type="submit" className="w-full" size="md" disabled={loading || !developerUsername.trim()}>
                 Continue as Developer

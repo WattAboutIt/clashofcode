@@ -115,7 +115,7 @@ async def developer_login(data: DeveloperLoginSchema):
     if username not in DEV_ALLOWED_USERNAMES:
         raise HTTPException(
             status_code=401,
-            detail="Developer access is only available for safal or sparsha.",
+            detail="Developer access denied.",
         )
 
     token = create_access_token({"sub": username, "role": "developer"})

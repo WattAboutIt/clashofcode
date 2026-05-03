@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
-DEV_ALLOWED_USERNAMES = {"safal", "sparsha"}
+DEV_ALLOWED_USERNAMES = {"safal", "sparsha","sabin"}
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
