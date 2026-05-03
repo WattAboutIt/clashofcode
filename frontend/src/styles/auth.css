@@ -1,0 +1,74 @@
+.auth-page {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-wrap {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 1.25rem;
+}
+
+.auth-intro,
+.auth-card,
+.auth-trust {
+  padding: 1.6rem;
+}
+
+.auth-intro,
+.auth-card {
+  text-align: center;
+}
+
+.auth-card form {
+  display: grid;
+  gap: 1rem;
+  text-align: left;
+}
+
+.auth-divider {
+  position: relative;
+  margin: 0.25rem 0;
+  text-align: center;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1px;
+  background: var(--surface-border);
+}
+
+.auth-divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.8rem;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.auth-error {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(221, 107, 98, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 241, 239, 0.92);
+  color: var(--danger);
+  font-size: 0.84rem;
+}
+
+.auth-trust {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.auth-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}

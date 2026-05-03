@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext(null);
@@ -5,7 +6,7 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem("clashofcode_theme");
-    return stored && stored !== "undefined" ? stored : "dark";
+    return stored && stored !== "undefined" ? stored : "warm";
   });
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
-  const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
+  const toggleTheme = () => setTheme((current) => (current === "warm" ? "light" : "warm"));
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

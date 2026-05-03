@@ -1,0 +1,82 @@
+.leaderboard-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.leaderboard-hero,
+.leaderboard-table-card {
+  padding: 1.7rem;
+}
+
+.leaderboard-hero {
+  text-align: center;
+}
+
+.leaderboard-podium {
+  display: grid;
+  gap: 1rem;
+}
+
+.leaderboard-podium-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.4rem;
+}
+
+.leaderboard-podium-card__medal {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 2.6rem;
+  opacity: 0.18;
+}
+
+.leaderboard-table-header,
+.leaderboard-row {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: 54px minmax(0, 1fr) 86px 86px 96px;
+  align-items: center;
+}
+
+.leaderboard-table-header {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.leaderboard-rows {
+  display: grid;
+}
+
+.leaderboard-row {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.leaderboard-row:last-child {
+  border-bottom: 0;
+}
+
+.leaderboard-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 960px) {
+  .leaderboard-podium {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .leaderboard-table-header,
+  .leaderboard-row {
+    grid-template-columns: 40px minmax(0, 1fr) 72px;
+  }
+}

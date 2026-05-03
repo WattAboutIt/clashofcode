@@ -1,0 +1,363 @@
+.room-page,
+.room-grid,
+.room-sidebar,
+.room-main {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.room-banner,
+.room-panel,
+.room-waiting,
+.room-editor-card,
+.room-sidebar-card {
+  padding: 1.5rem;
+}
+
+.room-banner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 242, 233, 0.94));
+}
+
+.room-banner__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.room-banner__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.room-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.room-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-badge--accent {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-strong);
+}
+
+.room-badge--soft {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--surface-border);
+  color: var(--text-secondary);
+}
+
+.room-error,
+.room-result {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 20px;
+}
+
+.room-error {
+  border: 1px solid rgba(221, 107, 98, 0.18);
+  background: rgba(255, 241, 239, 0.92);
+  color: var(--danger);
+}
+
+.room-waiting {
+  text-align: center;
+}
+
+.room-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: 1rem;
+  border-radius: 24px;
+  background: rgba(var(--accent-rgb), 0.12);
+  font-size: 2rem;
+}
+
+.room-question {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.room-question__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.room-question__description,
+.room-example,
+.room-info-row,
+.room-player {
+  border: 1px solid var(--surface-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.room-question__description {
+  padding: 1.15rem 1.2rem;
+  white-space: pre-wrap;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.room-example-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.room-example {
+  padding: 1rem 1.1rem;
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.room-editor-card__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.room-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.room-select,
+.room-textarea {
+  border: 1px solid var(--surface-border);
+  border-radius: 18px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.room-select {
+  min-height: 2.8rem;
+  padding: 0.75rem 0.95rem;
+}
+
+.room-code-shell {
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.room-code-shell__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+  background: rgba(248, 246, 242, 0.86);
+}
+
+.room-code-shell__name {
+  margin-left: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.room-code-shell__status {
+  margin-left: auto;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.room-textarea {
+  width: 100%;
+  min-height: 320px;
+  padding: 1.2rem;
+  border: 0;
+  border-radius: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  line-height: 1.75;
+}
+
+.room-result {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.room-result--success {
+  border: 1px solid rgba(49, 181, 123, 0.16);
+  background: rgba(240, 252, 246, 0.95);
+}
+
+.room-result--pending {
+  border: 1px solid rgba(243, 166, 79, 0.18);
+  background: rgba(255, 249, 239, 0.95);
+}
+
+.room-sidebar-card__list,
+.room-player-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.room-info-row,
+.room-player {
+  padding: 0.95rem 1rem;
+}
+
+.room-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.room-player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.room-player--me {
+  border-color: rgba(var(--accent-rgb), 0.22);
+  background: rgba(255, 246, 242, 0.92);
+}
+
+.room-player__main {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.room-player__avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 700;
+}
+
+.room-player__meta p {
+  margin: 0;
+}
+
+.room-player__tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.45rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(242, 182, 104, 0.18);
+  color: #b67b29;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-player__you {
+  margin-left: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.room-player__score {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.room-layout-card {
+  padding: 1.7rem;
+}
+
+.room-difficulty-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.room-difficulty-card {
+  padding: 1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+}
+
+.room-difficulty-card--active {
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background: rgba(255, 246, 242, 0.95);
+  box-shadow: 0 22px 30px -26px rgba(var(--accent-rgb), 0.6);
+}
+
+.room-pool-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.room-pool-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.room-empty {
+  padding: 1.4rem;
+  border: 1px dashed var(--surface-border);
+  border-radius: 22px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 960px) {
+  .room-grid {
+    grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr);
+    align-items: start;
+  }
+
+  .room-layout-split {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
+    align-items: start;
+  }
+
+  .room-difficulty-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

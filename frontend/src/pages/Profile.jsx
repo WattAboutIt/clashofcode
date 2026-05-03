@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
+import "../styles/profile.css";
 
-function StatBadge({ label, value, accent, loading }) {
+function StatBadge({ label, value, loading }) {
   return (
-    <Card className="group p-5 text-center transition-all duration-200 hover:-translate-y-1">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{label}</p>
-      <p className={`mt-2 text-3xl font-black font-mono ${accent}`}>
-        {loading ? "—" : value}
-      </p>
+    <Card className="profile-stat-card">
+      <p className="label-text">{label}</p>
+      <div className="profile-stat-card__value">{loading ? "—" : value}</div>
     </Card>
   );
 }
@@ -32,105 +31,80 @@ function Profile() {
   const username = user?.username || stats?.username || "—";
   const initials = username.slice(0, 2).toUpperCase();
   const winRate = stats?.winRate ?? 0;
+  const email = user?.email || stats?.email || "—";
+  const rankIcon = stats?.rank === "Diamond" ? "💎" : stats?.rank === "Gold" ? "🥇" : stats?.rank === "Silver" ? "🥈" : "🏅";
 
   return (
-    <section className="px-4 py-12 sm:px-6 lg:px-8 page-enter">
-      <div className="mx-auto max-w-5xl space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">Profile</p>
-          <h1 className="text-4xl font-black text-white">Your account</h1>
+    <section className="page-shell page-enter">
+      <div className="page-container profile-page">
+        <div>
+          <p className="label-text">Profile</p>
+          <h1 className="section-title">Your account</h1>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          {/* Account details */}
-          <Card className="p-8 space-y-6">
-            {/* Avatar row */}
-            <div className="flex items-center gap-5">
-              <div className="relative h-16 w-16 shrink-0">
-                <div className="h-full w-full rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center text-xl font-black text-slate-950 shadow-lg">
-                  {initials}
-                </div>
-                <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[var(--bg)] bg-emerald-400" />
+        <div className="profile-grid">
+          <Card className="profile-card">
+            <div className="profile-header-row">
+              <div className="profile-avatar">
+                {initials}
+                <span className="profile-avatar__dot" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-white">{username}</h2>
-                <p className="text-sm text-[var(--text-muted)]">{user?.email || stats?.email || "—"}</p>
+                <h2>{username}</h2>
+                <p className="muted-text">{email}</p>
               </div>
             </div>
 
-            {/* Info fields */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="profile-field-grid">
               {[
                 { label: "Username", value: username },
-                { label: "Email", value: user?.email || stats?.email || "—" },
+                { label: "Email", value: email },
               ].map((field) => (
-                <div key={field.label} className="rounded-xl border border-[var(--surface-border)] bg-[rgba(0,0,0,0.2)] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{field.label}</p>
-                  <p className="mt-1.5 text-sm font-semibold text-[var(--text)] truncate">{field.value}</p>
+                <div key={field.label} className="profile-field">
+                  <p className="label-text">{field.label}</p>
+                  <strong>{field.value}</strong>
                 </div>
               ))}
             </div>
 
-            {/* Win rate progress */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Win rate</p>
-                <p className="text-sm font-black text-cyan-300">{loading ? "—" : `${winRate}%`}</p>
+            <div id="settings">
+              <div className="dashboard-row">
+                <span className="label-text">Win rate</span>
+                <strong>{loading ? "—" : `${winRate}%`}</strong>
               </div>
-              <div className="h-2 rounded-full bg-[rgba(0,0,0,0.3)] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-700"
-                  style={{ width: loading ? "0%" : `${winRate}%` }}
-                />
-              </div>
+              <progress className="profile-progress" max="100" value={loading ? 0 : winRate} />
             </div>
           </Card>
 
-          {/* Rank card */}
-          <Card className="p-8 flex flex-col gap-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Rank Badge</p>
-            <div className="flex-1 relative rounded-xl overflow-hidden"
-              style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.08), rgba(99,102,241,0.12))", border: "1px solid rgba(34,211,238,0.15)" }}>
-              <div className="absolute inset-0 bg-grid opacity-30" />
-              <div className="relative flex h-full min-h-[160px] flex-col items-center justify-center p-6 text-center">
-                <div className="text-5xl mb-3">
-                  {stats?.rank === "Diamond" ? "💎" : stats?.rank === "Gold" ? "🥇" : stats?.rank === "Silver" ? "🥈" : "🏅"}
-                </div>
-                <p className="text-3xl font-black text-white neon-text">{loading ? "—" : (stats?.rank || "Unranked")}</p>
-                <p className="mt-2 text-xs text-[var(--text-muted)]">
-                  {loading ? "Loading..." : `${stats?.totalPoints ?? 0} pts collected`}
-                </p>
-              </div>
+          <Card className="profile-card">
+            <p className="label-text">Rank badge</p>
+            <div className="profile-rank">
+              <div className="profile-rank__icon" aria-hidden="true">{rankIcon}</div>
+              <h2>{loading ? "—" : stats?.rank || "Unranked"}</h2>
+              <p className="muted-text">{loading ? "Loading..." : `${stats?.totalPoints ?? 0} pts collected`}</p>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[var(--surface-border)] bg-[rgba(0,0,0,0.2)] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Streak</p>
-                <p className="mt-1 text-2xl font-black text-amber-300">{loading ? "—" : stats?.currentStreak ?? 0}</p>
+            <div className="profile-mini-grid">
+              <div className="profile-mini-card">
+                <p className="label-text">Streak</p>
+                <strong>{loading ? "—" : stats?.currentStreak ?? 0}</strong>
               </div>
-              <div className="rounded-xl border border-[var(--surface-border)] bg-[rgba(0,0,0,0.2)] p-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Best</p>
-                <p className="mt-1 text-2xl font-black text-cyan-300">{loading ? "—" : stats?.bestStreak ?? 0}</p>
+              <div className="profile-mini-card">
+                <p className="label-text">Best</p>
+                <strong>{loading ? "—" : stats?.bestStreak ?? 0}</strong>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
-          <StatBadge label="Total Games" value={stats?.gamesPlayed ?? 0} accent="text-white" loading={loading} />
-          <StatBadge label="Wins" value={stats?.wins ?? 0} accent="text-cyan-300" loading={loading} />
-          <StatBadge label="Losses" value={stats?.losses ?? 0} accent="text-rose-300" loading={loading} />
-          <StatBadge label="Win Rate" value={`${stats?.winRate ?? 0}%`} accent="text-violet-300" loading={loading} />
-          <StatBadge label="Best Streak" value={stats?.bestStreak ?? 0} accent="text-amber-300" loading={loading} />
+        <div className="profile-stats-grid">
+          <StatBadge label="Total Games" value={stats?.gamesPlayed ?? 0} loading={loading} />
+          <StatBadge label="Wins" value={stats?.wins ?? 0} loading={loading} />
+          <StatBadge label="Losses" value={stats?.losses ?? 0} loading={loading} />
+          <StatBadge label="Win Rate" value={`${stats?.winRate ?? 0}%`} loading={loading} />
+          <StatBadge label="Best Streak" value={stats?.bestStreak ?? 0} loading={loading} />
         </div>
 
-        {error && (
-          <div className="rounded-xl border border-rose-500/20 bg-rose-500/8 px-4 py-3 text-xs text-rose-300">
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-error">{error}</div>}
       </div>
     </section>
   );

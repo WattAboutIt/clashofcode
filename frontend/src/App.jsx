@@ -18,10 +18,10 @@ function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+          <div className="app-frame">
             <Navbar />
             <AppShell>
-              <div className="pt-28">
+              <div className="app-page-offset">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
