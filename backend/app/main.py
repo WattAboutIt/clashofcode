@@ -2,8 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .database import engine, Base
+from .bootstrap import ensure_legacy_schema, seed_questions
+from .database import AsyncSessionLocal, Base, engine
 from .routers import auth
+from .routers import leaderboard
+from .routers import questions
 from .routers import user
 from .routers import rooms
 
@@ -11,6 +14,8 @@ from .routers import rooms
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await ensure_legacy_schema(conn)
+    await seed_questions(AsyncSessionLocal)
     yield
 
 app = FastAPI(
@@ -41,7 +46,15 @@ app.include_router(
 )
 
 app.include_router(
+    questions.router,
+)
+
+app.include_router(
     user.router,
+)
+
+app.include_router(
+    leaderboard.router,
 )
 
 app.include_router(

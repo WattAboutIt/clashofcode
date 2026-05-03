@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import api from "../api/axios";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
@@ -21,7 +22,7 @@ function Profile() {
           username: profileRes.data.username,
           email: profileRes.data.email,
         });
-      } catch (err) {
+      } catch {
         setError("Unable to load profile. Refresh to retry.");
       } finally {
         setLoading(false);
@@ -32,12 +33,14 @@ function Profile() {
   }, []);
 
   return (
-    <section className="px-4 py-20 sm:px-6 lg:px-8">
+    <section className="px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="space-y-3">
           <p className="text-sm uppercase tracking-[0.32em] text-cyan-300/80">Profile</p>
           <h1 className="text-4xl font-black text-white">Your account</h1>
-          <p className="max-w-2xl text-sm leading-6 text-slate-300">Manage your stats and keep an eye on wins, losses, and your competitive rank.</p>
+          <p className="max-w-2xl text-sm leading-6 text-slate-300">
+            Your profile now reflects live backend data for rank, points, and match performance.
+          </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -66,13 +69,15 @@ function Profile() {
               <div className="rounded-[2rem] border border-white/10 bg-cyan-500/10 p-6 text-center">
                 <p className="text-sm uppercase tracking-[0.32em] text-cyan-200/80">Current status</p>
                 <p className="mt-4 text-3xl font-black text-white">{stats?.rank || "Unranked"}</p>
-                <p className="mt-2 text-sm text-slate-300">Keep winning to climb the arena ladder.</p>
+                <p className="mt-2 text-sm text-slate-300">
+                  {loading ? "Loading live standings..." : `${stats?.totalPoints ?? 0} points collected so far.`}
+                </p>
               </div>
             </div>
           </Card>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
           <Card className="p-6">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Total games</p>
             <p className="mt-4 text-4xl font-black text-white">{loading ? "..." : stats?.gamesPlayed ?? 0}</p>
@@ -84,6 +89,14 @@ function Profile() {
           <Card className="p-6">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Losses</p>
             <p className="mt-4 text-4xl font-black text-slate-300">{loading ? "..." : stats?.losses ?? 0}</p>
+          </Card>
+          <Card className="p-6">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Win rate</p>
+            <p className="mt-4 text-4xl font-black text-white">{loading ? "..." : `${stats?.winRate ?? 0}%`}</p>
+          </Card>
+          <Card className="p-6">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-400">Best streak</p>
+            <p className="mt-4 text-4xl font-black text-cyan-300">{loading ? "..." : stats?.bestStreak ?? 0}</p>
           </Card>
         </div>
 
