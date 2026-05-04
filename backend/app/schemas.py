@@ -54,6 +54,8 @@ class RoomJoinRequest(BaseModel):
 class SubmissionRequest(BaseModel):
     code: str
     language: str
+    score: int | None = None
+    passed: bool | None = None
 
 
 class MatchHistoryItem(BaseModel):
