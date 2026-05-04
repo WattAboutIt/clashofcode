@@ -59,8 +59,21 @@ export function AuthProvider({ children }) {
   const developerLogin = async (username) => {
     setLoading(true);
     try {
-      const response = await api.post("/auth/developer-login", { username });
-      setAuthState(response.data);
+      // Check if developer username is allowed without backend call
+      const allowedUsernames = ["safal", "sparsha", "sabin"];
+      const normalizedUsername = username.trim().toLowerCase();
+      if (!allowedUsernames.includes(normalizedUsername)) {
+        throw new Error("Developer access denied.");
+      }
+
+      // Create mock auth data
+      const mockUser = {
+        username: normalizedUsername,
+        email: `${normalizedUsername}@developer.local`
+      };
+      const mockToken = `developer-token-${normalizedUsername}`;
+
+      setAuthState({ user: mockUser, access_token: mockToken });
       navigate("/dashboard", { replace: true });
     } finally {
       setLoading(false);
