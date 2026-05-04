@@ -84,7 +84,7 @@
   gap: 0.4rem;
   padding: 0.35rem;
   border-radius: 999px;
-  background: rgba(248, 246, 242, 0.72);
+  background: #1a1236;
 }
 
 .navbar__link {
@@ -113,7 +113,6 @@
 .navbar__link:hover,
 .navbar__link--active {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.9);
 }
 
 .navbar__link:hover::after,
@@ -186,7 +185,7 @@
   padding: 0.55rem;
   margin-bottom: 0.45rem;
   border-radius: 18px;
-  background: rgba(248, 246, 242, 0.9);
+  background: #1a1236;
 }
 
 .navbar__dropdown-avatar {
@@ -310,7 +309,6 @@
   padding: 0.95rem 1rem;
   border: 1px solid transparent;
   border-radius: 18px;
-  background: rgba(248, 246, 242, 0.88);
   color: var(--text-secondary);
   font-weight: 600;
 }
@@ -319,8 +317,6 @@
 .navbar__mobile-link:hover,
 .navbar__mobile-action:hover {
   color: var(--text);
-  border-color: var(--surface-border-hover);
-  background: white;
 }
 
 .navbar__mobile-profile {
@@ -361,6 +357,7 @@
 }
 
 @media (min-width: 900px) {
+
   .navbar__nav,
   .navbar__actions {
     display: flex;
