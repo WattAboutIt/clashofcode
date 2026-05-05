@@ -34,14 +34,23 @@ async def _get_user_by_username(db: AsyncSession, username: str) -> User:
     return user
 
 
+def _get_myth_rank(points: int) -> str:
+    if points < 100:
+        return "Satyr"
+    elif points < 300:
+        return "Minotaur"
+    elif points < 600:
+        return "Medusa"
+    elif points < 1000:
+        return "Hercules"
+    elif points < 2000:
+        return "Ares"
+    else:
+        return "Zeus"
+
+
 async def _build_rank(db: AsyncSession, user: User) -> str:
-    result = await db.execute(
-        select(User.id).order_by(desc(User.total_points), desc(User.wins), User.username.asc())
-    )
-    ordered_ids = result.scalars().all()
-    if user.id not in ordered_ids:
-        return "Unranked"
-    return f"#{ordered_ids.index(user.id) + 1}"
+    return _get_myth_rank(user.total_points or 0)
 
 
 async def _serialize_stats(db: AsyncSession, user: User) -> dict:

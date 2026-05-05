@@ -2,9 +2,15 @@
   position: relative;
 }
 
+.landing-page .page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
 .landing-hero {
   display: grid;
-  gap: 1.5rem;
+  gap: 3rem;
   align-items: center;
 }
 
@@ -33,7 +39,7 @@
 .landing-hero__preview {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 245, 239, 0.95));
+  background: grey;
 }
 
 .landing-terminal {
@@ -50,7 +56,7 @@
   gap: 0.45rem;
   padding: 1rem 1.1rem;
   border-bottom: 1px solid var(--surface-border);
-  background: rgba(248, 246, 242, 0.85);
+  background: rgba(24, 22, 17, 0.85);
 }
 
 .landing-terminal__dot {
@@ -90,7 +96,7 @@
   padding: 1rem 1.05rem;
   border-radius: 20px;
   background: #fff6f1;
-  color: #7a4c38;
+  color: #432113;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.86rem;
   line-height: 1.7;
@@ -151,8 +157,6 @@
   margin-top: 1rem;
   padding: 0.42rem 0.72rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--text-secondary);
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -182,6 +186,7 @@
 }
 
 @media (max-width: 639px) {
+
   .landing-hero__content,
   .landing-hero__preview,
   .landing-features,

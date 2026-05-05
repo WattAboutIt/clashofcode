@@ -240,11 +240,9 @@ function Navbar() {
                 </NavLink>
               ))}
             </div>
-            <div className="navbar__mobile-divider" />
             <div className="navbar__mobile-actions">
-              <button
-                type="button"
-                className="navbar__mobile-action"
+              <a
+                className="navbar__mobile-link"
                 onClick={() => {
                   toggleTheme();
                   setOpen(false);
@@ -252,7 +250,7 @@ function Navbar() {
               >
                 <span>Theme Toggle</span>
                 <span>{theme === "warm" ? "Warm" : "Light"}</span>
-              </button>
+              </a>
               {token ? (
                 <>
                   <Link to="/dashboard#match-history" className="navbar__mobile-action" onClick={() => setOpen(false)}>
@@ -263,9 +261,8 @@ function Navbar() {
                     <span>Settings</span>
                     <span>+</span>
                   </Link>
-                  <button
-                    type="button"
-                    className="navbar__mobile-action"
+                  <a
+                    className="navbar__mobile-link"
                     onClick={() => {
                       setOpen(false);
                       logout();
@@ -273,7 +270,7 @@ function Navbar() {
                   >
                     <span>Logout</span>
                     <span>+</span>
-                  </button>
+                  </a>
                 </>
               ) : (
                 <>

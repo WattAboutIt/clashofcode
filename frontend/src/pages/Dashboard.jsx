@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
+import PixelAvatar from "../components/PixelAvatar";
 import "../styles/dashboard.css";
 
 function formatMatchTime(value) {
@@ -34,6 +35,46 @@ function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [matchmaking, setMatchmaking] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFindMatch = async () => {
+    setMatchmaking(true);
+    try {
+      const res = await api.post("/rooms/matchmake", { difficulty: "easy" });
+      if (res.data.status === "matched") {
+        navigate(`/room/${res.data.roomCode}`);
+      } else {
+        const interval = setInterval(async () => {
+          try {
+            const statusRes = await api.get("/rooms/matchmake/status");
+            if (statusRes.data.status === "matched") {
+              clearInterval(interval);
+              navigate(`/room/${statusRes.data.roomCode}`);
+            } else if (statusRes.data.status === "idle") {
+              clearInterval(interval);
+              setMatchmaking(false);
+            }
+          } catch (e) {
+            clearInterval(interval);
+            setMatchmaking(false);
+          }
+        }, 2000);
+      }
+    } catch (err) {
+      console.error(err);
+      setMatchmaking(false);
+    }
+  };
+
+  const handleCancelMatch = async () => {
+    try {
+      await api.post("/rooms/matchmake/cancel");
+      setMatchmaking(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     api.get("/user/dashboard")
@@ -61,8 +102,8 @@ function Dashboard() {
     <section className="page-shell page-enter">
       <div className="page-container dashboard-page">
         <Card className="dashboard-banner">
-          <div className="dashboard-banner__top">
-            <div>
+          <div className="dashboard-banner__top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div style={{ flex: 1 }}>
               <span className="eyebrow">
                 <span className="eyebrow__dot" />
                 Control panel
@@ -73,10 +114,18 @@ function Dashboard() {
               <p className="section-subtitle">
                 Your live stats, battle history, and question pool all in one calm, polished command center.
               </p>
+              <div className="dashboard-actions" style={{ marginTop: '1.5rem' }}>
+                {matchmaking ? (
+                  <Button onClick={handleCancelMatch} variant="secondary">Cancel Queue...</Button>
+                ) : (
+                  <Button onClick={handleFindMatch} className="battle-room__chip--difficulty">Find Match</Button>
+                )}
+                <Link to="/create-room"><Button>Create Room</Button></Link>
+                <Link to="/create-room"><Button variant="secondary">Join Room</Button></Link>
+              </div>
             </div>
-            <div className="dashboard-actions">
-              <Link to="/create-room"><Button>Create Room</Button></Link>
-              <Link to="/create-room"><Button variant="secondary">Join Room</Button></Link>
+            <div style={{ marginLeft: '2rem', flexShrink: 0 }}>
+              <PixelAvatar rank={data?.stats?.rank || "Satyr"} scale={5} />
             </div>
           </div>
         </Card>

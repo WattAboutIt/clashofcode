@@ -290,7 +290,7 @@ This will make battles feel live and interactive.
 ### Backend:
 1. Open terminal in the `backend` folder.
 2. Run `pip install -r requirements.txt` (for Python/FastAPI).
-3. Run `uvicorn main:app --reload` to start the server.
+3. Run `uvicorn app.main:app --reload` to start the server.
 
 Visit `http://localhost:5173` for the frontend and `http://localhost:5000` for the backend.
 

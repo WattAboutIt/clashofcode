@@ -5,7 +5,7 @@ import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
-import socket from "../utils/socket";
+import PyodideWorker from "../utils/pyodideWorker?worker";
 import "../styles/room.css";
 
 const DIFF_LABELS = {
@@ -191,6 +191,14 @@ function BattleRoom() {
   const [submissionResult, setSubmissionResult] = useState(null);
   const [language, setLanguage] = useState("python");
   const previousQuestionId = useRef(null);
+  const workerRef = useRef(null);
+
+  useEffect(() => {
+    workerRef.current = new PyodideWorker();
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
 
   useEffect(() => {
     api.get(`/rooms/${roomCode}`)
@@ -208,14 +216,27 @@ function BattleRoom() {
   }, [room?.question]);
 
   useEffect(() => {
-    if (import.meta.env.VITE_ENABLE_SOCKET !== "true" || !token) return undefined;
-    socket.auth = { token };
-    socket.connect();
-    socket.emit("join_room", { roomCode });
-    socket.on("room_updated", (nextRoom) => setRoom(nextRoom));
+    if (!token) return undefined;
+    const baseUrl = api.defaults.baseURL || "http://localhost:8000";
+    const wsUrl = baseUrl.replace(/^http/, "ws") + `/rooms/${roomCode}/ws`;
+
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === "room_updated") {
+          setRoom(data.room);
+        }
+      } catch (err) {
+        console.error("WS Parse Error", err);
+      }
+    };
+
+    api.post("/rooms/join", { roomCode }).catch(console.error);
+
     return () => {
-      socket.off("room_updated");
-      socket.disconnect();
+      ws.close();
     };
   }, [roomCode, token]);
 
@@ -243,15 +264,56 @@ function BattleRoom() {
     }
     setSubmitting(true);
     setError("");
-    try {
-      const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
-      setSubmissionResult(response.data);
-      const updated = await api.get(`/rooms/${roomCode}`);
-      setRoom(updated.data);
-    } catch (err) {
-      setError(err?.response?.data?.detail || "Submission failed.");
-    } finally {
-      setSubmitting(false);
+
+    if (language === "python" && workerRef.current) {
+      workerRef.current.onmessage = async (e) => {
+        const { type, result } = e.data;
+        if (type === "DONE") {
+          if (result.error) {
+            setSubmissionResult({ passed: false, error: result.error, score: 0 });
+            setSubmitting(false);
+          } else {
+            const payload = {
+              code,
+              language,
+              score: result.passed ? room.question.points : 0
+            };
+            try {
+              // Assume backend submit_solution is updated to accept the score
+              const response = await api.post(`/rooms/${roomCode}/submit`, payload);
+              const combinedResult = {
+                ...response.data,
+                passed: result.passed,
+                test_results: result.test_results,
+                score: payload.score
+              };
+              setSubmissionResult(combinedResult);
+              const updated = await api.get(`/rooms/${roomCode}`);
+              setRoom(updated.data);
+            } catch (err) {
+              setError(err?.response?.data?.detail || "Submission failed.");
+            } finally {
+              setSubmitting(false);
+            }
+          }
+        }
+      };
+
+      workerRef.current.postMessage({
+        code,
+        testCases: room?.question?.test_cases || []
+      });
+    } else {
+      try {
+        const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
+        setSubmissionResult(response.data);
+        const updated = await api.get(`/rooms/${roomCode}`);
+        setRoom(updated.data);
+      } catch (err) {
+        setError(err?.response?.data?.detail || "Submission failed.");
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -375,10 +437,14 @@ function BattleRoom() {
 
                 {submissionResult && (
                   <div className={`battle-room__result ${submissionResult.passed ? "battle-room__result--success" : "battle-room__result--pending"}`}>
-                    <strong>{submissionResult.passed ? "Accepted in battle" : "Submission received"}</strong>
-                    <p className="muted-text">
-                      Score: {submissionResult.score} pts · {submissionResult.test_results?.length ?? 0} test cases
-                    </p>
+                    <strong>{submissionResult.passed ? "Accepted in battle" : submissionResult.error ? "Runtime Error" : "Failed some test cases"}</strong>
+                    {submissionResult.error ? (
+                      <p className="muted-text font-mono text-xs mt-2 p-2 bg-[var(--surface-color)] rounded">{submissionResult.error}</p>
+                    ) : (
+                      <p className="muted-text">
+                        Score: {submissionResult.score} pts · {submissionResult.test_results?.filter(t => t.passed)?.length ?? 0}/{submissionResult.test_results?.length ?? 0} test cases
+                      </p>
+                    )}
                   </div>
                 )}
               </Card>

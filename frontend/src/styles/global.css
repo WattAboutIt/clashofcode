@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./theme.css";
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap");
 
@@ -410,7 +411,7 @@ textarea {
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--surface-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: #1a1236;
   color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 700;
@@ -420,7 +421,7 @@ textarea {
 
 .label-text {
   margin: 0 0 0.55rem;
-  color: var(--text-muted);
+  color: #e0d8f0;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -446,12 +447,10 @@ textarea {
 
 .skeleton {
   background:
-    linear-gradient(
-      90deg,
+    linear-gradient(90deg,
       rgba(255, 255, 255, 0.7) 20%,
       rgba(255, 224, 211, 0.92) 50%,
-      rgba(255, 255, 255, 0.7) 80%
-    );
+      rgba(255, 255, 255, 0.7) 80%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
@@ -508,6 +507,7 @@ textarea {
 }
 
 @keyframes pulseDot {
+
   0%,
   100% {
     opacity: 1;
@@ -536,4 +536,132 @@ textarea {
   .surface-card {
     border-radius: 24px;
   }
+}
+
+/* SNES Retro Myth RPG Gamification Overrides */
+:root {
+  --bg-color: #0f0a1f;
+  --text-color: #e0d8f0;
+  --primary-color: #ffd700;
+  --primary-hover: #ffaa00;
+  --secondary-color: #2e1a47;
+  --surface-color: #1a1236;
+  --border-color: #ffd700;
+}
+
+body {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+  font-family: 'Press Start 2P', monospace !important;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.1) 50%) !important;
+  background-size: 100% 4px !important;
+}
+
+h1,
+h2,
+h3,
+p,
+span,
+button,
+a {
+  font-family: 'Press Start 2P', monospace !important;
+}
+
+.dashboard-banner,
+.dashboard-stat,
+.battle-room__status-card,
+.dashboard-panel,
+.dashboard-level-card,
+.dashboard-row,
+.dashboard-history-item,
+.navbar__surface,
+.surface-card {
+  border-radius: 0 !important;
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+button,
+.ui-button,
+.battle-room__chip--difficulty {
+  border: 4px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  background-color: var(--secondary-color) !important;
+  color: var(--primary-color) !important;
+  box-shadow: 4px 4px 0px 0px #000 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.1s !important;
+}
+
+button:active,
+.ui-button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0px 0px #000 !important;
+}
+
+button:hover,
+.ui-button:hover {
+  background-color: var(--primary-hover) !important;
+  color: #000 !important;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
+
+:root {
+  --surface: #1a1236 !important;
+  --surface-soft: #2e1a47 !important;
+  --input-bg: #0f0a1f !important;
+  --text-muted: #a09eb5 !important;
+  --text-secondary: #cabae8 !important;
+  --bg-muted: #140d29 !important;
+  --bg-secondary: #0f0a1f !important;
+  --text: #e0d8f0 !important;
+}
+
+.ui-input,
+.ui-textarea {
+  border: 4px solid #5e17eb !important;
+  border-radius: 0 !important;
+  background-color: var(--input-bg) !important;
+  color: var(--text-color) !important;
+  box-shadow: 4px 4px 0px 0px #000 !important;
+}
+
+.ui-input:focus,
+.ui-textarea:focus {
+  border-color: #ffd700 !important;
+  box-shadow: 4px 4px 0px 0px #ffd700 !important;
+}
+
+.navbar__dropdown,
+.navbar__mobile-panel {
+  background-color: var(--surface-color) !important;
+  box-shadow: 6px 6px 0px 0px #000 !important;
+}
+
+.navbar__dropdown-header,
+.navbar__dropdown-meta,
+.navbar__dropdown-name {
+  color: var(--text-color) !important;
+}
+
+a.navbar__menu-item,
+button.navbar__menu-item {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  color: var(--text-color) !important;
+  text-transform: none !important;
+  border-radius: 0 !important;
+}
+
+a.navbar__menu-item:hover,
+button.navbar__menu-item:hover,
+.navbar__menu-item:hover {
+  background-color: var(--secondary-color) !important;
+  color: var(--primary-hover) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }

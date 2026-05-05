@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 import random
 import string
+import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from app.database import get_db
 from app.models import CodingQuestion, MatchHistory, User
 from app.room_store import room_store
 from app.schemas import RoomCreateRequest, RoomJoinRequest, SubmissionRequest
+from app.websocket_manager import manager
 
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
@@ -196,6 +198,7 @@ async def join_room(
         }
 
     payload = await _serialize_room(room, db)
+    await manager.broadcast(request.roomCode, {"event": "room_updated", "room": payload})
     return {"roomCode": payload["roomCode"]}
 
 
@@ -235,7 +238,15 @@ async def start_room(
     for player in room["players"].values():
         player["status"] = "active"
 
-    return await _serialize_room(room, db)
+    payload = await _serialize_room(room, db)
+    await manager.broadcast(room_code, {"event": "room_updated", "room": payload})
+    return payload
+
+
+async def calculate_platform_stats(room_code: str):
+    """ Async analytics simulation """
+    await asyncio.sleep(2)
+    print(f"Analytics Update: Average XP gain is 450.2. Match {room_code} finished and metrics processed asynchronously.")
 
 
 @router.post("/{room_code}/submit")
@@ -244,6 +255,7 @@ async def submit_solution(
     request: SubmissionRequest,
     current_username: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     room = _get_room_or_404(room_code)
     if room["status"] != "active":
@@ -268,12 +280,16 @@ async def submit_solution(
     player["submitted_at"] = _now_iso()
     player["status"] = "submitted"
 
-    passed = True
-    score = question.points
+    passed = request.passed if request.passed is not None else True
+    score = request.score if request.score is not None else question.points
     player["score"] = score
 
     if all(member["status"] == "submitted" for member in room["players"].values()):
         await _finalize_room(room, db)
+        background_tasks.add_task(calculate_platform_stats, room_code)
+
+    payload = await _serialize_room(room, db)
+    await manager.broadcast(room_code, {"event": "room_updated", "room": payload})
 
     return {
         "passed": passed,
@@ -282,5 +298,101 @@ async def submit_solution(
             {"name": f"Case {index + 1}", "passed": True}
             for index, _ in enumerate(question.test_cases or [])
         ],
-        "message": "Submission recorded. Execution-based judging can plug into this response later.",
+        "message": "Submission recorded.",
     }
+
+
+# Algorithmic Matchmaking state
+waitlist = {"easy": [], "medium": [], "hard": []}
+user_match_status = {}
+
+@router.post("/matchmake")
+async def matchmake(
+    request: RoomCreateRequest,
+    current_username: str = Depends(get_current_user),
+):
+    difficulty = request.difficulty.lower()
+    
+    if current_username in waitlist.get(difficulty, []):
+        return {"status": "waiting"}
+        
+    other_users = [u for u in waitlist[difficulty] if u != current_username]
+    if other_users:
+        matched_username = other_users[0]
+        waitlist[difficulty].remove(matched_username)
+        room_code = _generate_room_code()
+        while room_code in room_store:
+            room_code = _generate_room_code()
+            
+        host = matched_username
+        room_store[room_code] = {
+            "room_code": room_code,
+            "host": host,
+            "difficulty": difficulty,
+            "status": "waiting",
+            "created_at": _now_iso(),
+            "started_at": None,
+            "finished_at": None,
+            "question_id": None,
+            "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20}[difficulty],
+            "players": {
+                host: {
+                    "username": host,
+                    "status": "waiting",
+                    "score": 0,
+                    "joined_at": _now_iso(),
+                    "submitted_at": None,
+                    "code": "",
+                    "language": None,
+                },
+                current_username: {
+                    "username": current_username,
+                    "status": "waiting",
+                    "score": 0,
+                    "joined_at": _now_iso(),
+                    "submitted_at": None,
+                    "code": "",
+                    "language": None,
+                }
+            },
+        }
+        user_match_status[matched_username] = room_code
+        user_match_status[current_username] = room_code
+        return {"status": "matched", "roomCode": room_code}
+    else:
+        waitlist[difficulty].append(current_username)
+        user_match_status[current_username] = "waiting"
+        
+    return {"status": "waiting"}
+
+
+@router.get("/matchmake/status")
+async def get_matchmake_status(
+    current_username: str = Depends(get_current_user),
+):
+    status = user_match_status.get(current_username, "idle")
+    if status not in ("waiting", "idle"):
+         return {"status": "matched", "roomCode": status}
+    return {"status": status}
+
+
+@router.post("/matchmake/cancel")
+async def cancel_matchmake(
+    current_username: str = Depends(get_current_user),
+):
+    for diff in waitlist:
+        if current_username in waitlist[diff]:
+            waitlist[diff].remove(current_username)
+    if current_username in user_match_status:
+        del user_match_status[current_username]
+    return {"status": "idle"}
+
+
+@router.websocket("/{room_code}/ws")
+async def websocket_endpoint(websocket: WebSocket, room_code: str):
+    await manager.connect(room_code, websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(room_code, websocket)

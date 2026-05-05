@@ -88,11 +88,9 @@ function Home() {
               </div>
               <div className="landing-terminal__body">
                 <div>
-                  <p className="label-text">#1 Clan Rush</p>
-                  <h2>Two Sum Challenge</h2>
-                  <p className="section-subtitle">
-                    Given an array of integers, return indices of the two numbers that add up to the target.
-                  </p>
+                  <p className="label-text" style={{ color: "black" }}>#1 Clan Rush</p>
+                  <h2 style={{ color: "yellow", fontSize: "24px" }}>Two Sum Challenge</h2>
+                  <p className="section-subtitle" style={{ color: '#2D2D2D' }}>Given an array of integers, return indices of the two numbers that add up to the target.</p>
                 </div>
                 <div className="landing-terminal__code">
                   <div>def two_sum(nums, target):</div>
@@ -107,8 +105,8 @@ function Home() {
                     { label: "Points", value: "150" },
                   ].map((stat) => (
                     <div key={stat.label} className="landing-terminal__stat">
-                      <span className="label-text">{stat.label}</span>
-                      <span className="landing-terminal__stat-value">{stat.value}</span>
+                      <span className="label-text" style={{ color: '#4B0082' }}>{stat.label}</span>
+                      <span className="landing-terminal__stat-value" style={{ color: '#2D2D2D' }}>{stat.value}</span>
                     </div>
                   ))}
                 </div>
