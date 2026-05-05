@@ -26,5 +26,4 @@ services:
 
 databases:
   - name: clashofcode-db
-    type: postgresql
     plan: free
