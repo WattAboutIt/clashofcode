@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import os
 
 from .bootstrap import ensure_legacy_schema, seed_questions
 from .database import AsyncSessionLocal, Base, engine
@@ -23,13 +24,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration for local frontend development
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-]
+# CORS configuration
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174").split(",")
 
 app.add_middleware(
     CORSMiddleware,
