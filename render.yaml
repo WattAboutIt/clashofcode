@@ -26,6 +26,5 @@ services:
 
 databases:
   - name: clashofcode-db
-    engine: postgresql
-    version: 15
+    type: postgresql
     plan: free
