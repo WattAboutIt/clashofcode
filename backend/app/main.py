@@ -12,6 +12,7 @@ from .routers import leaderboard
 from .routers import questions
 from .routers import user
 from .routers import rooms
+from .routers import execution
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,9 @@ app = FastAPI(
 )
 
 # CORS configuration
-origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174").split(",")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,7 +65,11 @@ app.include_router(
     rooms.router,
 )
 
+app.include_router(
+    execution.router,
+)
+
 # Test route
 @app.get("/")
 async def home():
-    return {"message": "Clash of Code Backend Running"}
+    return {"message": "Clash of Code Runner is running"}
