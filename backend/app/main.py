@@ -1,7 +1,9 @@
+import logging
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import os
 
 from .bootstrap import ensure_legacy_schema, seed_questions
 from .database import AsyncSessionLocal, Base, engine
@@ -11,13 +13,20 @@ from .routers import questions
 from .routers import user
 from .routers import rooms
 
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await ensure_legacy_schema(conn)
-    await seed_questions(AsyncSessionLocal)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            await ensure_legacy_schema(conn)
+        await seed_questions(AsyncSessionLocal)
+    except Exception:
+        logger.exception("Database startup failed; the app will continue, but database functionality may be degraded.")
     yield
+
 
 app = FastAPI(
     title="Clash of Code API",
