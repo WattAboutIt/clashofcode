@@ -190,6 +190,8 @@ function BattleRoom() {
   const [submitting, setSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [language, setLanguage] = useState("python");
+  const [running, setRunning] = useState(false);
+  const [runOutput, setRunOutput] = useState(null);
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
 
@@ -317,6 +319,25 @@ function BattleRoom() {
     }
   };
 
+  const handleRun = async () => {
+    if (!code.trim()) {
+      setError("Write some code before running.");
+      return;
+    }
+    setRunning(true);
+    setError("");
+    setRunOutput(null);
+
+    try {
+      const response = await api.post("/execution/run", { code });
+      setRunOutput(response.data);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to run code.");
+    } finally {
+      setRunning(false);
+    }
+  };
+
   if (loading) {
     return (
       <section className="page-shell">
@@ -424,6 +445,14 @@ function BattleRoom() {
                       <option value="cpp">C++</option>
                     </select>
                     <Button
+                      onClick={handleRun}
+                      disabled={running || language !== "python"}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      {running ? "Running..." : "Run"}
+                    </Button>
+                    <Button
                       onClick={handleSubmit}
                       disabled={submitting || myPlayer?.status === "submitted"}
                       size="sm"
@@ -434,6 +463,24 @@ function BattleRoom() {
                 </div>
 
                 <CodeEditor value={code} onChange={setCode} language={language} />
+
+                {runOutput && (
+                  <div className="battle-room__result battle-room__result--info">
+                    <strong>Code Output</strong>
+                    {runOutput.output && (
+                      <div className="mt-2">
+                        <p className="muted-text font-mono text-xs">Output:</p>
+                        <pre className="font-mono text-xs mt-1 p-2 bg-[var(--surface-color)] rounded whitespace-pre-wrap">{runOutput.output}</pre>
+                      </div>
+                    )}
+                    {runOutput.error && (
+                      <div className="mt-2">
+                        <p className="muted-text font-mono text-xs text-red-500">Error:</p>
+                        <pre className="font-mono text-xs mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded whitespace-pre-wrap text-red-700 dark:text-red-300">{runOutput.error}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {submissionResult && (
                   <div className={`battle-room__result ${submissionResult.passed ? "battle-room__result--success" : "battle-room__result--pending"}`}>
