@@ -1,10 +1,10 @@
 services:
   - type: web
     name: clashofcode-backend
-    runtime: python3
+    env: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    env:
+    envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: clashofcode-db
@@ -15,11 +15,12 @@ services:
         generateValue: true
     healthCheckPath: /docs
 
-  - type: static
+  - type: web
     name: clashofcode-frontend
+    env: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    env:
+    envVars:
       - key: VITE_API_BASE_URL
         value: https://clashofcode-backend.onrender.com
 
