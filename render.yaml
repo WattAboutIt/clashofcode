@@ -2,6 +2,7 @@ services:
   - type: web
     name: clashofcode-backend
     env: python
+    instanceType: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -18,6 +19,7 @@ services:
   - type: web
     name: clashofcode-frontend
     env: static
+    instanceType: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
