@@ -770,6 +770,11 @@
   background: rgba(255, 249, 239, 0.96);
 }
 
+.battle-room__result--info {
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  background: rgba(239, 246, 255, 0.96);
+}
+
 .battle-room__dock-grid {
   display: grid;
   gap: 1rem;
