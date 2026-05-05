@@ -1,33 +1,30 @@
 services:
   - type: web
     name: clashofcode-backend
-    runtime: python
+    runtime: python3
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    envVars:
+    env:
       - key: DATABASE_URL
         fromDatabase:
           name: clashofcode-db
           property: connectionString
-
       - key: CORS_ORIGINS
         value: https://clashofcode-frontend.onrender.com
-
       - key: SECRET_KEY
         generateValue: true
-
     healthCheckPath: /docs
 
-  - type: web
+  - type: static
     name: clashofcode-frontend
-    runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    envVars:
+    env:
       - key: VITE_API_BASE_URL
         value: https://clashofcode-backend.onrender.com
 
 databases:
   - name: clashofcode-db
-    databaseName: clashofcode
+    engine: postgresql
+    version: 15
     plan: free
