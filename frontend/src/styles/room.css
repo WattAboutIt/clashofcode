@@ -15,7 +15,7 @@
 }
 
 .room-banner {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 242, 233, 0.94));
+  background: linear-gradient(145deg, rgba(21, 18, 54, 0.96), rgba(15, 13, 44, 0.96));
 }
 
 .room-banner__row {
@@ -68,8 +68,8 @@
 }
 
 .room-error {
-  border: 1px solid rgba(221, 107, 98, 0.18);
-  background: rgba(255, 241, 239, 0.92);
+  border: 1px solid rgba(234, 106, 103, 0.4);
+  background: rgba(50, 20, 34, 0.72);
   color: var(--danger);
 }
 
@@ -107,8 +107,8 @@
 .room-info-row,
 .room-player {
   border: 1px solid var(--surface-border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  background: rgba(21, 18, 55, 0.88);
 }
 
 .room-question__description {
@@ -161,8 +161,8 @@
 .room-code-shell {
   overflow: hidden;
   border: 1px solid var(--surface-border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.76);
+  border-radius: 12px;
+  background: rgba(13, 11, 36, 0.94);
 }
 
 .room-code-shell__bar {
@@ -171,7 +171,7 @@
   gap: 0.45rem;
   padding: 0.9rem 1rem;
   border-bottom: 1px solid var(--surface-border);
-  background: rgba(248, 246, 242, 0.86);
+  background: rgba(27, 23, 66, 0.84);
 }
 
 .room-code-shell__name {
@@ -208,13 +208,13 @@
 }
 
 .room-result--success {
-  border: 1px solid rgba(49, 181, 123, 0.16);
-  background: rgba(240, 252, 246, 0.95);
+  border: 1px solid rgba(58, 199, 125, 0.35);
+  background: rgba(18, 56, 43, 0.72);
 }
 
 .room-result--pending {
-  border: 1px solid rgba(243, 166, 79, 0.18);
-  background: rgba(255, 249, 239, 0.95);
+  border: 1px solid rgba(244, 180, 63, 0.35);
+  background: rgba(72, 51, 16, 0.72);
 }
 
 .room-sidebar-card__list,
@@ -244,7 +244,7 @@
 
 .room-player--me {
   border-color: rgba(var(--accent-rgb), 0.22);
-  background: rgba(255, 246, 242, 0.92);
+  background: rgba(30, 24, 68, 0.94);
 }
 
 .room-player__main {
@@ -256,7 +256,7 @@
 .room-player__avatar {
   width: 2.6rem;
   height: 2.6rem;
-  border-radius: 16px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -274,9 +274,9 @@
   align-items: center;
   margin-left: 0.45rem;
   padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  background: rgba(242, 182, 104, 0.18);
-  color: #b67b29;
+  border-radius: 8px;
+  background: rgba(255, 211, 79, 0.16);
+  color: #ffd34f;
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -293,9 +293,9 @@
   display: inline-flex;
   align-items: center;
   padding: 0.45rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--text-secondary);
+  border-radius: 8px;
+  background: rgba(29, 24, 70, 0.95);
+  color: var(--accent-gold);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -313,15 +313,15 @@
 .room-difficulty-card {
   padding: 1rem;
   border: 1px solid var(--surface-border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  background: rgba(20, 17, 51, 0.9);
   text-align: left;
 }
 
 .room-difficulty-card--active {
-  border-color: rgba(var(--accent-rgb), 0.28);
-  background: rgba(255, 246, 242, 0.95);
-  box-shadow: 0 22px 30px -26px rgba(var(--accent-rgb), 0.6);
+  border-color: rgba(255, 211, 79, 0.7);
+  background: rgba(31, 27, 76, 0.96);
+  box-shadow: 0 0 0 2px rgba(255, 211, 79, 0.14);
 }
 
 .room-pool-list {
@@ -332,14 +332,14 @@
 .room-pool-card {
   padding: 1rem 1.1rem;
   border: 1px solid var(--surface-border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  background: rgba(21, 18, 55, 0.9);
 }
 
 .room-empty {
   padding: 1.4rem;
   border: 1px dashed var(--surface-border);
-  border-radius: 22px;
+  border-radius: 10px;
   text-align: center;
   color: var(--text-secondary);
 }
@@ -768,6 +768,11 @@
 .battle-room__result--pending {
   border: 1px solid rgba(243, 166, 79, 0.18);
   background: rgba(255, 249, 239, 0.96);
+}
+
+.battle-room__result--info {
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  background: rgba(239, 246, 255, 0.96);
 }
 
 .battle-room__dock-grid {

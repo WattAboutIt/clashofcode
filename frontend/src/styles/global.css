@@ -1,12 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "./theme.css";
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap");
 
 :root {
-  color-scheme: light;
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  color-scheme: dark;
+  font-family: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   background: var(--bg);
@@ -22,9 +20,12 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(255, 122, 89, 0.08), transparent 24%),
-    radial-gradient(circle at top right, rgba(255, 196, 137, 0.16), transparent 32%),
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 12% 0%, rgba(255, 111, 60, 0.12), transparent 26%),
+    radial-gradient(circle at 92% 14%, rgba(255, 211, 79, 0.12), transparent 24%),
     linear-gradient(180deg, var(--bg), var(--bg-muted));
+  background-size: 56px 56px, 56px 56px, auto, auto, auto;
   color: var(--text);
   overflow-x: hidden;
   transition:
@@ -110,7 +111,7 @@ textarea {
 }
 
 .font-display {
-  font-family: "Poppins", "Inter", sans-serif;
+  font-family: "Sora", "Chakra Petch", sans-serif;
 }
 
 .font-mono {
@@ -195,10 +196,10 @@ textarea {
 .surface-card {
   background: var(--surface);
   border: 1px solid var(--surface-border);
-  border-radius: 28px;
+  border-radius: 16px;
   box-shadow: var(--card-shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .surface-card--soft {
@@ -229,11 +230,13 @@ textarea {
   justify-content: center;
   gap: 0.6rem;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 8px;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   text-align: center;
-  box-shadow: 0 18px 32px -24px rgba(31, 41, 55, 0.24);
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.65);
 }
 
 .ui-button:hover {
@@ -247,8 +250,9 @@ textarea {
 }
 
 .ui-button--primary {
-  color: white;
+  color: #120f2f;
   background: var(--accent-gradient);
+  border-color: rgba(255, 122, 70, 0.78);
 }
 
 .ui-button--primary:hover {
@@ -256,19 +260,19 @@ textarea {
 }
 
 .ui-button--secondary {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.82);
-  border-color: var(--surface-border);
+  color: var(--accent-gold);
+  background: rgba(20, 17, 50, 0.92);
+  border-color: rgba(255, 211, 79, 0.65);
 }
 
 .ui-button--secondary:hover {
-  border-color: var(--surface-border-hover);
-  box-shadow: var(--card-shadow-hover);
+  border-color: #ffd34f;
+  box-shadow: 0 0 0 2px rgba(255, 211, 79, 0.15);
 }
 
 .ui-button--danger {
-  color: white;
-  background: linear-gradient(135deg, #ef8b7f, #dd6b62);
+  color: #fff2f1;
+  background: linear-gradient(135deg, #e66459, #d94848);
 }
 
 .ui-button--sm {
@@ -293,14 +297,14 @@ textarea {
   width: 100%;
   padding: 0.95rem 1rem;
   border: 1px solid var(--surface-border);
-  border-radius: 18px;
+  border-radius: 10px;
   background: var(--input-bg);
   color: var(--text);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ui-input::placeholder {
-  color: #b3ab9f;
+  color: #7770a8;
 }
 
 .ui-input:focus {
@@ -313,9 +317,11 @@ textarea {
 .ui-field-label {
   display: block;
   margin-bottom: 0.55rem;
-  color: var(--text);
-  font-size: 0.92rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .ui-field-error {
@@ -336,12 +342,12 @@ textarea {
   gap: 0.55rem;
   padding: 0.55rem 0.95rem;
   border: 1px solid rgba(var(--accent-rgb), 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  background: rgba(255, 111, 60, 0.08);
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
@@ -356,22 +362,22 @@ textarea {
 
 .section-title {
   margin: 0;
-  font-family: "Poppins", "Inter", sans-serif;
+  font-family: "Sora", "Chakra Petch", sans-serif;
   font-size: clamp(2rem, 4vw, 3.75rem);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
 .section-subtitle {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1.75;
+  font-size: 1.02rem;
+  line-height: 1.82;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--accent-strong), #f7a76c 50%, #f39ab3 100%);
+  background: linear-gradient(135deg, var(--accent-strong), #ff7a31 50%, #ffd34f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -389,7 +395,7 @@ textarea {
 
 .metric-value {
   display: block;
-  font-family: "Poppins", "Inter", sans-serif;
+  font-family: "Sora", "Chakra Petch", sans-serif;
   font-size: 1.8rem;
   font-weight: 800;
   line-height: 1;
@@ -410,9 +416,9 @@ textarea {
   gap: 0.45rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--surface-border);
-  border-radius: 999px;
-  background: #1a1236;
-  color: var(--text-secondary);
+  border-radius: 8px;
+  background: rgba(22, 19, 56, 0.92);
+  color: var(--accent-gold);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -421,10 +427,10 @@ textarea {
 
 .label-text {
   margin: 0 0 0.55rem;
-  color: #e0d8f0;
-  font-size: 0.72rem;
+  color: var(--accent);
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
@@ -441,7 +447,7 @@ textarea {
 }
 
 .hover-lift:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   box-shadow: var(--card-shadow-hover);
 }
 
@@ -534,134 +540,6 @@ textarea {
   }
 
   .surface-card {
-    border-radius: 24px;
+    border-radius: 14px;
   }
-}
-
-/* SNES Retro Myth RPG Gamification Overrides */
-:root {
-  --bg-color: #0f0a1f;
-  --text-color: #e0d8f0;
-  --primary-color: #ffd700;
-  --primary-hover: #ffaa00;
-  --secondary-color: #2e1a47;
-  --surface-color: #1a1236;
-  --border-color: #ffd700;
-}
-
-body {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color) !important;
-  font-family: 'Press Start 2P', monospace !important;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.1) 50%) !important;
-  background-size: 100% 4px !important;
-}
-
-h1,
-h2,
-h3,
-p,
-span,
-button,
-a {
-  font-family: 'Press Start 2P', monospace !important;
-}
-
-.dashboard-banner,
-.dashboard-stat,
-.battle-room__status-card,
-.dashboard-panel,
-.dashboard-level-card,
-.dashboard-row,
-.dashboard-history-item,
-.navbar__surface,
-.surface-card {
-  border-radius: 0 !important;
-  background-color: var(--surface-color) !important;
-  color: var(--text-color) !important;
-}
-
-button,
-.ui-button,
-.battle-room__chip--difficulty {
-  border: 4px solid var(--border-color) !important;
-  border-radius: 0 !important;
-  background-color: var(--secondary-color) !important;
-  color: var(--primary-color) !important;
-  box-shadow: 4px 4px 0px 0px #000 !important;
-  text-transform: uppercase !important;
-  transition: transform 0.1s !important;
-}
-
-button:active,
-.ui-button:active {
-  transform: translate(2px, 2px) !important;
-  box-shadow: 2px 2px 0px 0px #000 !important;
-}
-
-button:hover,
-.ui-button:hover {
-  background-color: var(--primary-hover) !important;
-  color: #000 !important;
-}
-
-canvas {
-  image-rendering: pixelated;
-}
-
-:root {
-  --surface: #1a1236 !important;
-  --surface-soft: #2e1a47 !important;
-  --input-bg: #0f0a1f !important;
-  --text-muted: #a09eb5 !important;
-  --text-secondary: #cabae8 !important;
-  --bg-muted: #140d29 !important;
-  --bg-secondary: #0f0a1f !important;
-  --text: #e0d8f0 !important;
-}
-
-.ui-input,
-.ui-textarea {
-  border: 4px solid #5e17eb !important;
-  border-radius: 0 !important;
-  background-color: var(--input-bg) !important;
-  color: var(--text-color) !important;
-  box-shadow: 4px 4px 0px 0px #000 !important;
-}
-
-.ui-input:focus,
-.ui-textarea:focus {
-  border-color: #ffd700 !important;
-  box-shadow: 4px 4px 0px 0px #ffd700 !important;
-}
-
-.navbar__dropdown,
-.navbar__mobile-panel {
-  background-color: var(--surface-color) !important;
-  box-shadow: 6px 6px 0px 0px #000 !important;
-}
-
-.navbar__dropdown-header,
-.navbar__dropdown-meta,
-.navbar__dropdown-name {
-  color: var(--text-color) !important;
-}
-
-a.navbar__menu-item,
-button.navbar__menu-item {
-  border: none !important;
-  box-shadow: none !important;
-  background-color: transparent !important;
-  color: var(--text-color) !important;
-  text-transform: none !important;
-  border-radius: 0 !important;
-}
-
-a.navbar__menu-item:hover,
-button.navbar__menu-item:hover,
-.navbar__menu-item:hover {
-  background-color: var(--secondary-color) !important;
-  color: var(--primary-hover) !important;
-  transform: none !important;
-  box-shadow: none !important;
 }

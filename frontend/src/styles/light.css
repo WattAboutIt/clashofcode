@@ -26,3 +26,437 @@
   --accent-gradient: linear-gradient(135deg, #ff7a59, #ff9b7b);
   --gold-gradient: linear-gradient(135deg, #ffedd5, #f2b668);
 }
+
+/* Light mode overrides for visibility */
+:root[data-theme="light"] .room-badge {
+  background: #fef3f2 !important;
+  color: #ff5c35 !important;
+  border-color: #ffb27a !important;
+}
+
+:root[data-theme="light"] .room-badge--accent {
+  background: rgba(255, 122, 89, 0.1) !important;
+  color: #ff5c35 !important;
+}
+
+:root[data-theme="light"] .room-badge--soft {
+  background: #f9fafb !important;
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .room-difficulty-card {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.06), rgba(243, 154, 179, 0.06)) !important;
+  border-color: rgba(255, 122, 89, 0.2) !important;
+}
+
+:root[data-theme="light"] .room-difficulty-card--active {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.15), rgba(243, 154, 179, 0.12)) !important;
+  border-color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .dashboard-stat {
+  background: linear-gradient(180deg, #ffffff, #faf8f5) !important;
+}
+
+:root[data-theme="light"] .dashboard-level-card {
+  background: #f9fafb !important;
+}
+
+:root[data-theme="light"] .room-pool-card {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.05), rgba(243, 154, 179, 0.05)) !important;
+  border-color: rgba(255, 122, 89, 0.15) !important;
+}
+
+:root[data-theme="light"] .room-pool-card span {
+  color: #64748b !important;
+}
+
+/* Input fields and form elements */
+:root[data-theme="light"] .profile-field,
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+:root[data-theme="light"] .profile-field {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .ui-input,
+:root[data-theme="light"] .room-textarea {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .ui-input::placeholder,
+:root[data-theme="light"] .room-textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Labels and eyebrows */
+:root[data-theme="light"] .eyebrow,
+:root[data-theme="light"] .ui-field-label,
+:root[data-theme="light"] .label-text {
+  color: #ff7a59 !important;
+}
+
+/* Buttons styling for light mode */
+:root[data-theme="light"] .ui-button {
+  background: linear-gradient(135deg, #ff7a59, #ff9b7b) !important;
+  color: #ffffff !important;
+  border: 1px solid #ff7a59 !important;
+}
+
+:root[data-theme="light"] .ui-button:hover {
+  background: linear-gradient(135deg, #ff5c35, #ff7a59) !important;
+}
+
+:root[data-theme="light"] .ui-button--primary {
+  background: linear-gradient(135deg, #ff7a59, #ff9b7b) !important;
+}
+
+:root[data-theme="light"] .ui-button--secondary {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+:root[data-theme="light"] .ui-button--secondary:hover {
+  background: #e5e7eb !important;
+}
+
+/* Dashboard panels and cards */
+:root[data-theme="light"] .dashboard-panel,
+:root[data-theme="light"] .surface-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .dashboard-banner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 241, 231, 0.95)) !important;
+  border: none !important;
+}
+
+/* Status cards and badges */
+:root[data-theme="light"] .room-result {
+  background: #f3f4f6 !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .room-result--success {
+  background: rgba(47, 176, 112, 0.08) !important;
+  color: #2fb070 !important;
+}
+
+:root[data-theme="light"] .room-result--pending {
+  background: rgba(244, 180, 63, 0.08) !important;
+  color: #ef9c41 !important;
+}
+
+/* Profile cards */
+:root[data-theme="light"] .profile-card {
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .profile-field,
+:root[data-theme="light"] .profile-mini-card,
+:root[data-theme="light"] .profile-stat-card {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Row elements */
+:root[data-theme="light"] .dashboard-row,
+:root[data-theme="light"] .room-info-row {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Player cards */
+:root[data-theme="light"] .room-player {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Navbar styling for light mode */
+:root[data-theme="light"] .navbar__surface {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  box-shadow: 0 12px 24px -12px rgba(15, 23, 42, 0.1) !important;
+}
+
+:root[data-theme="light"] .navbar__brand-subtitle {
+  color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .navbar__link {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .navbar__link:hover,
+:root[data-theme="light"] .navbar__link--active {
+  color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .navbar__nav {
+  background: rgba(243, 244, 246, 0.8) !important;
+}
+
+:root[data-theme="light"] .navbar__dropdown {
+  background: #ffffff !important;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.12) !important;
+}
+
+:root[data-theme="light"] .navbar__menu-item:hover {
+  background: #f3f4f6 !important;
+}
+
+/* Question pool spacing */
+:root[data-theme="light"] .room-difficulty-grid,
+:root[data-theme="light"] .dashboard-grid {
+  gap: 1.5rem !important;
+}
+
+/* Remove background from profile field sections (username, email, etc) */
+:root[data-theme="light"] .profile-field-grid .profile-field {
+  background: transparent !important;
+  border: none !important;
+  padding: 0.5rem 0 !important;
+}
+
+:root[data-theme="light"] .profile-field-grid .profile-field input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+  padding: 0.5rem 0 !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .profile-field-grid .profile-field input::placeholder {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .profile-field-grid .profile-field input:focus {
+  border-bottom-color: #ff7a59 !important;
+}
+
+/* Reduce shadows on white boxes */
+:root[data-theme="light"] .surface-card,
+:root[data-theme="light"] .dashboard-panel {
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .dashboard-stat {
+  box-shadow: 0 2px 8px -4px rgba(15, 23, 42, 0.05) !important;
+}
+
+:root[data-theme="light"] .profile-avatar {
+  box-shadow: 0 8px 16px -8px rgba(var(--accent-rgb), 0.3) !important;
+}
+
+/* Error messages styling for light mode */
+:root[data-theme="light"] .auth-error {
+  background: rgba(220, 101, 90, 0.08) !important;
+  border: 1px solid rgba(220, 101, 90, 0.2) !important;
+  color: #dc655a !important;
+}
+
+:root[data-theme="light"] .room-error {
+  background: rgba(220, 101, 90, 0.08) !important;
+  border: 1px solid rgba(220, 101, 90, 0.2) !important;
+  color: #dc655a !important;
+}
+
+:root[data-theme="light"] .ui-field-error {
+  color: #dc655a !important;
+}
+
+/* Profile stats boxes - remove background from STREAK and BEST */
+:root[data-theme="light"] .profile-rank .profile-mini-grid .profile-mini-card {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Battle room status cards for light mode */
+:root[data-theme="light"] .battle-room__status-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 122, 89, 0.2) !important;
+  color: #111827 !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .battle-room__status-card strong {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__status-label {
+  color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .battle-room__timer {
+  color: #111827 !important;
+}
+
+/* Room question/challenge box styling */
+:root[data-theme="light"] .room-question {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .room-question__header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .room-question__header h2,
+:root[data-theme="light"] .battle-room__headline h1 {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .room-question__header .eyebrow {
+  color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .room-question__description {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .room-example {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .room-example-list {
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Challenge code block styling */
+:root[data-theme="light"] .room-code-shell {
+  background: #f3f4f6 !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+:root[data-theme="light"] .room-code-shell__bar {
+  background: #f3f4f6 !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .room-code-shell code {
+  color: #111827 !important;
+}
+
+/* Status info cards styling */
+:root[data-theme="light"] .room-info-row {
+  background: transparent !important;
+  border: none !important;
+  padding: 0.5rem 0 !important;
+}
+
+/* Battle status cards - timer, players, points */
+:root[data-theme="light"] .battle-room__status-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  color: #111827 !important;
+  box-shadow: 0 2px 8px -4px rgba(15, 23, 42, 0.05) !important;
+}
+
+:root[data-theme="light"] .battle-room__status-card strong {
+  color: #111827 !important;
+  font-size: 1.8rem !important;
+}
+
+:root[data-theme="light"] .battle-room__status-label {
+  color: #ff7a59 !important;
+  font-weight: 600 !important;
+}
+
+/* Battle room panels */
+:root[data-theme="light"] .battle-room__problem-panel,
+:root[data-theme="light"] .battle-room__editor-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Room editor card */
+:root[data-theme="light"] .room-editor-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .room-code-shell {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .room-code-shell__bar {
+  background: #f3f4f6 !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Available/Live badge styling */
+:root[data-theme="light"] .landing-terminal .terminal-dot--rose {
+  background: #e6847a !important;
+}
+
+:root[data-theme="light"] .landing-terminal .terminal-dot--gold {
+  background: #efb565 !important;
+}
+
+:root[data-theme="light"] .landing-terminal .terminal-dot--green {
+  background: #53bf8d !important;
+}
+
+:root[data-theme="light"] .status-chip {
+  background: rgba(255, 122, 89, 0.1) !important;
+  color: #ff7a59 !important;
+  border: 1px solid rgba(255, 122, 89, 0.2) !important;
+}
+
+/* Home preview terminal (Two Sum Challenge) */
+:root[data-theme="light"] .landing-terminal {
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .landing-terminal__bar {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: #f3f4f6 !important;
+}
+
+:root[data-theme="light"] .landing-terminal__meta {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .landing-terminal__title {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .landing-terminal__body .section-subtitle {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .landing-terminal__code {
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  background: #f9fafb !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .landing-terminal__stat {
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .landing-terminal__stat .label-text {
+  color: #ff7a59 !important;
+}
+
+:root[data-theme="light"] .landing-terminal__stat-value {
+  color: #111827 !important;
+}
