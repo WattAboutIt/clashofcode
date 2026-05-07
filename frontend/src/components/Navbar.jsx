@@ -28,6 +28,7 @@ function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { token, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const nextThemeLabel = theme === "light" ? "Dark" : "Light";
   const dropdownRef = useRef(null);
   const navItems = token ? authLinks : guestLinks;
   const initials = useMemo(() => (user?.username || "C").slice(0, 1).toUpperCase(), [user]);
@@ -172,8 +173,8 @@ function Navbar() {
                           <path d="m17.66 17.66.7.7" />
                           <circle cx="12" cy="12" r="4" />
                         </Icon>
-                        <span>Theme Toggle</span>
-                        <span>{theme === "warm" ? "Warm" : "Light"}</span>
+                        <span>Change theme:</span>
+                        <span>{nextThemeLabel}</span>
                       </button>
                       <div className="navbar__menu-divider" />
                       <button
@@ -248,8 +249,8 @@ function Navbar() {
                   setOpen(false);
                 }}
               >
-                <span>Theme Toggle</span>
-                <span>{theme === "warm" ? "Warm" : "Light"}</span>
+                <span>Change theme:</span>
+                <span>{nextThemeLabel}</span>
               </a>
               {token ? (
                 <>
