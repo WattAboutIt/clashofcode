@@ -447,17 +447,25 @@
   display: grid;
   gap: 1rem;
   align-items: start;
+  grid-template-columns: 1fr;
+}
+
+.battle-room__left-column {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.battle-room__right-column {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
 }
 
 .battle-room__problem-panel,
 .battle-room__editor-panel {
   padding: 0;
   overflow: hidden;
-}
-
-.battle-room__editor-stack {
-  display: grid;
-  gap: 1rem;
 }
 
 .battle-room__panel-tabs {
@@ -494,13 +502,14 @@
 .battle-room__problem-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  overflow: hidden;
 }
 
 .battle-room__problem-scroll {
   display: grid;
   gap: 1.35rem;
   padding: 1.35rem 1.25rem 1.4rem;
+  overflow-y: auto;
 }
 
 .battle-room__problem-header {
@@ -663,7 +672,8 @@
 
 .battle-room__editor-shell {
   display: grid;
-  grid-template-rows: auto minmax(360px, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 0;
 }
 
 .battle-room__editor-bar {
@@ -708,31 +718,45 @@
 }
 
 .battle-room__editor-body {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  min-height: 0;
+  display: flex;
+  min-height: 18rem;
+  position: relative;
 }
 
 .battle-room__editor-gutter {
-  overflow: hidden;
+  flex-shrink: 0;
+  width: 52px;
   padding: 1rem 0;
   border-right: 1px solid var(--surface-border);
   background: #faf7f2;
   color: var(--text-muted);
   text-align: right;
+  overflow: hidden;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar on gutter while keeping scroll functionality */
+.battle-room__editor-gutter::-webkit-scrollbar {
+  display: none;
+}
+
+.battle-room__editor-gutter {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .battle-room__editor-line {
   display: block;
   padding-right: 0.8rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.78rem;
+  font-size: 0.92rem;
   line-height: 1.72;
+  height: 1.72em;
 }
 
 .battle-room__editor-textarea {
-  width: 100%;
-  min-height: 360px;
+  flex: 1;
   padding: 1rem 1.1rem;
   border: 0;
   border-radius: 0;
@@ -741,8 +765,9 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.92rem;
   line-height: 1.72;
-  resize: vertical;
+  resize: none;
   tab-size: 2;
+  overflow: auto;
 }
 
 .battle-room__editor-textarea:focus {
@@ -905,17 +930,38 @@
 
 @media (min-width: 1100px) {
   .battle-room__workspace {
-    grid-template-columns: minmax(420px, 0.95fr) minmax(520px, 1.05fr);
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.85fr);
   }
 
-  .battle-room__problem-panel,
-  .battle-room__editor-panel {
-    min-height: 72vh;
+  .battle-room__left-column {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .battle-room__problem-panel {
+    flex: 0 0 auto;
+    overflow: hidden;
   }
 
   .battle-room__problem-scroll {
-    max-height: calc(72vh - 52px);
-    overflow-y: auto;
+    overflow: visible;
+  }
+
+  .battle-room__editor-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .battle-room__editor-body {
+    min-height: 18rem;
+  }
+
+  .battle-room__right-column {
+    min-height: 0;
+  }
+
+  .battle-room__dock-card {
+    flex: 0 1 auto;
   }
 }
 

@@ -125,7 +125,7 @@ function Dashboard() {
               </div>
             </div>
             <div style={{ marginLeft: '2rem', flexShrink: 0 }}>
-              <PixelAvatar rank={data?.stats?.rank || "Satyr"} scale={5} />
+              <PixelAvatar rank={data?.stats?.rank || user?.stats?.rank || "Satyr"} scale={5} />
             </div>
           </div>
         </Card>

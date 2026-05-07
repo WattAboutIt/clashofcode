@@ -27,3 +27,494 @@
   --accent-gradient: linear-gradient(135deg, #ff5d2e, #ff7e32);
   --gold-gradient: linear-gradient(135deg, #ffe27d, #f7b840);
 }
+
+:root[data-theme="warm"] .auth-dev-login,
+:root .auth-dev-login {
+  background: rgba(21, 18, 55, 0.96) !important;
+  border: 1px solid rgba(129, 120, 206, 0.32) !important;
+  box-shadow: 0 18px 42px -34px rgba(5, 4, 22, 0.85) !important;
+}
+
+:root[data-theme="warm"] .auth-dev-login__title,
+:root .auth-dev-login__title {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .auth-dev-login__meta,
+:root .auth-dev-login__meta {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .auth-dev-form,
+:root .auth-dev-form {
+  border-top: 1px solid rgba(129, 120, 206, 0.24) !important;
+}
+
+:root[data-theme="warm"] .auth-divider span,
+:root .auth-divider span {
+  background: var(--bg-secondary) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Dark mode specific styling for improved contrast and consistency */
+:root[data-theme="warm"],
+:root {
+  /* Card and surface styling */
+  --surface: rgba(25, 22, 65, 0.92);
+  --surface-soft: rgba(21, 18, 55, 0.96);
+  --input-bg: rgba(35, 31, 85, 0.95);
+}
+
+/* Room badges styling for dark mode */
+:root[data-theme="warm"] .room-badge,
+:root .room-badge {
+  background: rgba(var(--accent-rgb), 0.15) !important;
+  color: var(--accent-strong) !important;
+  border: 1px solid rgba(var(--accent-rgb), 0.35) !important;
+}
+
+:root[data-theme="warm"] .room-badge--soft,
+:root .room-badge--soft {
+  background: rgba(145, 137, 187, 0.12) !important;
+  border-color: rgba(129, 120, 206, 0.4) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Difficulty cards in dark mode */
+:root[data-theme="warm"] .room-difficulty-card,
+:root .room-difficulty-card {
+  background: linear-gradient(135deg, rgba(35, 31, 85, 0.8), rgba(40, 35, 95, 0.8)) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .room-difficulty-card--active,
+:root .room-difficulty-card--active {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(255, 111, 60, 0.12)) !important;
+  border-color: rgba(var(--accent-rgb), 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1) !important;
+}
+
+/* Room info and question styling */
+:root[data-theme="warm"] .room-question__description,
+:root .room-question__description {
+  background: rgba(20, 17, 50, 0.95) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .room-example,
+:root .room-example {
+  background: rgba(25, 22, 65, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.32) !important;
+}
+
+/* Input and select fields */
+:root[data-theme="warm"] .room-select,
+:root .room-select,
+:root[data-theme="warm"] .room-textarea,
+:root .room-textarea {
+  background: rgba(35, 31, 85, 0.96) !important;
+  border-color: rgba(129, 120, 206, 0.42) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .room-select:hover,
+:root .room-select:hover,
+:root[data-theme="warm"] .room-textarea:hover,
+:root .room-textarea:hover {
+  border-color: rgba(255, 111, 60, 0.45) !important;
+}
+
+:root[data-theme="warm"] .room-select:focus,
+:root .room-select:focus,
+:root[data-theme="warm"] .room-textarea:focus,
+:root .room-textarea:focus {
+  border-color: rgba(255, 111, 60, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(255, 111, 60, 0.1) !important;
+}
+
+/* Pool cards */
+:root[data-theme="warm"] .room-pool-card,
+:root .room-pool-card {
+  background: linear-gradient(135deg, rgba(35, 31, 85, 0.7), rgba(40, 35, 95, 0.7)) !important;
+  border-color: rgba(129, 120, 206, 0.32) !important;
+}
+
+:root[data-theme="warm"] .room-pool-card:hover,
+:root .room-pool-card:hover {
+  background: linear-gradient(135deg, rgba(40, 35, 95, 0.8), rgba(45, 40, 105, 0.8)) !important;
+  border-color: rgba(var(--accent-rgb), 0.45) !important;
+}
+
+/* Player cards and info rows */
+:root[data-theme="warm"] .room-player,
+:root .room-player {
+  background: rgba(25, 22, 65, 0.9) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .room-player--me,
+:root .room-player--me {
+  background: rgba(35, 31, 85, 0.96) !important;
+  border-color: rgba(var(--accent-rgb), 0.4) !important;
+}
+
+:root[data-theme="warm"] .room-info-row,
+:root .room-info-row {
+  background: rgba(25, 22, 65, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.32) !important;
+}
+
+/* Code editor styling */
+:root[data-theme="warm"] .room-code-shell,
+:root .room-code-shell {
+  background: rgba(15, 13, 40, 0.96) !important;
+}
+
+:root[data-theme="warm"] .room-code-shell__bar,
+:root .room-code-shell__bar {
+  background: rgba(30, 26, 75, 0.92) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+}
+
+/* Error and result styling */
+:root[data-theme="warm"] .room-error,
+:root .room-error {
+  background: rgba(50, 20, 34, 0.8) !important;
+  border-color: rgba(234, 106, 103, 0.5) !important;
+}
+
+:root[data-theme="warm"] .room-result--success,
+:root .room-result--success {
+  background: rgba(18, 56, 43, 0.85) !important;
+  border-color: rgba(58, 199, 125, 0.45) !important;
+}
+
+:root[data-theme="warm"] .room-result--pending,
+:root .room-result--pending {
+  background: rgba(72, 51, 16, 0.85) !important;
+  border-color: rgba(244, 180, 63, 0.45) !important;
+}
+
+/* Placeholder text for inputs */
+:root[data-theme="warm"] input::placeholder,
+:root input::placeholder,
+:root[data-theme="warm"] textarea::placeholder,
+:root textarea::placeholder {
+  color: rgba(241, 237, 239, 0.35) !important;
+}
+
+/* Text visibility improvements */
+:root[data-theme="warm"] .room-pool-card span,
+:root .room-pool-card span {
+  color: var(--text-secondary) !important;
+}
+
+/* Battle room styling for dark mode - match landing terminal */
+:root[data-theme="warm"] .battle-room__problem-shell,
+:root .battle-room__problem-shell,
+:root[data-theme="warm"] .battle-room__editor-shell,
+:root .battle-room__editor-shell {
+  overflow: hidden;
+  border: 1px solid rgba(129, 120, 206, 0.38) !important;
+  border-radius: 22px !important;
+  background: rgba(16, 14, 43, 0.94) !important;
+  box-shadow: 0 24px 44px -28px rgba(4, 3, 18, 0.8) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tabs,
+:root .battle-room__panel-tabs,
+:root[data-theme="warm"] .battle-room__editor-top,
+:root .battle-room__editor-top,
+:root[data-theme="warm"] .battle-room__editor-bar,
+:root .battle-room__editor-bar {
+  background: rgba(30, 26, 72, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.25) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tab,
+:root .battle-room__panel-tab,
+:root[data-theme="warm"] .battle-room__editor-name,
+:root .battle-room__editor-name,
+:root[data-theme="warm"] .battle-room__editor-state,
+:root .battle-room__editor-state,
+:root[data-theme="warm"] .battle-room__section-count,
+:root .battle-room__section-count,
+:root[data-theme="warm"] .battle-room__example-index,
+:root .battle-room__example-index,
+:root[data-theme="warm"] .battle-room__constraint-box,
+:root .battle-room__constraint-box {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tab--active,
+:root .battle-room__panel-tab--active,
+:root[data-theme="warm"] .battle-room__problem-title,
+:root .battle-room__problem-title,
+:root[data-theme="warm"] .battle-room__editor-title,
+:root .battle-room__editor-title,
+:root[data-theme="warm"] .battle-room__section-header h3,
+:root .battle-room__section-header h3,
+:root[data-theme="warm"] .battle-room__example-card strong,
+:root .battle-room__example-card strong,
+:root[data-theme="warm"] .battle-room__constraint-box strong,
+:root .battle-room__constraint-box strong {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__copy,
+:root .battle-room__copy,
+:root[data-theme="warm"] .battle-room__example-card,
+:root .battle-room__example-card,
+:root[data-theme="warm"] .battle-room__constraint-box,
+:root .battle-room__constraint-box {
+  background: rgba(19, 16, 51, 0.88) !important;
+  border: 1px solid rgba(129, 120, 206, 0.3) !important;
+}
+
+:root[data-theme="warm"] .battle-room__example-index,
+:root .battle-room__example-index {
+  background: rgba(248, 246, 242, 0.08) !important;
+  border: 1px solid rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .battle-room__editor-gutter,
+:root .battle-room__editor-gutter {
+  background: rgba(18, 15, 46, 0.94) !important;
+  color: var(--text-muted) !important;
+  border-right: 1px solid rgba(129, 120, 206, 0.25) !important;
+}
+
+:root[data-theme="warm"] .battle-room__editor-textarea,
+:root .battle-room__editor-textarea {
+  background: rgba(8, 7, 24, 0.95) !important;
+  color: #f3f0ff !important;
+}
+
+:root[data-theme="warm"] .battle-room__editor-textarea::placeholder,
+:root .battle-room__editor-textarea::placeholder {
+  color: rgba(243, 240, 255, 0.45) !important;
+}
+
+:root[data-theme="warm"] .battle-room__room-code,
+:root .battle-room__room-code {
+  background: rgba(24, 21, 61, 0.76) !important;
+  border-color: rgba(129, 120, 206, 0.34) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Battle room styling for dark mode - Fix text visibility */
+:root[data-theme="warm"] .battle-room__topbar,
+:root .battle-room__topbar {
+  background: rgba(25, 22, 65, 0.9) !important;
+  border: 1px solid rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .battle-room__title,
+:root .battle-room__title {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__room-code,
+:root .battle-room__room-code {
+  background: rgba(35, 31, 85, 0.96) !important;
+  border-color: rgba(129, 120, 206, 0.4) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__status-card,
+:root .battle-room__status-card {
+  background: rgba(25, 22, 65, 0.92) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__status-card strong,
+:root .battle-room__status-card strong {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__status-card--timer,
+:root .battle-room__status-card--timer {
+  background: rgba(var(--accent-rgb), 0.12) !important;
+  border-color: rgba(var(--accent-rgb), 0.35) !important;
+}
+
+:root[data-theme="warm"] .battle-room__status-label,
+:root .battle-room__status-label {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__timer,
+:root .battle-room__timer {
+  color: var(--accent-gold) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tabs,
+:root .battle-room__panel-tabs {
+  background: rgba(30, 26, 75, 0.92) !important;
+  border-color: rgba(129, 120, 206, 0.35) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tab,
+:root .battle-room__panel-tab {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__panel-tab--active,
+:root .battle-room__panel-tab--active {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__problem-shell,
+:root .battle-room__problem-shell {
+  background: rgba(15, 13, 40, 0.96) !important;
+}
+
+:root[data-theme="warm"] .battle-room__problem-scroll,
+:root .battle-room__problem-scroll {
+  background: rgba(15, 13, 40, 0.96) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__problem-title,
+:root .battle-room__problem-title {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chip--difficulty,
+:root .battle-room__chip--difficulty {
+  background: rgba(58, 199, 125, 0.15) !important;
+  color: var(--success) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chip--points,
+:root .battle-room__chip--points {
+  background: rgba(var(--accent-rgb), 0.15) !important;
+  color: var(--accent-strong) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chip--ghost,
+:root .battle-room__chip--ghost {
+  background: rgba(35, 31, 85, 0.92) !important;
+  border-color: rgba(129, 120, 206, 0.4) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__section-header h3,
+:root .battle-room__section-header h3 {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__section-count,
+:root .battle-room__section-count {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__copy,
+:root .battle-room__copy {
+  background: rgba(25, 22, 65, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.32) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__example-card,
+:root .battle-room__example-card {
+  background: rgba(25, 22, 65, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.32) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__example-label,
+:root .battle-room__example-label {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__example-output,
+:root .battle-room__example-output {
+  color: var(--text) !important;
+  background: rgba(15, 13, 40, 0.96) !important;
+}
+:root[data-theme="warm"] .battle-room__problem-panel,
+:root[data-theme="warm"] .battle-room__editor-panel,
+:root[data-theme="warm"] .battle-room__dock-card {
+  background: rgba(21, 18, 55, 0.9) !important;
+  border: 1px solid rgba(129, 120, 206, 0.3) !important;
+  box-shadow: 0 24px 60px -44px rgba(5, 4, 22, 0.95) !important;
+}
+:root[data-theme="warm"] .battle-room__problem-shell,
+:root[data-theme="warm"] .battle-room__editor-shell {
+  overflow: hidden;
+  border: 1px solid rgba(129, 120, 206, 0.38) !important;
+  border-radius: 22px !important;
+  background: rgba(16, 14, 43, 0.94) !important;
+  box-shadow: 0 24px 44px -28px rgba(4, 3, 18, 0.8) !important;
+}
+:root[data-theme="warm"] .battle-room__panel-tabs,
+:root[data-theme="warm"] .battle-room__editor-top,
+:root[data-theme="warm"] .battle-room__editor-bar {
+  background: rgba(30, 26, 72, 0.88) !important;
+  border-color: rgba(129, 120, 206, 0.25) !important;
+}
+:root[data-theme="warm"] .battle-room__panel-tab,
+:root[data-theme="warm"] .battle-room__editor-name,
+:root[data-theme="warm"] .battle-room__editor-state,
+:root[data-theme="warm"] .battle-room__section-count,
+:root[data-theme="warm"] .battle-room__room-code,
+:root[data-theme="warm"] .battle-room__player-you,
+:root[data-theme="warm"] .battle-room__player-score,
+:root[data-theme="warm"] .battle-room__constraint-box,
+:root[data-theme="warm"] .battle-room__info-row span,
+:root[data-theme="warm"] .battle-room__player-meta p:last-child {
+  color: var(--text-secondary) !important;
+}
+:root[data-theme="warm"] .battle-room__panel-tab--active,
+:root[data-theme="warm"] .battle-room__problem-title,
+:root[data-theme="warm"] .battle-room__editor-title,
+:root[data-theme="warm"] .battle-room__dock-header h3,
+:root[data-theme="warm"] .battle-room__section-header h3,
+:root[data-theme="warm"] .battle-room__player strong,
+:root[data-theme="warm"] .battle-room__info-row strong {
+  color: var(--text) !important;
+}
+:root[data-theme="warm"] .battle-room__chip--ghost {
+  background: rgba(35, 31, 85, 0.92) !important;
+  border: 1px solid rgba(129, 120, 206, 0.4) !important;
+  color: var(--text-secondary) !important;
+}
+:root[data-theme="warm"] .battle-room__copy,
+:root[data-theme="warm"] .battle-room__example-card,
+:root[data-theme="warm"] .battle-room__constraint-box,
+:root[data-theme="warm"] .battle-room__info-row,
+:root[data-theme="warm"] .battle-room__player {
+  background: rgba(19, 16, 51, 0.88) !important;
+  border: 1px solid rgba(129, 120, 206, 0.3) !important;
+}
+:root[data-theme="warm"] .battle-room__example-index {
+  background: rgba(248, 246, 242, 0.08) !important;
+  border: 1px solid rgba(129, 120, 206, 0.35) !important;
+}
+:root[data-theme="warm"] .battle-room__language-select {
+  appearance: auto;
+  background: rgba(11, 10, 29, 0.96) !important;
+  border: 1px solid rgba(129, 120, 206, 0.5) !important;
+  color: #f8f3ef !important;
+  box-shadow: 0 0 0 1px rgba(11, 10, 29, 0.5) inset !important;
+}
+
+:root[data-theme="warm"] .battle-room__language-select option,
+:root .battle-room__language-select option {
+  background: #1f1f2e !important;
+  color: #f8f3ef !important;
+}
+:root[data-theme="warm"] .battle-room__editor-gutter {
+  background: rgba(18, 15, 46, 0.94) !important;
+  color: var(--text-muted) !important;
+  border-right: 1px solid rgba(129, 120, 206, 0.25) !important;
+}
+:root[data-theme="warm"] .battle-room__editor-textarea {
+  background: rgba(8, 7, 24, 0.95) !important;
+  color: #f3f0ff !important;
+}
+:root[data-theme="warm"] .battle-room__editor-textarea::placeholder {
+  color: rgba(243, 240, 255, 0.45) !important;
+}

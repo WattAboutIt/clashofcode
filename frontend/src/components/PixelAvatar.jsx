@@ -19,7 +19,8 @@ export default function PixelAvatar({ rank = "Satyr", scale = 8 }) {
             Zeus: { skin: '#fffaf0', outfit: '#4169e1', eye: '#00ffff', detail: '#ffd700' },
         };
 
-        const colors = styles[rank] || styles.Satyr;
+        const avatarType = styles[rank] ? rank : "Satyr";
+        const colors = styles[avatarType] || styles.Satyr;
 
         const state = {
             blink: false,
@@ -45,10 +46,17 @@ export default function PixelAvatar({ rank = "Satyr", scale = 8 }) {
             ctx.fillRect(x + 3, y + 2, 10, 6);
 
             // Rank-specific features
-            if (rank === "Satyr" || rank === "Minotaur") {
+            if (avatarType === "Satyr" || avatarType === "Minotaur") {
+                ctx.fillStyle = colors.skin;
+                ctx.fillRect(x + 1, y + 3, 2, 4);
+                ctx.fillRect(x + 13, y + 3, 2, 4);
+
                 ctx.fillStyle = colors.detail; // Horns
                 ctx.fillRect(x + 2, y, 2, 3);
                 ctx.fillRect(x + 12, y, 2, 3);
+
+                ctx.fillRect(x + 2, y + 4, 1, 1);
+                ctx.fillRect(x + 13, y + 4, 1, 1);
             } else if (rank === "Medusa") {
                 ctx.fillStyle = colors.detail; // Snakes
                 ctx.fillRect(x + 1, y, 14, 2);

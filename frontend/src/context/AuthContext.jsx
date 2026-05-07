@@ -69,7 +69,8 @@ export function AuthProvider({ children }) {
       // Create mock auth data
       const mockUser = {
         username: normalizedUsername,
-        email: `${normalizedUsername}@developer.local`
+        email: `${normalizedUsername}@developer.local`,
+        stats: { rank: "Developer" }
       };
       const mockToken = `developer-token-${normalizedUsername}`;
 

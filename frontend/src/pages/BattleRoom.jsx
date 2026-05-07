@@ -418,11 +418,11 @@ function BattleRoom() {
           </Card>
         ) : (
           <div className="battle-room__workspace">
-            <Card className="battle-room__problem-panel">
-              <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
-            </Card>
+            <div className="battle-room__left-column">
+              <Card className="battle-room__problem-panel">
+                <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
+              </Card>
 
-            <div className="battle-room__editor-stack">
               <Card className="battle-room__editor-panel">
                 <div className="battle-room__editor-top">
                   <div>
@@ -495,56 +495,56 @@ function BattleRoom() {
                   </div>
                 )}
               </Card>
+            </div>
 
-              <div className="battle-room__dock-grid">
-                <Card className="battle-room__dock-card">
-                  <div className="battle-room__dock-header">
-                    <div>
-                      <p className="label-text">Match Info</p>
-                      <h3>Battle details</h3>
+            <div className="battle-room__right-column">
+              <Card className="battle-room__dock-card">
+                <div className="battle-room__dock-header">
+                  <div>
+                    <p className="label-text">Match Info</p>
+                    <h3>Battle details</h3>
+                  </div>
+                </div>
+                <div className="battle-room__info-list">
+                  {[
+                    { label: "Room Code", value: roomCode },
+                    { label: "Time Limit", value: `${room?.time_limit_minutes ?? 0} min` },
+                    { label: "Difficulty", value: difficultyLabel },
+                    { label: "Points", value: room?.question?.points ?? "—" },
+                  ].map((row) => (
+                    <div key={row.label} className="battle-room__info-row">
+                      <span className="muted-text">{row.label}</span>
+                      <strong>{row.value}</strong>
                     </div>
-                  </div>
-                  <div className="battle-room__info-list">
-                    {[
-                      { label: "Room Code", value: roomCode },
-                      { label: "Time Limit", value: `${room?.time_limit_minutes ?? 0} min` },
-                      { label: "Difficulty", value: difficultyLabel },
-                      { label: "Points", value: room?.question?.points ?? "—" },
-                    ].map((row) => (
-                      <div key={row.label} className="battle-room__info-row">
-                        <span className="muted-text">{row.label}</span>
-                        <strong>{row.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                  ))}
+                </div>
+              </Card>
 
-                <Card className="battle-room__dock-card">
-                  <div className="battle-room__dock-header">
-                    <div>
-                      <p className="label-text">Participants</p>
-                      <h3>{room?.players?.length ?? 0} coders</h3>
+              <Card className="battle-room__dock-card">
+                <div className="battle-room__dock-header">
+                  <div>
+                    <p className="label-text">Participants</p>
+                    <h3>{room?.players?.length ?? 0} coders</h3>
+                  </div>
+                </div>
+
+                <div className="battle-room__player-list">
+                  {room?.players?.length ? (
+                    room.players.map((player) => (
+                      <PlayerRow
+                        key={player.username}
+                        player={player}
+                        isMe={player.username === user?.username}
+                        host={room.host}
+                      />
+                    ))
+                  ) : (
+                    <div className="room-empty">
+                      <p>Waiting for players to join...</p>
                     </div>
-                  </div>
-
-                  <div className="battle-room__player-list">
-                    {room?.players?.length ? (
-                      room.players.map((player) => (
-                        <PlayerRow
-                          key={player.username}
-                          player={player}
-                          isMe={player.username === user?.username}
-                          host={room.host}
-                        />
-                      ))
-                    ) : (
-                      <div className="room-empty">
-                        <p>Waiting for players to join...</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </div>
+                  )}
+                </div>
+              </Card>
             </div>
           </div>
         )}
