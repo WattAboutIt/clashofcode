@@ -27,6 +27,11 @@
   --gold-gradient: linear-gradient(135deg, #ffedd5, #f2b668);
 }
 
+/* Light mode body background override */
+:root[data-theme="light"] body {
+  background: linear-gradient(180deg, #f9fafb, #f3f4f6) !important;
+}
+
 /* Light mode overrides for visibility */
 :root[data-theme="light"] .room-badge {
   background: #fef3f2 !important;
@@ -60,6 +65,26 @@
 
 :root[data-theme="light"] .dashboard-level-card {
   background: #f9fafb !important;
+  border-color: rgba(255, 122, 89, 0.15) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .dashboard-row {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.05), rgba(243, 154, 179, 0.05)) !important;
+  border-color: rgba(255, 122, 89, 0.15) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .dashboard-history-empty {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.06), rgba(243, 154, 179, 0.06)) !important;
+  border-color: rgba(255, 122, 89, 0.15) !important;
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .dashboard-history-item {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.08), rgba(243, 154, 179, 0.06)) !important;
+  border-color: rgba(255, 122, 89, 0.2) !important;
+  color: #111827 !important;
 }
 
 :root[data-theme="light"] .room-pool-card {
@@ -68,6 +93,80 @@
 }
 
 :root[data-theme="light"] .room-pool-card span {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .battle-room__problem-shell,
+:root[data-theme="light"] .battle-room__editor-shell {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.12) !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tabs,
+:root[data-theme="light"] .battle-room__editor-top,
+:root[data-theme="light"] .battle-room__editor-bar {
+  background: #f9fafb !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tab,
+:root[data-theme="light"] .battle-room__editor-name,
+:root[data-theme="light"] .battle-room__editor-state,
+:root[data-theme="light"] .battle-room__section-count,
+:root[data-theme="light"] .battle-room__example-index,
+:root[data-theme="light"] .battle-room__constraint-box {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tab--active,
+:root[data-theme="light"] .battle-room__problem-title,
+:root[data-theme="light"] .battle-room__editor-title,
+:root[data-theme="light"] .battle-room__section-header h3,
+:root[data-theme="light"] .battle-room__example-card strong,
+:root[data-theme="light"] .battle-room__constraint-box strong {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__copy,
+:root[data-theme="light"] .battle-room__example-card,
+:root[data-theme="light"] .battle-room__constraint-box {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__example-index {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.14) !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-gutter {
+  background: #f3f4f6 !important;
+  color: #94a3b8 !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-textarea {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .battle-room__status-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__status-card--timer {
+  background: rgba(255, 122, 89, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__room-code {
+  background: #f9fafb !important;
   color: #64748b !important;
 }
 
@@ -214,6 +313,39 @@
 
 :root[data-theme="light"] .navbar__menu-item:hover {
   background: #f3f4f6 !important;
+}
+
+/* Mobile navbar styling for light mode */
+:root[data-theme="light"] .navbar__mobile-toggle {
+  background: #f9fafb !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .navbar__mobile-toggle:hover {
+  border-color: rgba(255, 122, 89, 0.35) !important;
+}
+
+:root[data-theme="light"] .navbar__mobile-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.12) !important;
+}
+
+:root[data-theme="light"] .navbar__mobile-link,
+:root[data-theme="light"] .navbar__mobile-action {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .navbar__mobile-link--active,
+:root[data-theme="light"] .navbar__mobile-link:hover,
+:root[data-theme="light"] .navbar__mobile-action:hover {
+  color: #111827 !important;
+  background: #f3f4f6 !important;
+}
+
+:root[data-theme="light"] .navbar__mobile-divider {
+  background: rgba(15, 23, 42, 0.08) !important;
 }
 
 /* Question pool spacing */
@@ -425,6 +557,90 @@
   box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
 }
 
+:root[data-theme="light"] .battle-room__problem-panel,
+:root[data-theme="light"] .battle-room__editor-panel,
+:root[data-theme="light"] .battle-room__dock-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .battle-room__problem-shell,
+:root[data-theme="light"] .battle-room__editor-shell {
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tabs,
+:root[data-theme="light"] .battle-room__editor-top,
+:root[data-theme="light"] .battle-room__editor-bar {
+  background: #f9fafb !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tab,
+:root[data-theme="light"] .battle-room__editor-name,
+:root[data-theme="light"] .battle-room__editor-state,
+:root[data-theme="light"] .battle-room__section-count,
+:root[data-theme="light"] .battle-room__room-code,
+:root[data-theme="light"] .battle-room__player-you,
+:root[data-theme="light"] .battle-room__player-score,
+:root[data-theme="light"] .battle-room__constraint-box,
+:root[data-theme="light"] .battle-room__info-row span,
+:root[data-theme="light"] .battle-room__player-meta p:last-child {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .battle-room__panel-tab--active,
+:root[data-theme="light"] .battle-room__problem-title,
+:root[data-theme="light"] .battle-room__editor-title,
+:root[data-theme="light"] .battle-room__dock-header h3,
+:root[data-theme="light"] .battle-room__section-header h3,
+:root[data-theme="light"] .battle-room__player strong,
+:root[data-theme="light"] .battle-room__info-row strong {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__chip--ghost {
+  background: rgba(255, 122, 89, 0.08) !important;
+  border: 1px solid rgba(255, 122, 89, 0.16) !important;
+  color: #ff5c35 !important;
+}
+
+:root[data-theme="light"] .battle-room__copy,
+:root[data-theme="light"] .battle-room__example-card,
+:root[data-theme="light"] .battle-room__constraint-box,
+:root[data-theme="light"] .battle-room__info-row,
+:root[data-theme="light"] .battle-room__player {
+  background: #f9fafb !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__example-index {
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 122, 89, 0.14) !important;
+}
+
+:root[data-theme="light"] .battle-room__language-select {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-gutter {
+  background: #f3f4f6 !important;
+  color: #94a3b8 !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-textarea {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__editor-textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
 :root[data-theme="light"] .landing-terminal__bar {
   border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
   background: #f3f4f6 !important;
@@ -459,4 +675,49 @@
 
 :root[data-theme="light"] .landing-terminal__stat-value {
   color: #111827 !important;
+}
+
+/* Battle room problem scroll section - light mode */
+:root[data-theme="light"] .battle-room__problem-scroll {
+  background: #f9fafb !important;
+  color: #64748b !important;
+}
+
+/* Login developer access box - light mode */
+:root[data-theme="light"] .auth-dev-login {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 122, 89, 0.15) !important;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .auth-dev-login__title {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .auth-dev-login__meta {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .auth-dev-form {
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .auth-divider span {
+  background: #ffffff !important;
+  color: #94a3b8 !important;
+}
+
+/* Navbar dropdown header - light mode */
+:root[data-theme="light"] .navbar__dropdown-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 122, 89, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+:root[data-theme="light"] .navbar__dropdown-name {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .navbar__dropdown-meta {
+  color: #64748b !important;
 }
