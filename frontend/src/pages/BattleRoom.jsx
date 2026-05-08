@@ -192,6 +192,8 @@ function BattleRoom() {
   const [language, setLanguage] = useState("python");
   const [running, setRunning] = useState(false);
   const [runOutput, setRunOutput] = useState(null);
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState(null);
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
 
@@ -338,6 +340,43 @@ function BattleRoom() {
     }
   };
 
+  const handleTest = async () => {
+    if (!code.trim()) {
+      setError("Write some code before testing.");
+      return;
+    }
+
+    // Only Python can be tested with the backend judge
+    if (language !== "python") {
+      setError("Testing is only available for Python.");
+      return;
+    }
+
+    setTesting(true);
+    setError("");
+    setTestResults(null);
+
+    try {
+      const testCases = (room?.question?.test_cases || []).map((tc) => ({
+        input: tc.input || "",
+        expected_output: tc.expected_output || tc.output || ""
+      }));
+
+      const response = await api.post("/execution/evaluate", {
+        code,
+        test_cases: testCases,
+        problem_title: room?.question?.title || "Unknown",
+        problem_description: room?.question?.description || ""
+      });
+
+      setTestResults(response.data);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Failed to test code.");
+    } finally {
+      setTesting(false);
+    }
+  };
+
   if (loading) {
     return (
       <section className="page-shell">
@@ -453,6 +492,14 @@ function BattleRoom() {
                       {running ? "Running..." : "Run"}
                     </Button>
                     <Button
+                      onClick={handleTest}
+                      disabled={testing || language !== "python"}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      {testing ? "Testing..." : "Test"}
+                    </Button>
+                    <Button
                       onClick={handleSubmit}
                       disabled={submitting || myPlayer?.status === "submitted"}
                       size="sm"
@@ -477,6 +524,51 @@ function BattleRoom() {
                       <div className="mt-2">
                         <p className="muted-text font-mono text-xs text-red-500">Error:</p>
                         <pre className="font-mono text-xs mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded whitespace-pre-wrap text-red-700 dark:text-red-300">{runOutput.error}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {testResults && (
+                  <div className={`battle-room__result ${testResults.success ? "battle-room__result--success" : "battle-room__result--pending"}`}>
+                    <strong>{testResults.success ? "All tests passed! ✓" : "Some tests failed"}</strong>
+                    <p className="muted-text mt-2">
+                      {testResults.passed}/{testResults.total} test cases passed
+                    </p>
+                    {testResults.results && (
+                      <div className="mt-3">
+                        {testResults.results.map((result) => (
+                          <div
+                            key={result.test_case}
+                            className={`mt-2 p-2 rounded text-xs font-mono ${
+                              result.status === "passed"
+                                ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+                            }`}
+                          >
+                            <div className="font-bold">
+                              Test {result.test_case}: {result.status === "passed" ? "✓ PASSED" : "✗ FAILED"}
+                            </div>
+                            {result.status === "failed" && (
+                              <>
+                                <div className="mt-1">
+                                  <strong>Expected:</strong>
+                                  <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.expected}</pre>
+                                </div>
+                                <div className="mt-1">
+                                  <strong>Got:</strong>
+                                  <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.actual}</pre>
+                                </div>
+                                {result.error && (
+                                  <div className="mt-1">
+                                    <strong>Error:</strong>
+                                    <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.error}</pre>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
