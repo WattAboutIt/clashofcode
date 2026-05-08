@@ -1,5 +1,10 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict, List
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):

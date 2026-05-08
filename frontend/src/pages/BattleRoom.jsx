@@ -267,7 +267,7 @@ function BattleRoom() {
       };
 
       ws.onclose = (e) => {
-        console.log("WebSocket closed", e.reason);
+        console.log(`WebSocket closed (Code: ${e.code}, Reason: ${e.reason || 'None'})`);
         if (attempts < MAX_ATTEMPTS) {
           const delay = Math.min(1000 * Math.pow(2, attempts), 10000);
           reconnectTimeout = setTimeout(() => {
