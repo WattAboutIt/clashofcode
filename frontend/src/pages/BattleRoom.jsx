@@ -435,17 +435,46 @@ function BattleRoom() {
     let pingTimer = null;
     let attempts = 0;
     let closedByCleanup = false;
+    const MAX_RECONNECTS = 6;
 
-    const connect = () => {
+    const clearPing = () => {
+      if (pingTimer) {
+        window.clearInterval(pingTimer);
+        pingTimer = null;
+      }
+    };
+
+    const buildWsUrl = () => {
       const baseUrl = api.defaults.baseURL || window.location.origin;
-      const wsUrl = `${baseUrl.replace(/^http/, "ws")}/rooms/${roomCode}/ws?token=${encodeURIComponent(token)}`;
+      const normalizedBase = baseUrl.replace(/\/$/, "").replace(/^http/i, "ws");
+      return `${normalizedBase}/rooms/${encodeURIComponent(roomCode)}/ws?token=${encodeURIComponent(token)}`;
+    };
+
+    const connect = async () => {
+      if (closedByCleanup) return;
+      if (wsRef.current && [WebSocket.CONNECTING, WebSocket.OPEN].includes(wsRef.current.readyState)) {
+        console.log("WS SKIP duplicate socket", wsRef.current.readyState);
+        return;
+      }
+
+      try {
+        await api.post("/rooms/join", { roomCode });
+      } catch (err) {
+        setError(extractError(err, "Unable to join room before websocket connect."));
+        console.log("WS JOIN FAILED", err);
+        return;
+      }
+
+      const wsUrl = buildWsUrl();
+      console.log("WS CONNECT", wsUrl.replace(token, "[token]"));
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
       socket.onopen = () => {
+        console.log("WS OPEN");
         attempts = 0;
         setError("");
-        api.post("/rooms/join", { roomCode }).catch((err) => setError(extractError(err, "Unable to join room.")));
+        clearPing();
         pingTimer = window.setInterval(() => sendSocket({ event: "ping" }), 15000);
       };
 
@@ -458,23 +487,32 @@ function BattleRoom() {
         }
       };
 
-      socket.onclose = () => {
-        if (pingTimer) window.clearInterval(pingTimer);
+      socket.onclose = (event) => {
+        console.log("WS CLOSED", event.code, event.reason);
+        clearPing();
+        if (wsRef.current === socket) wsRef.current = null;
         if (closedByCleanup) return;
+        if (attempts >= MAX_RECONNECTS) {
+          setError("Realtime connection lost. Refresh the page to reconnect.");
+          return;
+        }
         const delay = Math.min(1000 * 2 ** attempts, 10000);
         attempts += 1;
         reconnectTimer = window.setTimeout(connect, delay);
       };
 
-      socket.onerror = () => socket.close();
+      socket.onerror = (event) => {
+        console.log("WS ERROR", event);
+      };
     };
 
     connect();
     return () => {
       closedByCleanup = true;
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
-      if (pingTimer) window.clearInterval(pingTimer);
+      clearPing();
       wsRef.current?.close();
+      wsRef.current = null;
     };
   }, [roomCode, sendSocket, token]);
 

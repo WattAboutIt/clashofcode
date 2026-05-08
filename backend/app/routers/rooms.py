@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import random
 import string
 import asyncio
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from sqlalchemy import select
@@ -16,6 +17,7 @@ from app.websocket_manager import manager
 from app.routers.execution import evaluate_python_cases, unsupported_language_response
 
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
+logger = logging.getLogger(__name__)
 
 VALID_LEVELS = {"easy", "medium", "hard"}
 
@@ -147,6 +149,12 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
 
 async def _broadcast_room(room: dict, db: AsyncSession) -> dict:
     payload = await _serialize_room(room, db)
+    logger.info(
+        "ROOM BROADCAST room_id=%s status=%s players=%s",
+        room["room_code"],
+        payload["status"],
+        len(payload["players"]),
+    )
     await manager.broadcast(room["room_code"], {"event": "room_updated", "room": payload})
     return payload
 
@@ -370,6 +378,7 @@ async def submit_solution(
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
+    logger.info("SUBMIT ATTEMPT room_id=%s user_id=%s language=%s", room_code, current_username, request.language)
     room = _get_room_or_404(room_code)
     await _expire_room_if_needed(room, db)
     if room["status"] != "active":
@@ -392,7 +401,11 @@ async def submit_solution(
     if request.language.lower() != "python":
         judge_result = unsupported_language_response(request.language)
     else:
-        judge_result = evaluate_python_cases(request.code, question.test_cases or [], timeout_seconds=12)
+        try:
+            judge_result = evaluate_python_cases(request.code, question.test_cases or [], timeout_seconds=12)
+        except Exception:
+            logger.exception("SUBMIT EXECUTION FAILURE room_id=%s user_id=%s", room_code, current_username)
+            raise HTTPException(status_code=500, detail="Judge execution failed.")
 
     passed = judge_result.status == "Accepted" and judge_result.total > 0 and judge_result.passed == judge_result.total
     score = question.points if passed else 0
@@ -428,6 +441,15 @@ async def submit_solution(
         _push_event(room, "submit", f"{current_username} submitted an accepted solution.", current_username)
     else:
         _push_event(room, "submit", f"{current_username} submitted: {status_label}.", current_username)
+    logger.info(
+        "SUBMIT RESULT room_id=%s user_id=%s status=%s passed=%s total=%s score=%s",
+        room_code,
+        current_username,
+        status_label,
+        judge_result.passed,
+        judge_result.total,
+        score,
+    )
 
     if all(member["status"] == "submitted" for member in room["players"].values()):
         await _finalize_room(room, db)
@@ -556,9 +578,25 @@ async def cancel_matchmake(
 
 @router.websocket("/{room_code}/ws")
 async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = None):
-    # Validate token from query params
+    room_id = room_code.strip().upper()
+    username = None
+    accepted = False
+    print("WS CONNECT ATTEMPT", room_id)
+    logger.info("WS CONNECT ATTEMPT room_id=%s client=%s", room_id, websocket.client)
+
+    try:
+        await websocket.accept()
+        accepted = True
+        print("WS ACCEPTED", room_id)
+        logger.info("WS ACCEPTED room_id=%s client=%s state=%s", room_id, websocket.client, websocket.client_state)
+    except Exception as exc:
+        print("WS ACCEPT ERROR", exc)
+        logger.exception("WS ACCEPT ERROR room_id=%s client=%s", room_id, websocket.client)
+        return
+
     if not token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        logger.warning("WS CLOSE missing token room_id=%s", room_id)
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Missing token")
         return
 
     try:
@@ -567,23 +605,36 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if not username:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            logger.warning("WS CLOSE invalid token subject room_id=%s", room_id)
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
             return
-    except Exception:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+    except Exception as exc:
+        logger.warning("WS CLOSE jwt decode failed room_id=%s error=%s", room_id, exc)
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
         return
 
-    room = room_store.get(room_code.strip().upper())
+    try:
+        room = room_store.get(room_id)
+    except Exception as exc:
+        logger.exception("WS CLOSE room lookup error room_id=%s user_id=%s", room_id, username)
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Room lookup failed")
+        return
+
     if not room:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        logger.warning("WS CLOSE room not found room_id=%s user_id=%s", room_id, username)
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Room not found")
         return
 
-    if username in room["players"]:
-        room["players"][username]["online"] = True
-        room["players"][username]["last_action"] = "online"
-        _push_event(room, "presence", f"{username} is online.", username)
+    if username not in room["players"]:
+        logger.warning("WS CLOSE user not in room room_id=%s user_id=%s", room_id, username)
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Join room before connecting")
+        return
 
-    await manager.connect(room_code, websocket, username)
+    room["players"][username]["online"] = True
+    room["players"][username]["last_action"] = "online"
+    _push_event(room, "presence", f"{username} is online.", username)
+
+    manager.connect(room_id, websocket, username)
     async with AsyncSessionLocal() as db:
         await _broadcast_room(room, db)
 
@@ -612,18 +663,29 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
 
             async with AsyncSessionLocal() as db:
                 await _broadcast_room(room, db)
-    except WebSocketDisconnect:
+    except WebSocketDisconnect as exc:
+        logger.info(
+            "WS DISCONNECT room_id=%s user_id=%s code=%s reason=%s",
+            room_id,
+            username,
+            getattr(exc, "code", None),
+            getattr(exc, "reason", ""),
+        )
         if username in room["players"]:
             room["players"][username]["online"] = False
             room["players"][username]["typing"] = False
             room["players"][username]["last_action"] = "offline"
             _push_event(room, "presence", f"{username} went offline.", username)
-        manager.disconnect(room_code, websocket)
+        manager.disconnect(room_id, websocket)
         async with AsyncSessionLocal() as db:
             await _broadcast_room(room, db)
     except Exception as e:
-        print(f"WS error in {room_code}: {e}")
-        if username in room["players"]:
+        logger.exception("WS ERROR room_id=%s user_id=%s accepted=%s state=%s error=%s", room_id, username, accepted, websocket.client_state, e)
+        if username and username in room["players"]:
             room["players"][username]["online"] = False
             room["players"][username]["typing"] = False
-        manager.disconnect(room_code, websocket)
+        manager.disconnect(room_id, websocket)
+        try:
+            await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="WebSocket error")
+        except Exception:
+            pass
