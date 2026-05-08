@@ -1037,3 +1037,603 @@
     padding-right: 0.55rem;
   }
 }
+
+.page-container.battle-room {
+  width: min(1640px, 100%);
+}
+
+.battle-room,
+.battle-room * {
+  letter-spacing: 0;
+}
+
+.battle-room .hover-lift:hover {
+  transform: none;
+}
+
+.battle-room__topbar {
+  position: sticky;
+  top: 5.8rem;
+  z-index: 5;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.battle-room__topbar .label-text,
+.battle-room__dock-card .label-text {
+  color: #6b7280;
+}
+
+.battle-room__title {
+  font-size: 1.35rem;
+  letter-spacing: 0;
+}
+
+.battle-room__room-code,
+.battle-room__chip,
+.battle-room__status-card,
+.battle-room__language-select,
+.battle-room__info-row,
+.battle-room__player {
+  border-radius: 6px;
+}
+
+.battle-room__workspace--leetcode {
+  align-items: stretch;
+  min-height: calc(100vh - 13rem);
+}
+
+.battle-room__leetcode-card {
+  height: 100%;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 60px -42px rgba(15, 23, 42, 0.45);
+}
+
+.battle-room__left-column,
+.battle-room__middle-column,
+.battle-room__right-column {
+  min-width: 0;
+  min-height: 0;
+}
+
+.battle-room__problem-panel,
+.battle-room__editor-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.battle-room__problem-shell,
+.battle-room__problem-scroll,
+.battle-room__editor-shell,
+.battle-room__editor-body {
+  min-height: 0;
+}
+
+.battle-room__panel-tabs,
+.battle-room__editor-top {
+  min-height: 48px;
+  padding: 0 1rem;
+  background: #f7f8fa;
+}
+
+.battle-room__panel-tabs {
+  gap: 0.35rem;
+}
+
+.battle-room__panel-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #5f6774;
+  cursor: pointer;
+  padding: 0.9rem 0.7rem;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.battle-room__panel-tab:hover,
+.battle-room__console-tab:hover {
+  color: #111827;
+  background: rgba(17, 24, 39, 0.04);
+}
+
+.battle-room__panel-tab--active {
+  color: #111827;
+}
+
+.battle-room__panel-tab--active::after {
+  bottom: -1px;
+  height: 3px;
+  background: #111827;
+}
+
+.battle-room__problem-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 1.25rem 1.4rem 1.6rem;
+}
+
+.battle-room__problem-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.battle-room__problem-title {
+  font-size: 1.55rem;
+  letter-spacing: 0;
+}
+
+.battle-room__chip--difficulty {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.battle-room__chip--points {
+  color: #b45309;
+  background: #ffedd5;
+}
+
+.battle-room__chip--ghost {
+  color: #4b5563;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.battle-room__copy,
+.battle-room__example-card,
+.battle-room__constraint-box {
+  border-radius: 8px;
+  background: #ffffff;
+  border-color: #edf0f3;
+  color: #374151;
+}
+
+.battle-room__copy {
+  padding: 0;
+  border: 0;
+  line-height: 1.75;
+}
+
+.battle-room__example-index {
+  border-radius: 6px;
+  background: #f3f4f6;
+}
+
+.battle-room__editor-top--leetcode {
+  align-items: center;
+}
+
+.battle-room__editor-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.battle-room__editor-controls {
+  gap: 0.5rem;
+}
+
+.battle-room__editor-controls .ui-button {
+  min-height: 2.25rem;
+  padding: 0.48rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  text-transform: none;
+}
+
+.battle-room__editor-controls .ui-button--primary {
+  background: #2cbb5d;
+  border-color: #2cbb5d;
+  color: #ffffff;
+}
+
+.battle-room__editor-controls .ui-button--secondary {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+.battle-room__language-select {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #111827;
+  font-size: 0.86rem;
+}
+
+.battle-room__editor-shell {
+  flex: 1 1 auto;
+}
+
+.battle-room__editor-bar {
+  min-height: 42px;
+  padding: 0 1rem;
+  background: #ffffff;
+}
+
+.battle-room__editor-pill {
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.battle-room__editor-name,
+.battle-room__editor-state {
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.battle-room__editor-body {
+  flex: 1 1 auto;
+  min-height: 390px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.battle-room__editor-gutter {
+  width: 46px;
+  padding: 0.85rem 0;
+  background: #f7f8fa;
+  border-color: #edf0f3;
+}
+
+.battle-room__editor-line,
+.battle-room__editor-textarea {
+  font-size: 0.92rem;
+  line-height: 1.72;
+}
+
+.battle-room__editor-textarea {
+  background: #ffffff;
+  color: #1f2937;
+}
+
+.battle-room__console {
+  flex: 0 0 270px;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.battle-room__console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid #edf0f3;
+  background: #f7f8fa;
+  overflow-x: auto;
+}
+
+.battle-room__console-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #5f6774;
+  cursor: pointer;
+  padding: 0.62rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.battle-room__console-tab--active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+.battle-room__console-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.9rem;
+}
+
+.battle-room__console-empty {
+  display: grid;
+  place-items: center;
+  min-height: 145px;
+  padding: 1.2rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.battle-room__result-container {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.battle-room__result-container:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.battle-room__result-container--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.battle-room__result-container--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.battle-room__result-container--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.battle-room__result-head,
+.battle-room__case-progress,
+.battle-room__case-card-head,
+.battle-room__score-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.battle-room__result-kicker,
+.battle-room__score-block span,
+.battle-room__case-diff span {
+  display: block;
+  color: #6b7280;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.battle-room__result-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.battle-room__result-title--success {
+  color: #16a34a;
+}
+
+.battle-room__result-title--warning {
+  color: #ea580c;
+}
+
+.battle-room__result-title--danger {
+  color: #dc2626;
+}
+
+.battle-room__score-block {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.battle-room__score-block strong {
+  color: #b45309;
+  font-size: 1.2rem;
+}
+
+.battle-room__error-log {
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  overflow: auto;
+}
+
+.battle-room__error-log p {
+  margin: 0 0 0.4rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.battle-room__error-log pre,
+.battle-room__case-diff pre,
+.battle-room__case-output {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.battle-room__case-results {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.battle-room__case-track {
+  flex: 1;
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.battle-room__case-segment--pass {
+  background: #22c55e;
+}
+
+.battle-room__case-segment--fail {
+  background: #ef4444;
+}
+
+.battle-room__case-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.battle-room__sample-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.battle-room__case-card {
+  padding: 0.8rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.battle-room__sample-card {
+  padding: 0.8rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.battle-room__case-card-head {
+  font-weight: 700;
+}
+
+.battle-room__case-badge {
+  padding: 0.18rem 0.45rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+}
+
+.battle-room__case-badge--pass {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.battle-room__case-badge--fail {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.battle-room__case-diff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.battle-room__case-diff pre,
+.battle-room__case-output {
+  margin-top: 0.35rem;
+  padding: 0.65rem;
+  overflow: auto;
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.05);
+}
+
+.battle-room__dock-card {
+  padding: 1rem;
+}
+
+.battle-room__dock-header {
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.battle-room__info-row,
+.battle-room__player {
+  padding: 0.78rem;
+  background: #ffffff;
+  border-color: #edf0f3;
+}
+
+.battle-room__player-avatar {
+  border-radius: 6px;
+  background: #111827;
+}
+
+.battle-room__player--me {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.battle-room__player-tag {
+  border-radius: 5px;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.battle-room__player-score {
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.room-error {
+  border-radius: 8px;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+@media (min-width: 1100px) {
+  .battle-room__workspace--leetcode {
+    grid-template-columns: minmax(340px, 0.95fr) minmax(520px, 1.35fr) minmax(250px, 0.55fr);
+  }
+
+  .battle-room__problem-scroll {
+    overflow: auto;
+  }
+
+  .battle-room__right-column {
+    align-content: start;
+  }
+}
+
+@media (min-width: 1400px) {
+  .battle-room__workspace--leetcode {
+    grid-template-columns: minmax(410px, 0.9fr) minmax(650px, 1.35fr) minmax(270px, 0.5fr);
+  }
+}
+
+@media (max-width: 1099px) {
+  .battle-room__topbar {
+    position: static;
+  }
+
+  .battle-room__workspace--leetcode {
+    min-height: 0;
+  }
+
+  .battle-room__editor-body {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 760px) {
+  .battle-room__editor-top--leetcode,
+  .battle-room__editor-controls {
+    align-items: stretch;
+  }
+
+  .battle-room__editor-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .battle-room__editor-controls .ui-button,
+  .battle-room__language-select {
+    flex: 1 1 44%;
+  }
+
+  .battle-room__console {
+    flex-basis: 250px;
+  }
+
+  .battle-room__case-diff {
+    grid-template-columns: 1fr;
+  }
+}

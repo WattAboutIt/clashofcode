@@ -38,6 +38,8 @@ function CountdownTimer({ startedAt, limitMinutes }) {
   return <span className="battle-room__timer">{remaining || "--:--"}</span>;
 }
 
+const PROBLEM_TABS = ["Description", "Examples", "Constraints"];
+
 function ProblemSection({ title, children, aside = null }) {
   return (
     <section className="battle-room__section">
@@ -51,14 +53,66 @@ function ProblemSection({ title, children, aside = null }) {
 }
 
 function QuestionPanel({ question, difficulty }) {
+  const [activeTab, setActiveTab] = useState("Description");
+
   if (!question) return null;
+
+  const hasExamples = question.examples?.length > 0;
+  const tabContent = {
+    Description: (
+      <ProblemSection title="Description">
+        <div className="battle-room__copy">
+          {question.description}
+        </div>
+      </ProblemSection>
+    ),
+    Examples: hasExamples ? (
+      <ProblemSection
+        title="Examples"
+        aside={<span className="battle-room__section-count">{question.examples.length} sample cases</span>}
+      >
+        <div className="battle-room__example-grid">
+          {question.examples.map((example, index) => (
+            <article key={`${question.id}-${index}`} className="battle-room__example-card">
+              <div className="battle-room__example-head">
+                <span className="battle-room__example-index">Example {index + 1}</span>
+              </div>
+              <p><strong>Input:</strong> <span className="font-mono">{example.input}</span></p>
+              <p><strong>Output:</strong> <span className="font-mono">{example.output}</span></p>
+              {example.explanation && <p className="muted-text">{example.explanation}</p>}
+            </article>
+          ))}
+        </div>
+      </ProblemSection>
+    ) : (
+      <div className="room-empty">No examples were provided for this challenge.</div>
+    ),
+    Constraints: question.constraints ? (
+      <ProblemSection title="Constraints">
+        <div className="battle-room__constraint-box">
+          {question.constraints}
+        </div>
+      </ProblemSection>
+    ) : (
+      <div className="room-empty">No explicit constraints were provided.</div>
+    ),
+  };
 
   return (
     <div className="battle-room__problem-shell">
-      <div className="battle-room__panel-tabs" aria-hidden="true">
-        <span className="battle-room__panel-tab battle-room__panel-tab--active">Description</span>
-        <span className="battle-room__panel-tab">Examples</span>
-        <span className="battle-room__panel-tab">Constraints</span>
+      <div className="battle-room__panel-tabs" role="tablist" aria-label="Problem details">
+        {PROBLEM_TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            className={`battle-room__panel-tab ${activeTab === tab ? "battle-room__panel-tab--active" : ""}`}
+            onClick={() => setActiveTab(tab)}
+            role="tab"
+            aria-selected={activeTab === tab}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       <div className="battle-room__problem-scroll">
@@ -77,39 +131,7 @@ function QuestionPanel({ question, difficulty }) {
           </div>
         </div>
 
-        <ProblemSection title="Description">
-          <div className="battle-room__copy">
-            {question.description}
-          </div>
-        </ProblemSection>
-
-        {question.examples?.length > 0 && (
-          <ProblemSection
-            title="Examples"
-            aside={<span className="battle-room__section-count">{question.examples.length} sample cases</span>}
-          >
-            <div className="battle-room__example-grid">
-              {question.examples.map((example, index) => (
-                <article key={`${question.id}-${index}`} className="battle-room__example-card">
-                  <div className="battle-room__example-head">
-                    <span className="battle-room__example-index">Example {index + 1}</span>
-                  </div>
-                  <p><strong>Input:</strong> <span className="font-mono">{example.input}</span></p>
-                  <p><strong>Output:</strong> <span className="font-mono">{example.output}</span></p>
-                  {example.explanation && <p className="muted-text">{example.explanation}</p>}
-                </article>
-              ))}
-            </div>
-          </ProblemSection>
-        )}
-
-        {question.constraints && (
-          <ProblemSection title="Constraints">
-            <div className="battle-room__constraint-box">
-              {question.constraints}
-            </div>
-          </ProblemSection>
-        )}
+        {tabContent[activeTab]}
       </div>
     </div>
   );
@@ -179,78 +201,185 @@ function PlayerRow({ player, isMe, host }) {
   );
 }
 
+function ConsoleTabs({ runOutput, testResults, submissionResult, question }) {
+  const [activeTab, setActiveTab] = useState("Testcase");
+  const tabs = ["Testcase", "Run", "Test Result", "Submission"];
+  const latestResults = testResults?.results || submissionResult?.test_results || [];
+  const sampleCases = question?.examples || [];
+  const runRows = runOutput?.output ? [{ passed: true, actual: runOutput.output }] : [];
+
+  const panel = {
+    Testcase: latestResults.length ? (
+      <ResultCard
+        type="test"
+        title="Latest cases"
+        success={latestResults.every((result) => result.passed || result.status === "passed")}
+        results={latestResults}
+      />
+    ) : sampleCases.length ? (
+      <div className="battle-room__sample-list">
+        {sampleCases.map((example, index) => (
+          <div key={`${question?.id || "sample"}-${index}`} className="battle-room__sample-card">
+            <div className="battle-room__case-card-head">
+              <span>Case {index + 1}</span>
+              <span className="battle-room__case-badge">Sample</span>
+            </div>
+            <div className="battle-room__case-diff">
+              <div>
+                <span>Input</span>
+                <pre>{example.input || "N/A"}</pre>
+              </div>
+              <div>
+                <span>Expected</span>
+                <pre>{example.output || "N/A"}</pre>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="battle-room__console-empty">
+        Run tests to see case-by-case input, expected output, and actual output here.
+      </div>
+    ),
+    Run: runOutput ? (
+      <ResultCard
+        type="test"
+        title="Code Execution"
+        success={!runOutput.error}
+        error={runOutput.error}
+        results={runRows}
+      />
+    ) : (
+      <div className="battle-room__console-empty">
+        Use Run for a quick Python execution check.
+      </div>
+    ),
+    "Test Result": testResults ? (
+      <ResultCard
+        type="test"
+        title="Test Results"
+        success={testResults?.success}
+        results={testResults?.results}
+        error={testResults?.error}
+      />
+    ) : (
+      <div className="battle-room__console-empty">
+        Use Test to judge your code against the challenge test cases.
+      </div>
+    ),
+    Submission: submissionResult ? (
+      <ResultCard
+        type="submit"
+        title="Submission Accepted"
+        success={submissionResult?.passed}
+        results={submissionResult?.test_results}
+        score={submissionResult?.score}
+        error={submissionResult?.error}
+      />
+    ) : (
+      <div className="battle-room__console-empty">
+        Submit when you are ready to lock your battle score.
+      </div>
+    ),
+  };
+
+  return (
+    <div className="battle-room__console">
+      <div className="battle-room__console-tabs" role="tablist" aria-label="Code console">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            className={`battle-room__console-tab ${activeTab === tab ? "battle-room__console-tab--active" : ""}`}
+            onClick={() => setActiveTab(tab)}
+            role="tab"
+            aria-selected={activeTab === tab}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      <div className="battle-room__console-body">
+        {panel[activeTab]}
+      </div>
+    </div>
+  );
+}
+
 function ResultCard({ title, success, results, score, error, type = "test" }) {
   if (!results && !error && !title) return null;
 
   const isAccepted = success || (results && results.every(r => r.passed) && results.length > 0);
   const statusLabel = error ? "Runtime Error" : isAccepted ? "Accepted" : "Wrong Answer";
-  const statusColor = error ? "text-red-500" : isAccepted ? "text-green-500" : "text-orange-500";
-  const bgColor = error ? "bg-red-50 dark:bg-red-900/10" : isAccepted ? "bg-green-50 dark:bg-green-900/10" : "bg-orange-50 dark:bg-orange-900/10";
-  const borderColor = error ? "border-red-200" : isAccepted ? "border-green-200" : "border-orange-200";
+  const statusTone = error ? "danger" : isAccepted ? "success" : "warning";
 
   return (
-    <div className={`battle-room__result-container ${bgColor} ${borderColor} border rounded-2xl p-6 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`battle-room__result-container battle-room__result-container--${statusTone} animate-in`}>
+      <div className="battle-room__result-head">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">
+          <span className="battle-room__result-kicker">
             {type === "submit" ? "Submission Result" : "Test Result"}
           </span>
-          <h2 className={`text-2xl font-black ${statusColor} italic uppercase`}>{statusLabel}</h2>
+          <h2 className={`battle-room__result-title battle-room__result-title--${statusTone}`}>{statusLabel}</h2>
         </div>
         {score !== undefined && (
-          <div className="text-right">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">Score Earned</span>
-            <span className="text-2xl font-black text-amber-500">{score} pts</span>
+          <div className="battle-room__score-block">
+            <span>Score Earned</span>
+            <strong>{score} pts</strong>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl border border-red-100 font-mono text-sm overflow-auto max-h-40">
-          <p className="text-red-600 font-bold mb-1">Error Message:</p>
-          <pre className="whitespace-pre-wrap">{error}</pre>
+        <div className="battle-room__error-log">
+          <p>Error Message:</p>
+          <pre>{error}</pre>
         </div>
       )}
 
       {results && results.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+        <div className="battle-room__case-results">
+          <div className="battle-room__case-progress">
+            <div className="battle-room__case-track">
               {results.map((r, i) => (
                 <div 
                   key={i} 
-                  className={`h-full ${r.passed ? 'bg-green-500' : 'bg-red-500'} border-r border-white/20`}
+                  className={`battle-room__case-segment ${r.passed || r.status === "passed" ? "battle-room__case-segment--pass" : "battle-room__case-segment--fail"}`}
                   style={{ width: `${100 / results.length}%` }}
                 />
               ))}
             </div>
-            <span className="text-sm font-bold whitespace-nowrap">
-              {results.filter(r => r.passed).length} / {results.length} Passed
+            <span>
+              {results.filter(r => r.passed || r.status === "passed").length} / {results.length} Passed
             </span>
           </div>
 
-          <div className="grid gap-3 mt-4">
+          <div className="battle-room__case-list">
             {results.map((res, idx) => {
               const isPassed = res.passed === true || res.status === "passed";
               return (
-                <div key={idx} className="bg-white/40 dark:bg-black/10 rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm">Test Case {idx + 1}</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                <div key={idx} className="battle-room__case-card">
+                  <div className="battle-room__case-card-head">
+                    <span>Test Case {idx + 1}</span>
+                    <span className={`battle-room__case-badge ${isPassed ? "battle-room__case-badge--pass" : "battle-room__case-badge--fail"}`}>
                       {isPassed ? "Passed" : "Failed"}
                     </span>
                   </div>
                   {!isPassed && (
-                    <div className="grid grid-cols-2 gap-4 mt-3 text-[11px] font-mono">
+                    <div className="battle-room__case-diff">
                       <div>
-                        <span className="text-muted-foreground block mb-1">Expected</span>
-                        <pre className="p-2 bg-black/5 dark:bg-white/5 rounded overflow-auto">{res.expected || "N/A"}</pre>
+                        <span>Expected</span>
+                        <pre>{res.expected || "N/A"}</pre>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block mb-1">Actual</span>
-                        <pre className="p-2 bg-black/5 dark:bg-white/5 rounded overflow-auto">{res.actual || res.error || "N/A"}</pre>
+                        <span>Actual</span>
+                        <pre>{res.actual || res.error || "N/A"}</pre>
                       </div>
                     </div>
+                  )}
+                  {isPassed && res.actual && (
+                    <pre className="battle-room__case-output">{res.actual}</pre>
                   )}
                 </div>
               );
@@ -281,6 +410,8 @@ function BattleRoom() {
   const workerRef = useRef(null);
 
   useEffect(() => {
+    let workerFailureTimer = null;
+
     try {
       // Use standard Worker instantiation for better compatibility with Vite in production
       workerRef.current = new Worker(
@@ -289,10 +420,15 @@ function BattleRoom() {
       );
     } catch (err) {
       console.error("Worker initialization failed", err);
-      setError("Failed to initialize Python environment. Please refresh.");
+      workerFailureTimer = window.setTimeout(() => {
+        setError("Failed to initialize Python environment. Please refresh.");
+      }, 0);
     }
 
     return () => {
+      if (workerFailureTimer) {
+        window.clearTimeout(workerFailureTimer);
+      }
       workerRef.current?.terminate();
     };
   }, []);
@@ -527,6 +663,14 @@ function BattleRoom() {
     }
   };
 
+  const handleResetCode = () => {
+    setCode(room?.question?.starter_code || "");
+    setRunOutput(null);
+    setTestResults(null);
+    setSubmissionResult(null);
+    setError("");
+  };
+
   if (loading) {
     return (
       <section className="page-shell">
@@ -606,33 +750,43 @@ function BattleRoom() {
             </div>
           </Card>
         ) : (
-          <div className="battle-room__workspace">
+          <div className="battle-room__workspace battle-room__workspace--leetcode">
             <div className="battle-room__left-column">
-              <Card className="battle-room__problem-panel">
+              <Card className="battle-room__problem-panel battle-room__leetcode-card">
                 <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
               </Card>
+            </div>
 
-              <Card className="battle-room__editor-panel">
-                <div className="battle-room__editor-top">
-                  <div>
-                    <p className="label-text">Code</p>
-                    <h2 className="battle-room__editor-title">Submit your solution</h2>
-                  </div>
-
-                  <div className="battle-room__editor-controls">
+            <div className="battle-room__middle-column">
+              <Card className="battle-room__editor-panel battle-room__leetcode-card">
+                <div className="battle-room__editor-top battle-room__editor-top--leetcode">
+                  <div className="battle-room__editor-heading">
+                    <span className="battle-room__panel-tab battle-room__panel-tab--active">Code</span>
                     <span className="battle-room__chip battle-room__chip--ghost">
                       {myPlayer?.status === "submitted" ? "Submitted" : "In progress"}
                     </span>
+                  </div>
+
+                  <div className="battle-room__editor-controls">
                     <select
                       value={language}
                       onChange={(event) => setLanguage(event.target.value)}
                       className="battle-room__language-select"
+                      aria-label="Language"
                     >
                       <option value="python">Python</option>
                       <option value="javascript">JavaScript</option>
                       <option value="java">Java</option>
                       <option value="cpp">C++</option>
                     </select>
+                    <Button
+                      onClick={handleResetCode}
+                      disabled={!room?.question}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Reset
+                    </Button>
                     <Button
                       onClick={handleRun}
                       disabled={running || language !== "python"}
@@ -661,40 +815,20 @@ function BattleRoom() {
 
                 <CodeEditor value={code} onChange={setCode} language={language} />
 
-                {runOutput && (
-                  <ResultCard 
-                    type="test"
-                    title="Code Execution"
-                    success={!runOutput.error}
-                    error={runOutput.error}
-                    results={runOutput.output ? [{ name: "Stdout", passed: true, actual: runOutput.output }] : []}
-                  />
-                )}
-
-                <ResultCard 
-                  type="test"
-                  title="Test Results"
-                  success={testResults?.success}
-                  results={testResults?.results}
-                  error={testResults?.error}
-                />
-
-                <ResultCard 
-                  type="submit"
-                  title="Submission Accepted"
-                  success={submissionResult?.passed}
-                  results={submissionResult?.test_results}
-                  score={submissionResult?.score}
-                  error={submissionResult?.error}
+                <ConsoleTabs
+                  runOutput={runOutput}
+                  testResults={testResults}
+                  submissionResult={submissionResult}
+                  question={room?.question}
                 />
               </Card>
             </div>
 
             <div className="battle-room__right-column">
-              <Card className="battle-room__dock-card">
+              <Card className="battle-room__dock-card battle-room__leetcode-card">
                 <div className="battle-room__dock-header">
                   <div>
-                    <p className="label-text">Match Info</p>
+                    <p className="label-text">Room</p>
                     <h3>Battle details</h3>
                   </div>
                 </div>
@@ -713,7 +847,7 @@ function BattleRoom() {
                 </div>
               </Card>
 
-              <Card className="battle-room__dock-card">
+              <Card className="battle-room__dock-card battle-room__leetcode-card">
                 <div className="battle-room__dock-header">
                   <div>
                     <p className="label-text">Participants</p>
