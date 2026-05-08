@@ -5,7 +5,7 @@ import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
-import PyodideWorker from "../utils/pyodideWorker?worker";
+// Removed module worker import; will instantiate classic worker manually.
 import "../styles/room.css";
 
 const DIFF_LABELS = {

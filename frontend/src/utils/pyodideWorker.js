@@ -39,17 +39,17 @@ def __run_tests():
         
         for i, t in enumerate(tests):
             inputs_dict = t.get("input", {})
-            expected = t.get("expected")
+            expected_output = t.get("expected_output")
             try:
                 res = func(**inputs_dict)
-                passed = (res == expected)
+                passed = (res == expected_output)
                 if passed:
                     passedCount += 1
                 results.append({
                     "name": f"Case {i+1}", 
                     "passed": passed, 
                     "actual": res, 
-                    "expected": expected
+                    "expected": expected_output
                 })
             except Exception as e:
                 results.append({

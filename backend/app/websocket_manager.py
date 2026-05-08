@@ -7,6 +7,7 @@ class ConnectionManager:
 
     async def connect(self, room_code: str, websocket: WebSocket):
         await websocket.accept()
+        logger.info(f"WebSocket connected: room={room_code}, client={websocket.client})")
         if room_code not in self.active_connections:
             self.active_connections[room_code] = []
         self.active_connections[room_code].append(websocket)
