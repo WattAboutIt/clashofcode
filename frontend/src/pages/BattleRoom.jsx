@@ -198,7 +198,17 @@ function BattleRoom() {
   const workerRef = useRef(null);
 
   useEffect(() => {
-    workerRef.current = new PyodideWorker();
+    try {
+      // Use standard Worker instantiation for better compatibility with Vite in production
+      workerRef.current = new Worker(
+        new URL("../utils/pyodideWorker.js", import.meta.url),
+        { type: "classic" }
+      );
+    } catch (err) {
+      console.error("Worker initialization failed", err);
+      setError("Failed to initialize Python environment. Please refresh.");
+    }
+
     return () => {
       workerRef.current?.terminate();
     };
@@ -220,27 +230,72 @@ function BattleRoom() {
   }, [room?.question]);
 
   useEffect(() => {
-    if (!token) return undefined;
-    const baseUrl = api.defaults.baseURL || "http://localhost:8000";
-    const wsUrl = baseUrl.replace(/^http/, "ws") + `/rooms/${roomCode}/ws`;
+    if (!token || !roomCode) return undefined;
 
-    const ws = new WebSocket(wsUrl);
+    let ws = null;
+    let reconnectTimeout = null;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5;
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === "room_updated") {
-          setRoom(data.room);
-        }
-      } catch (err) {
-        console.error("WS Parse Error", err);
+    const connect = () => {
+      if (attempts >= MAX_ATTEMPTS) {
+        setError("Connection lost. Please refresh the page to reconnect.");
+        return;
       }
+
+      const baseUrl = api.defaults.baseURL || window.location.origin;
+      const wsUrl = baseUrl.replace(/^http/, "ws") + `/rooms/${roomCode}/ws?token=${token}`;
+
+      console.log(`Connecting to WebSocket: ${wsUrl} (Attempt ${attempts + 1})`);
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+        attempts = 0;
+        setError(""); // Clear any connection errors
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === "room_updated") {
+            setRoom(data.room);
+          }
+        } catch (err) {
+          console.error("WS Parse Error", err);
+        }
+      };
+
+      ws.onclose = (e) => {
+        console.log("WebSocket closed", e.reason);
+        if (attempts < MAX_ATTEMPTS) {
+          const delay = Math.min(1000 * Math.pow(2, attempts), 10000);
+          reconnectTimeout = setTimeout(() => {
+            attempts++;
+            connect();
+          }, delay);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error", err);
+        ws.close();
+      };
     };
 
-    api.post("/rooms/join", { roomCode }).catch(console.error);
+    connect();
+
+    // Auto-join room when socket connects (handled by backend usually, but ensuring local state)
+    api.post("/rooms/join", { roomCode }).catch(err => {
+      console.error("Join error", err);
+      if (err.response?.status === 401) {
+        setError("Unauthorized. Please login again.");
+      }
+    });
 
     return () => {
-      ws.close();
+      if (ws) ws.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
   }, [roomCode, token]);
 
@@ -255,7 +310,8 @@ function BattleRoom() {
       setRoom(response.data);
       setSubmissionResult(null);
     } catch (err) {
-      setError(err?.response?.data?.detail || "Unable to start the game right now.");
+      const msg = err?.response?.data?.detail || err?.message || "Unable to start the game right now.";
+      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
     } finally {
       setStarting(false);
     }
@@ -295,7 +351,8 @@ function BattleRoom() {
               const updated = await api.get(`/rooms/${roomCode}`);
               setRoom(updated.data);
             } catch (err) {
-              setError(err?.response?.data?.detail || "Submission failed.");
+              const msg = err?.response?.data?.detail || err?.message || "Submission failed.";
+              setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
             } finally {
               setSubmitting(false);
             }
@@ -314,7 +371,8 @@ function BattleRoom() {
         const updated = await api.get(`/rooms/${roomCode}`);
         setRoom(updated.data);
       } catch (err) {
-        setError(err?.response?.data?.detail || "Submission failed.");
+        const msg = err?.response?.data?.detail || err?.message || "Submission failed.";
+        setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
       } finally {
         setSubmitting(false);
       }
@@ -334,7 +392,8 @@ function BattleRoom() {
       const response = await api.post("/execution/run", { code });
       setRunOutput(response.data);
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to run code.");
+      const msg = err?.response?.data?.detail || err?.message || "Failed to run code.";
+      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
     } finally {
       setRunning(false);
     }
@@ -371,7 +430,8 @@ function BattleRoom() {
 
       setTestResults(response.data);
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to test code.");
+      const msg = err?.response?.data?.detail || err?.message || "Failed to test code.";
+      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
     } finally {
       setTesting(false);
     }

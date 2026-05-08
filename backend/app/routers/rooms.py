@@ -389,10 +389,30 @@ async def cancel_matchmake(
 
 
 @router.websocket("/{room_code}/ws")
-async def websocket_endpoint(websocket: WebSocket, room_code: str):
+async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = None):
+    # Validate token from query params
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    try:
+        from jose import jwt
+        from app.auth import SECRET_KEY, ALGORITHM
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await manager.connect(room_code, websocket)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        manager.disconnect(room_code, websocket)
+    except Exception as e:
+        print(f"WS error in {room_code}: {e}")
         manager.disconnect(room_code, websocket)
