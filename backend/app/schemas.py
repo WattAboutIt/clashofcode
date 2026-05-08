@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from typing import Any
 from pydantic import BaseModel, EmailStr
 
 
@@ -11,11 +11,10 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
-    
+
 class LoginSchema(BaseModel):
     username: str
     password: str
-
 
 class DeveloperLoginSchema(BaseModel):
     username: str
@@ -27,12 +26,21 @@ class QuestionExample(BaseModel):
     explanation: str | None = None
 
 
+class TestCase(BaseModel):
+    """
+    Matches the DB JSON format exactly:
+      { "input": { "nums": [2,7], "target": 9 }, "expected": [0, 1] }
+    """
+    input: dict        # kwargs dict passed to the solution function
+    expected: Any      # any JSON-serialisable type (list, bool, int, str…)
+
+
 class CodingQuestionResponse(BaseModel):
     id: int
     title: str
     difficulty: str
     description: str
-    test_cases: list[dict]
+    test_cases: list[TestCase]   # typed — was list[dict]
     points: int
     examples: list[QuestionExample] = []
     constraints: str | None = None
@@ -46,17 +54,14 @@ class RoomCreateRequest(BaseModel):
     host: str | None = None
     difficulty: str = "easy"
 
-
 class RoomJoinRequest(BaseModel):
     roomCode: str
-
 
 class SubmissionRequest(BaseModel):
     code: str
     language: str
     score: int | None = None
     passed: bool | None = None
-
 
 class MatchHistoryItem(BaseModel):
     id: int
@@ -66,7 +71,6 @@ class MatchHistoryItem(BaseModel):
     result: str
     score: int
     createdAt: datetime
-
 
 class UserStatsResponse(BaseModel):
     gamesPlayed: int
