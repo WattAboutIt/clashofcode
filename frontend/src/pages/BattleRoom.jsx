@@ -1,115 +1,91 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Editor from "@monaco-editor/react";
 import { useParams } from "react-router-dom";
 
 import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
-// Removed module worker import; will instantiate classic worker manually.
 import "../styles/room.css";
 
-const DIFF_LABELS = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
+const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const LANGUAGE_META = {
+  python: { label: "Python", monaco: "python", extension: "py" },
+  javascript: { label: "JavaScript", monaco: "javascript", extension: "js" },
+  java: { label: "Java", monaco: "java", extension: "java" },
+  cpp: { label: "C++", monaco: "cpp", extension: "cpp" },
 };
+const MOBILE_TABS = ["Problem", "Code", "Console", "Players"];
 
-function CountdownTimer({ startedAt, limitMinutes }) {
-  const [remaining, setRemaining] = useState("");
+function toDisplay(value, fallback = "N/A") {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function extractError(err, fallback) {
+  const detail = err?.response?.data?.detail || err?.response?.data?.error || err?.message;
+  if (!detail) return fallback;
+  return typeof detail === "string" ? detail : JSON.stringify(detail);
+}
+
+function normalizeCases(question) {
+  const sampleCases = question?.sample_cases || question?.test_cases || [];
+  return sampleCases.map((item, index) => ({
+    name: item.name || `Case ${index + 1}`,
+    input: item.input ?? {},
+    expected: item.expected ?? item.expected_output ?? item.output,
+  }));
+}
+
+function getDraftKey(roomCode, language) {
+  return `clashofcode:draft:${roomCode}:${language}`;
+}
+
+function StatusPill({ status }) {
+  const normalized = String(status || "Idle").toLowerCase().replace(/\s+/g, "-");
+  return <span className={`battle-room__status-pill battle-room__status-pill--${normalized}`}>{status || "Idle"}</span>;
+}
+
+function CountdownTimer({ room, onExpire }) {
+  const [remaining, setRemaining] = useState(room?.remaining_seconds ?? null);
 
   useEffect(() => {
-    if (!startedAt) return undefined;
-    const end = new Date(startedAt).getTime() + limitMinutes * 60 * 1000;
+    if (!room?.ends_at || room?.status !== "active") {
+      return undefined;
+    }
+
     const tick = () => {
-      const diff = end - Date.now();
-      if (diff <= 0) {
-        setRemaining("00:00");
-        return;
-      }
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setRemaining(`${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`);
+      const diff = Math.max(0, Math.floor((new Date(room.ends_at).getTime() - Date.now()) / 1000));
+      setRemaining(diff);
+      if (diff === 0) onExpire?.();
     };
+
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [startedAt, limitMinutes]);
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [room?.ends_at, room?.remaining_seconds, room?.status, onExpire]);
 
-  return <span className="battle-room__timer">{remaining || "--:--"}</span>;
+  if (remaining === null || remaining === undefined) return <span className="battle-room__timer">--:--</span>;
+  const minutes = Math.floor(remaining / 60);
+  const seconds = remaining % 60;
+  return <span className={`battle-room__timer ${remaining <= 60 ? "battle-room__timer--danger" : ""}`}>{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}</span>;
 }
 
-const PROBLEM_TABS = ["Description", "Examples", "Constraints"];
-
-function ProblemSection({ title, children, aside = null }) {
-  return (
-    <section className="battle-room__section">
-      <div className="battle-room__section-header">
-        <h3>{title}</h3>
-        {aside}
-      </div>
-      <div className="battle-room__section-body">{children}</div>
-    </section>
-  );
-}
-
-function QuestionPanel({ question, difficulty }) {
-  const [activeTab, setActiveTab] = useState("Description");
-
-  if (!question) return null;
-
-  const hasExamples = question.examples?.length > 0;
-  const tabContent = {
-    Description: (
-      <ProblemSection title="Description">
-        <div className="battle-room__copy">
-          {question.description}
-        </div>
-      </ProblemSection>
-    ),
-    Examples: hasExamples ? (
-      <ProblemSection
-        title="Examples"
-        aside={<span className="battle-room__section-count">{question.examples.length} sample cases</span>}
-      >
-        <div className="battle-room__example-grid">
-          {question.examples.map((example, index) => (
-            <article key={`${question.id}-${index}`} className="battle-room__example-card">
-              <div className="battle-room__example-head">
-                <span className="battle-room__example-index">Example {index + 1}</span>
-              </div>
-              <p><strong>Input:</strong> <span className="font-mono">{example.input}</span></p>
-              <p><strong>Output:</strong> <span className="font-mono">{example.output}</span></p>
-              {example.explanation && <p className="muted-text">{example.explanation}</p>}
-            </article>
-          ))}
-        </div>
-      </ProblemSection>
-    ) : (
-      <div className="room-empty">No examples were provided for this challenge.</div>
-    ),
-    Constraints: question.constraints ? (
-      <ProblemSection title="Constraints">
-        <div className="battle-room__constraint-box">
-          {question.constraints}
-        </div>
-      </ProblemSection>
-    ) : (
-      <div className="room-empty">No explicit constraints were provided.</div>
-    ),
-  };
+function ProblemPane({ question, difficulty, active, onTab }) {
+  if (!question) {
+    return <div className="battle-room__empty-pane">The problem appears when the battle starts.</div>;
+  }
 
   return (
     <div className="battle-room__problem-shell">
-      <div className="battle-room__panel-tabs" role="tablist" aria-label="Problem details">
-        {PROBLEM_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className={`battle-room__panel-tab ${activeTab === tab ? "battle-room__panel-tab--active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-            role="tab"
-            aria-selected={activeTab === tab}
-          >
+      <div className="battle-room__panel-tabs" role="tablist" aria-label="Problem sections">
+        {["Description", "Examples", "Constraints"].map((tab) => (
+          <button key={tab} type="button" className={`battle-room__panel-tab ${active === tab ? "battle-room__panel-tab--active" : ""}`} onClick={() => onTab(tab)} role="tab" aria-selected={active === tab}>
             {tab}
           </button>
         ))}
@@ -122,271 +98,256 @@ function QuestionPanel({ question, difficulty }) {
             <h2 className="battle-room__problem-title">{question.title}</h2>
           </div>
           <div className="battle-room__chip-row">
-            <span className="battle-room__chip battle-room__chip--difficulty">
-              {DIFF_LABELS[difficulty] || difficulty}
-            </span>
-            <span className="battle-room__chip battle-room__chip--points">
-              {question.points} pts
-            </span>
+            <span className="battle-room__chip battle-room__chip--difficulty">{DIFF_LABELS[difficulty] || difficulty}</span>
+            <span className="battle-room__chip battle-room__chip--points">{question.points} pts</span>
           </div>
         </div>
 
-        {tabContent[activeTab]}
+        {active === "Description" && <div className="battle-room__copy">{question.description}</div>}
+
+        {active === "Examples" && (
+          <div className="battle-room__example-grid">
+            {(question.examples || []).length ? question.examples.map((example, index) => (
+              <article key={`${question.id}-${index}`} className="battle-room__example-card">
+                <span className="battle-room__example-index">Example {index + 1}</span>
+                <p><strong>Input:</strong> <span className="font-mono">{toDisplay(example.input)}</span></p>
+                <p><strong>Output:</strong> <span className="font-mono">{toDisplay(example.output)}</span></p>
+                {example.explanation && <p className="muted-text">{example.explanation}</p>}
+              </article>
+            )) : <div className="room-empty">No written examples were provided.</div>}
+          </div>
+        )}
+
+        {active === "Constraints" && (
+          question.constraints ? <div className="battle-room__constraint-box">{question.constraints}</div> : <div className="room-empty">No explicit constraints were provided.</div>
+        )}
       </div>
     </div>
   );
 }
 
-function CodeEditor({ value, onChange, language = "python" }) {
-  const extension = language === "python" ? "py" : language === "javascript" ? "js" : language === "java" ? "java" : "cpp";
-  const gutterRef = useRef(null);
-  const lineCount = Math.max(value.split("\n").length, 18);
-  const lines = Array.from({ length: lineCount }, (_, index) => index + 1);
-
-  const syncScroll = (event) => {
-    if (gutterRef.current) {
-      gutterRef.current.scrollTop = event.target.scrollTop;
-    }
-  };
+function MonacoCodeEditor({ code, language, locked, onChange, onMount }) {
+  const meta = LANGUAGE_META[language] || LANGUAGE_META.python;
 
   return (
-    <div className="battle-room__editor-shell">
+    <div className="battle-room__monaco-shell">
       <div className="battle-room__editor-bar">
         <div className="battle-room__editor-file">
-          <span className="battle-room__editor-pill">{language}</span>
-          <span className="battle-room__editor-name">solution.{extension}</span>
+          <span className="battle-room__editor-pill">{meta.label}</span>
+          <span className="battle-room__editor-name">solution.{meta.extension}</span>
         </div>
-        <span className="battle-room__editor-state">Editing</span>
+        <span className="battle-room__editor-state">{locked ? "Locked" : "Autosaving"}</span>
       </div>
-
-      <div className="battle-room__editor-body">
-        <div ref={gutterRef} className="battle-room__editor-gutter" aria-hidden="true">
-          {lines.map((line) => (
-            <span key={line} className="battle-room__editor-line">{line}</span>
-          ))}
-        </div>
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onScroll={syncScroll}
-          spellCheck={false}
-          className="battle-room__editor-textarea"
-          placeholder={`# Write your ${language} solution here...\n`}
-        />
-      </div>
+      <Editor
+        height="100%"
+        language={meta.monaco}
+        value={code}
+        theme="vs-dark"
+        loading={<div className="battle-room__editor-loading">Loading editor...</div>}
+        options={{
+          readOnly: locked,
+          fontSize: 14,
+          fontLigatures: true,
+          minimap: { enabled: true },
+          bracketPairColorization: { enabled: true },
+          guides: { bracketPairs: true, indentation: true },
+          automaticLayout: true,
+          tabSize: 2,
+          scrollBeyondLastLine: false,
+          wordWrap: "on",
+          formatOnPaste: true,
+          formatOnType: true,
+          suggestOnTriggerCharacters: true,
+        }}
+        onChange={(value) => onChange(value || "")}
+        onMount={onMount}
+      />
     </div>
   );
 }
 
-function PlayerRow({ player, isMe, host }) {
-  const isHost = player.username === host;
+function TestcaseTabs({ cases, result, selected, onSelect }) {
+  const results = result?.results || [];
+  const rows = results.length ? results : cases;
+  if (!rows.length) {
+    return <div className="battle-room__console-empty">No visible cases are available. Use custom input for a manual run.</div>;
+  }
+
+  const row = rows[selected] || rows[0];
+  const resultRow = results[selected];
 
   return (
-    <div className={`battle-room__player ${isMe ? "battle-room__player--me" : ""}`}>
-      <div className="battle-room__player-main">
-        <div className="battle-room__player-avatar">{player.username.slice(0, 2).toUpperCase()}</div>
-        <div className="battle-room__player-meta">
-          <p>
-            <strong>{player.username}</strong>
-            {isHost && <span className="battle-room__player-tag">Host</span>}
-            {isMe && <span className="battle-room__player-you">you</span>}
-          </p>
-          <p className="muted-text">{player.status}</p>
-        </div>
-      </div>
-      <span className="battle-room__player-score">
-        {player.status === "submitted" ? `${player.score} pts` : player.status}
-      </span>
-    </div>
-  );
-}
-
-function ConsoleTabs({ runOutput, testResults, submissionResult, question }) {
-  const [activeTab, setActiveTab] = useState("Testcase");
-  const tabs = ["Testcase", "Run", "Test Result", "Submission"];
-  const latestResults = testResults?.results || submissionResult?.test_results || [];
-  const sampleCases = question?.examples || [];
-  const runRows = runOutput?.output ? [{ passed: true, actual: runOutput.output }] : [];
-
-  const panel = {
-    Testcase: latestResults.length ? (
-      <ResultCard
-        type="test"
-        title="Latest cases"
-        success={latestResults.every((result) => result.passed || result.status === "passed")}
-        results={latestResults}
-      />
-    ) : sampleCases.length ? (
-      <div className="battle-room__sample-list">
-        {sampleCases.map((example, index) => (
-          <div key={`${question?.id || "sample"}-${index}`} className="battle-room__sample-card">
-            <div className="battle-room__case-card-head">
-              <span>Case {index + 1}</span>
-              <span className="battle-room__case-badge">Sample</span>
-            </div>
-            <div className="battle-room__case-diff">
-              <div>
-                <span>Input</span>
-                <pre>{example.input || "N/A"}</pre>
-              </div>
-              <div>
-                <span>Expected</span>
-                <pre>{example.output || "N/A"}</pre>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div className="battle-room__console-empty">
-        Run tests to see case-by-case input, expected output, and actual output here.
-      </div>
-    ),
-    Run: runOutput ? (
-      <ResultCard
-        type="test"
-        title="Code Execution"
-        success={!runOutput.error}
-        error={runOutput.error}
-        results={runRows}
-      />
-    ) : (
-      <div className="battle-room__console-empty">
-        Use Run for a quick Python execution check.
-      </div>
-    ),
-    "Test Result": testResults ? (
-      <ResultCard
-        type="test"
-        title="Test Results"
-        success={testResults?.success}
-        results={testResults?.results}
-        error={testResults?.error}
-      />
-    ) : (
-      <div className="battle-room__console-empty">
-        Use Test to judge your code against the challenge test cases.
-      </div>
-    ),
-    Submission: submissionResult ? (
-      <ResultCard
-        type="submit"
-        title="Submission Accepted"
-        success={submissionResult?.passed}
-        results={submissionResult?.test_results}
-        score={submissionResult?.score}
-        error={submissionResult?.error}
-      />
-    ) : (
-      <div className="battle-room__console-empty">
-        Submit when you are ready to lock your battle score.
-      </div>
-    ),
-  };
-
-  return (
-    <div className="battle-room__console">
-      <div className="battle-room__console-tabs" role="tablist" aria-label="Code console">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className={`battle-room__console-tab ${activeTab === tab ? "battle-room__console-tab--active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-            role="tab"
-            aria-selected={activeTab === tab}
-          >
-            {tab}
+    <div className="battle-room__testcase-pane">
+      <div className="battle-room__case-tabs" role="tablist" aria-label="Visible test cases">
+        {rows.map((item, index) => (
+          <button key={`${item.name || "case"}-${index}`} type="button" className={`battle-room__case-tab ${selected === index ? "battle-room__case-tab--active" : ""}`} onClick={() => onSelect(index)}>
+            {item.name || `Case ${index + 1}`}
+            {resultRow && index === selected && <StatusPill status={resultRow.status} />}
           </button>
         ))}
       </div>
-      <div className="battle-room__console-body">
-        {panel[activeTab]}
+
+      <div className="battle-room__case-detail-grid">
+        <label>
+          <span>Input</span>
+          <pre>{toDisplay(row.input)}</pre>
+        </label>
+        <label>
+          <span>Expected</span>
+          <pre>{toDisplay(row.expected)}</pre>
+        </label>
+        {resultRow && (
+          <label>
+            <span>Actual</span>
+            <pre>{toDisplay(resultRow.actual, resultRow.error || "N/A")}</pre>
+          </label>
+        )}
       </div>
     </div>
   );
 }
 
-function ResultCard({ title, success, results, score, error, type = "test" }) {
-  if (!results && !error && !title) return null;
-
-  const isAccepted = success || (results && results.every(r => r.passed) && results.length > 0);
-  const statusLabel = error ? "Runtime Error" : isAccepted ? "Accepted" : "Wrong Answer";
-  const statusTone = error ? "danger" : isAccepted ? "success" : "warning";
+function ConsolePane({ active, onActive, runResult, submitResult, running, customInput, onCustomInput, onClear, cases, selectedCase, onSelectCase }) {
+  const tabs = ["Testcases", "Console", "Custom Input", "Submissions"];
+  const currentResult = active === "Submissions" ? submitResult : runResult;
 
   return (
-    <div className={`battle-room__result-container battle-room__result-container--${statusTone} animate-in`}>
-      <div className="battle-room__result-head">
-        <div>
-          <span className="battle-room__result-kicker">
-            {type === "submit" ? "Submission Result" : "Test Result"}
-          </span>
-          <h2 className={`battle-room__result-title battle-room__result-title--${statusTone}`}>{statusLabel}</h2>
-        </div>
-        {score !== undefined && (
-          <div className="battle-room__score-block">
-            <span>Score Earned</span>
-            <strong>{score} pts</strong>
-          </div>
-        )}
+    <div className="battle-room__console">
+      <div className="battle-room__console-tabs" role="tablist" aria-label="Execution console">
+        {tabs.map((tab) => (
+          <button key={tab} type="button" className={`battle-room__console-tab ${active === tab ? "battle-room__console-tab--active" : ""}`} onClick={() => onActive(tab)} role="tab" aria-selected={active === tab}>
+            {tab}
+          </button>
+        ))}
+        <button type="button" className="battle-room__console-clear" onClick={onClear}>Clear</button>
       </div>
 
-      {error && (
-        <div className="battle-room__error-log">
-          <p>Error Message:</p>
-          <pre>{error}</pre>
+      <div className="battle-room__console-body" aria-live="polite">
+        {running && <div className="battle-room__running-strip">Running code...</div>}
+
+        {active === "Testcases" && <TestcaseTabs cases={cases} result={runResult} selected={selectedCase} onSelect={onSelectCase} />}
+
+        {active === "Custom Input" && (
+          <textarea className="battle-room__custom-input" value={customInput} onChange={(event) => onCustomInput(event.target.value)} placeholder="stdin for input()-based solutions" aria-label="Custom stdin input" />
+        )}
+
+        {active === "Console" && (
+          currentResult ? <ExecutionResult result={currentResult} /> : <div className="battle-room__console-empty">Run Code to see stdout, errors, status, and runtime.</div>
+        )}
+
+        {active === "Submissions" && (
+          submitResult ? <ExecutionResult result={submitResult} /> : <div className="battle-room__console-empty">Submit to run hidden judge validation.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ExecutionResult({ result }) {
+  const status = result?.status || result?.message || (result?.passed ? "Accepted" : "Wrong Answer");
+  const rows = result?.results || result?.test_results || [];
+
+  return (
+    <div className="battle-room__execution-result">
+      <div className="battle-room__execution-head">
+        <div>
+          <StatusPill status={status} />
+          <p>{result?.passed_count ?? result?.passed ?? 0} / {result?.total_count ?? result?.total ?? rows.length ?? 0} cases passed</p>
+        </div>
+        <div className="battle-room__perf-row">
+          <span>{result?.runtime_ms ?? 0} ms</span>
+          <span>{result?.memory_kb ? `${result.memory_kb} KB` : "Memory N/A"}</span>
+          {result?.score !== undefined && <strong>{result.score} pts</strong>}
+        </div>
+      </div>
+
+      {(result?.stdout || result?.stderr || result?.error) && (
+        <div className="battle-room__stdout-grid">
+          {result.stdout && <label><span>stdout</span><pre>{result.stdout}</pre></label>}
+          {(result.stderr || result.error) && <label><span>errors</span><pre>{result.stderr || result.error}</pre></label>}
         </div>
       )}
 
-      {results && results.length > 0 && (
-        <div className="battle-room__case-results">
-          <div className="battle-room__case-progress">
-            <div className="battle-room__case-track">
-              {results.map((r, i) => (
-                <div 
-                  key={i} 
-                  className={`battle-room__case-segment ${r.passed || r.status === "passed" ? "battle-room__case-segment--pass" : "battle-room__case-segment--fail"}`}
-                  style={{ width: `${100 / results.length}%` }}
-                />
-              ))}
-            </div>
-            <span>
-              {results.filter(r => r.passed || r.status === "passed").length} / {results.length} Passed
-            </span>
-          </div>
-
-          <div className="battle-room__case-list">
-            {results.map((res, idx) => {
-              const isPassed = res.passed === true || res.status === "passed";
-              return (
-                <div key={idx} className="battle-room__case-card">
-                  <div className="battle-room__case-card-head">
-                    <span>Test Case {idx + 1}</span>
-                    <span className={`battle-room__case-badge ${isPassed ? "battle-room__case-badge--pass" : "battle-room__case-badge--fail"}`}>
-                      {isPassed ? "Passed" : "Failed"}
-                    </span>
-                  </div>
-                  {!isPassed && (
-                    <div className="battle-room__case-diff">
-                      <div>
-                        <span>Expected</span>
-                        <pre>{res.expected || "N/A"}</pre>
-                      </div>
-                      <div>
-                        <span>Actual</span>
-                        <pre>{res.actual || res.error || "N/A"}</pre>
-                      </div>
-                    </div>
-                  )}
-                  {isPassed && res.actual && (
-                    <pre className="battle-room__case-output">{res.actual}</pre>
-                  )}
+      {!!rows.length && (
+        <div className="battle-room__case-list">
+          {rows.map((item, index) => (
+            <div key={`${item.name || "result"}-${index}`} className="battle-room__case-card">
+              <div className="battle-room__case-card-head">
+                <span>{item.name || `Case ${index + 1}`}</span>
+                <StatusPill status={item.status || (item.passed ? "Accepted" : "Wrong Answer")} />
+              </div>
+              {!item.passed && (
+                <div className="battle-room__case-diff">
+                  <label><span>Expected</span><pre>{toDisplay(item.expected)}</pre></label>
+                  <label><span>Actual</span><pre>{toDisplay(item.actual, item.error || "N/A")}</pre></label>
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Leaderboard({ players, currentUsername, host }) {
+  const ranked = [...(players || [])].sort((a, b) => (b.score || 0) - (a.score || 0) || (b.progress || 0) - (a.progress || 0));
+  return (
+    <div className="battle-room__leaderboard">
+      {ranked.map((player, index) => (
+        <div key={player.username} className={`battle-room__leader-row ${player.username === currentUsername ? "battle-room__leader-row--me" : ""}`}>
+          <span className="battle-room__rank">#{index + 1}</span>
+          <div className="battle-room__player-avatar">{player.username.slice(0, 2).toUpperCase()}</div>
+          <div className="battle-room__leader-main">
+            <p>
+              <strong>{player.username}</strong>
+              {player.username === host && <span className="battle-room__player-tag">Host</span>}
+              {player.username === currentUsername && <span className="battle-room__player-you">you</span>}
+            </p>
+            <small>
+              <span className={player.online ? "battle-room__online" : "battle-room__offline"} />
+              {player.typing ? "typing..." : player.last_action || player.status}
+            </small>
+          </div>
+          <div className="battle-room__leader-score">
+            <strong>{player.score || 0}</strong>
+            <span>{player.passed || 0}/{player.total || 0}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EventFeed({ events }) {
+  return (
+    <div className="battle-room__event-feed">
+      {(events || []).slice().reverse().slice(0, 12).map((event) => (
+        <div key={event.id} className="battle-room__event">
+          <span>{event.kind}</span>
+          <p>{event.message}</p>
+        </div>
+      ))}
+      {!(events || []).length && <div className="room-empty">Battle events will appear here.</div>}
+    </div>
+  );
+}
+
+function SubmissionHistory({ submissions }) {
+  return (
+    <div className="battle-room__submission-history">
+      {(submissions || []).length ? submissions.map((submission) => (
+        <div key={submission.id || submission.submitted_at} className="battle-room__submission-row">
+          <div>
+            <StatusPill status={submission.status} />
+            <p>{submission.language} · {new Date(submission.submitted_at).toLocaleTimeString()}</p>
+          </div>
+          <div>
+            <strong>{submission.score || 0} pts</strong>
+            <span>{submission.passed || 0}/{submission.total || 0} · {submission.runtime_ms || 0} ms</span>
+          </div>
+        </div>
+      )) : <div className="room-empty">No submissions yet.</div>}
     </div>
   );
 }
@@ -397,129 +358,132 @@ function BattleRoom() {
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [starting, setStarting] = useState(false);
-  const [code, setCode] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState(null);
   const [language, setLanguage] = useState("python");
+  const [code, setCode] = useState("");
   const [running, setRunning] = useState(false);
-  const [runOutput, setRunOutput] = useState(null);
-  const [testing, setTesting] = useState(false);
-  const [testResults, setTestResults] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [runResult, setRunResult] = useState(null);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [customInput, setCustomInput] = useState("");
+  const [problemTab, setProblemTab] = useState("Description");
+  const [consoleTab, setConsoleTab] = useState("Testcases");
+  const [selectedCase, setSelectedCase] = useState(0);
+  const [mobileTab, setMobileTab] = useState("Code");
+  const [focusMode, setFocusMode] = useState({ problem: false, sidebar: false, console: false });
+  const [columns, setColumns] = useState({ left: 34, right: 19 });
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
+  const wsRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    let workerFailureTimer = null;
+  const myPlayer = useMemo(() => room?.players?.find((player) => player.username === user?.username), [room, user?.username]);
+  const isHost = room?.host === user?.username;
+  const visibleCases = useMemo(() => normalizeCases(room?.question), [room?.question]);
+  const locked = room?.status === "finished" || myPlayer?.status === "submitted" || myPlayer?.status === "time_up";
+  const submissions = myPlayer?.submissions || [];
 
-    try {
-      // Use standard Worker instantiation for better compatibility with Vite in production
-      workerRef.current = new Worker(
-        new URL("../utils/pyodideWorker.js", import.meta.url),
-        { type: "classic" }
-      );
-    } catch (err) {
-      console.error("Worker initialization failed", err);
-      workerFailureTimer = window.setTimeout(() => {
-        setError("Failed to initialize Python environment. Please refresh.");
-      }, 0);
+  const sendSocket = useCallback((payload) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
     }
-
-    return () => {
-      if (workerFailureTimer) {
-        window.clearTimeout(workerFailureTimer);
-      }
-      workerRef.current?.terminate();
-    };
   }, []);
 
   useEffect(() => {
+    workerRef.current = new Worker(new URL("../utils/pyodideWorker.js", import.meta.url), { type: "classic" });
+    return () => workerRef.current?.terminate();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     api.get(`/rooms/${roomCode}`)
-      .then((response) => setRoom(response.data))
-      .catch(() => setError("Unable to load room. Please check the room code."))
-      .finally(() => setLoading(false));
+      .then((response) => {
+        if (!cancelled) setRoom(response.data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(extractError(err, "Unable to load room. Please check the room code."));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [roomCode]);
 
   useEffect(() => {
-    const nextId = room?.question?.id;
-    if (nextId && previousQuestionId.current !== nextId) {
-      setCode(room?.question?.starter_code || "");
-      previousQuestionId.current = nextId;
-    }
-  }, [room?.question]);
+    const questionId = room?.question?.id;
+    if (!questionId || previousQuestionId.current === `${questionId}:${language}`) return;
+    const stored = localStorage.getItem(getDraftKey(roomCode, language));
+    setCode(stored ?? room.question.starter_code ?? "");
+    previousQuestionId.current = `${questionId}:${language}`;
+  }, [language, room?.question, roomCode]);
+
+  useEffect(() => {
+    if (!room?.question?.id || !code) return undefined;
+    const id = window.setTimeout(() => {
+      localStorage.setItem(getDraftKey(roomCode, language), code);
+    }, 700);
+    return () => window.clearTimeout(id);
+  }, [code, language, room?.question?.id, roomCode]);
 
   useEffect(() => {
     if (!token || !roomCode) return undefined;
 
-    let ws = null;
-    let reconnectTimeout = null;
+    let reconnectTimer = null;
+    let pingTimer = null;
     let attempts = 0;
-    const MAX_ATTEMPTS = 5;
+    let closedByCleanup = false;
 
     const connect = () => {
-      if (attempts >= MAX_ATTEMPTS) {
-        setError("Connection lost. Please refresh the page to reconnect.");
-        return;
-      }
-
       const baseUrl = api.defaults.baseURL || window.location.origin;
-      const wsUrl = baseUrl.replace(/^http/, "ws") + `/rooms/${roomCode}/ws?token=${token}`;
+      const wsUrl = `${baseUrl.replace(/^http/, "ws")}/rooms/${roomCode}/ws?token=${encodeURIComponent(token)}`;
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
 
-      console.log(`Connecting to WebSocket: ${wsUrl} (Attempt ${attempts + 1})`);
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log("WebSocket connected");
+      socket.onopen = () => {
         attempts = 0;
-        setError(""); // Clear any connection errors
+        setError("");
+        api.post("/rooms/join", { roomCode }).catch((err) => setError(extractError(err, "Unable to join room.")));
+        pingTimer = window.setInterval(() => sendSocket({ event: "ping" }), 15000);
       };
 
-      ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.event === "room_updated") {
-            setRoom(data.room);
-          }
-        } catch (err) {
-          console.error("WS Parse Error", err);
+          if (data.event === "room_updated") setRoom(data.room);
+        } catch {
+          // Ignore malformed socket packets.
         }
       };
 
-      ws.onclose = (e) => {
-        console.log(`WebSocket closed (Code: ${e.code}, Reason: ${e.reason || 'None'})`);
-        if (attempts < MAX_ATTEMPTS) {
-          const delay = Math.min(1000 * Math.pow(2, attempts), 10000);
-          reconnectTimeout = setTimeout(() => {
-            attempts++;
-            connect();
-          }, delay);
-        }
+      socket.onclose = () => {
+        if (pingTimer) window.clearInterval(pingTimer);
+        if (closedByCleanup) return;
+        const delay = Math.min(1000 * 2 ** attempts, 10000);
+        attempts += 1;
+        reconnectTimer = window.setTimeout(connect, delay);
       };
 
-      ws.onerror = (err) => {
-        console.error("WebSocket error", err);
-        ws.close();
-      };
+      socket.onerror = () => socket.close();
     };
 
     connect();
-
-    // Auto-join room when socket connects (handled by backend usually, but ensuring local state)
-    api.post("/rooms/join", { roomCode }).catch(err => {
-      console.error("Join error", err);
-      if (err.response?.status === 401) {
-        setError("Unauthorized. Please login again.");
-      }
-    });
-
     return () => {
-      if (ws) ws.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      closedByCleanup = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (pingTimer) window.clearInterval(pingTimer);
+      wsRef.current?.close();
     };
-  }, [roomCode, token]);
+  }, [roomCode, sendSocket, token]);
 
-  const isHost = useMemo(() => room?.host === user?.username, [room, user]);
-  const myPlayer = useMemo(() => room?.players?.find((player) => player.username === user?.username), [room, user]);
+  const handleCodeChange = useCallback((value) => {
+    setCode(value);
+    sendSocket({ event: "typing", typing: true });
+    if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = window.setTimeout(() => sendSocket({ event: "typing", typing: false }), 1200);
+  }, [sendSocket]);
 
   const handleStart = async () => {
     setStarting(true);
@@ -527,148 +491,133 @@ function BattleRoom() {
     try {
       const response = await api.post(`/rooms/${roomCode}/start`);
       setRoom(response.data);
-      setSubmissionResult(null);
     } catch (err) {
-      const msg = err?.response?.data?.detail || err?.message || "Unable to start the game right now.";
-      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+      setError(extractError(err, "Unable to start battle."));
     } finally {
       setStarting(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!code.trim()) {
-      setError("Write some code before submitting.");
-      return;
-    }
-    setSubmitting(true);
-    setError("");
-    setRunOutput(null);
-    setTestResults(null);
-    setSubmissionResult(null);
+  const runWithPyodide = (payload) => new Promise((resolve) => {
+    workerRef.current.onmessage = (event) => resolve(event.data.result);
+    workerRef.current.postMessage(payload);
+  });
 
-    if (language === "python" && workerRef.current) {
-      workerRef.current.onmessage = async (e) => {
-        const { type, result } = e.data;
-        if (type === "DONE") {
-          if (result.error) {
-            setSubmissionResult({ passed: false, error: result.error, score: 0 });
-            setSubmitting(false);
-          } else {
-            const payload = {
-              code,
-              language,
-              score: result.passed ? room.question.points : 0
-            };
-            try {
-              // Assume backend submit_solution is updated to accept the score
-              const response = await api.post(`/rooms/${roomCode}/submit`, payload);
-              const combinedResult = {
-                ...response.data,
-                passed: result.passed,
-                test_results: result.test_results,
-                score: payload.score
-              };
-              setSubmissionResult(combinedResult);
-              const updated = await api.get(`/rooms/${roomCode}`);
-              setRoom(updated.data);
-            } catch (err) {
-              const msg = err?.response?.data?.detail || err?.message || "Submission failed.";
-              setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
-            } finally {
-              setSubmitting(false);
-            }
-          }
-        }
-      };
-
-      workerRef.current.postMessage({
-        code,
-        testCases: room?.question?.test_cases || []
-      });
-    } else {
-      try {
-        const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
-        setSubmissionResult(response.data);
-        const updated = await api.get(`/rooms/${roomCode}`);
-        setRoom(updated.data);
-      } catch (err) {
-        const msg = err?.response?.data?.detail || err?.message || "Submission failed.";
-        setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
-      } finally {
-        setSubmitting(false);
-      }
-    }
-  };
-
-  const handleRun = async () => {
+  const handleRun = useCallback(async () => {
+    if (locked) return;
     if (!code.trim()) {
       setError("Write some code before running.");
       return;
     }
     setRunning(true);
     setError("");
-    setRunOutput(null);
-    setTestResults(null); // Clear other results
-    setSubmissionResult(null);
+    sendSocket({ event: "run_code" });
 
     try {
-      const response = await api.post("/execution/run", { code });
-      setRunOutput(response.data);
+      let result;
+      if (language === "python" && workerRef.current) {
+        result = await runWithPyodide({
+          code,
+          mode: customInput.trim() ? "stdin" : "cases",
+          stdin: customInput,
+          testCases: visibleCases,
+        });
+      } else {
+        const response = await api.post("/execution/run", {
+          code,
+          language,
+          stdin: customInput,
+          test_cases: customInput.trim() ? [] : visibleCases,
+        });
+        result = response.data;
+      }
+      setRunResult(result);
+      setConsoleTab(customInput.trim() ? "Console" : "Testcases");
     } catch (err) {
-      const msg = err?.response?.data?.detail || err?.message || "Failed to run code.";
-      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+      setRunResult({ status: "Runtime Error", error: extractError(err, "Failed to run code."), stdout: "", stderr: "", passed: 0, total: 0, results: [] });
+      setConsoleTab("Console");
     } finally {
       setRunning(false);
     }
-  };
+  }, [code, customInput, language, locked, sendSocket, visibleCases]);
 
-  const handleTest = async () => {
+  const handleSubmit = useCallback(async () => {
+    if (locked) return;
     if (!code.trim()) {
-      setError("Write some code before testing.");
+      setError("Write some code before submitting.");
       return;
     }
-
-    // Only Python can be tested with the backend judge
-    if (language !== "python") {
-      setError("Testing is only available for Python.");
-      return;
-    }
-
-    setTesting(true);
+    setSubmitting(true);
     setError("");
-    setRunOutput(null);
-    setTestResults(null);
-    setSubmissionResult(null);
-
     try {
-      const testCases = (room?.question?.test_cases || []).map((tc) => ({
-        input: tc.input || "",
-        expected_output: tc.expected_output || tc.output || ""
-      }));
-
-      const response = await api.post("/execution/evaluate", {
-        code,
-        test_cases: testCases,
-        problem_title: room?.question?.title || "Unknown",
-        problem_description: room?.question?.description || ""
-      });
-
-      setTestResults(response.data);
+      const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
+      setSubmitResult(response.data);
+      setConsoleTab("Submissions");
+      const updated = await api.get(`/rooms/${roomCode}`);
+      setRoom(updated.data);
     } catch (err) {
-      const msg = err?.response?.data?.detail || err?.message || "Failed to test code.";
-      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+      const message = extractError(err, "Submission failed.");
+      setSubmitResult({ status: "Runtime Error", error: message, stdout: "", stderr: message, passed: 0, total: 0, results: [] });
+      setConsoleTab("Submissions");
+      setError(message);
     } finally {
-      setTesting(false);
+      setSubmitting(false);
     }
+  }, [code, language, locked, roomCode]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (event.key === "Enter" && event.shiftKey) {
+        event.preventDefault();
+        handleSubmit();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        handleRun();
+      } else if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        localStorage.setItem(getDraftKey(roomCode, language), code);
+        setToast("Draft saved");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [code, handleRun, handleSubmit, language, roomCode]);
+
+  const handleEditorMount = useCallback((editor) => {
+    editor.focus();
+  }, []);
+
+  const resetCode = () => {
+    setCode(room?.question?.starter_code || "");
+    setRunResult(null);
+    setSubmitResult(null);
   };
 
-  const handleResetCode = () => {
-    setCode(room?.question?.starter_code || "");
-    setRunOutput(null);
-    setTestResults(null);
-    setSubmissionResult(null);
-    setError("");
+  const copyInvite = async () => {
+    const url = `${window.location.origin}/battle-room/${roomCode}`;
+    await navigator.clipboard.writeText(url);
+    setToast("Invite link copied");
+    window.setTimeout(() => setToast(""), 1800);
+  };
+
+  const startResize = (side, event) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const initial = { ...columns };
+    const onMove = (moveEvent) => {
+      const delta = ((moveEvent.clientX - startX) / window.innerWidth) * 100;
+      setColumns((current) => ({
+        left: side === "left" ? Math.min(48, Math.max(22, initial.left + delta)) : current.left,
+        right: side === "right" ? Math.min(30, Math.max(14, initial.right - delta)) : current.right,
+      }));
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
   if (loading) {
@@ -676,204 +625,151 @@ function BattleRoom() {
       <section className="page-shell">
         <div className="page-container battle-room">
           <div className="skeleton loading-slab loading-slab--banner" />
-          <div className="battle-room__workspace">
-            <div className="skeleton loading-slab loading-slab--panel" />
-            <div className="skeleton loading-slab loading-slab--panel" />
-          </div>
+          <div className="battle-room__workspace"><div className="skeleton loading-slab loading-slab--panel" /><div className="skeleton loading-slab loading-slab--panel" /></div>
         </div>
       </section>
     );
   }
 
-  const questionTitle = room?.question?.title || "Battle Workspace";
   const roomStatus = room?.status || "waiting";
   const difficultyLabel = DIFF_LABELS[room?.difficulty] || room?.difficulty || "Open";
+  const showProblem = !focusMode.problem;
+  const showSidebar = !focusMode.sidebar;
+  const showConsole = !focusMode.console;
+  const gridStyle = {
+    "--battle-left": showProblem ? `${columns.left}%` : "0px",
+    "--battle-right": showSidebar ? `${columns.right}%` : "0px",
+  };
 
   return (
     <section className="page-shell page-enter">
-      <div className="page-container battle-room">
+      <div className="page-container battle-room battle-room--pro">
         <Card className="battle-room__topbar">
           <div className="battle-room__topbar-row">
             <div className="battle-room__headline">
               <div>
                 <p className="label-text">Battle Room</p>
-                <h1 className="battle-room__title">{questionTitle}</h1>
+                <h1 className="battle-room__title">{room?.question?.title || "Battle Workspace"}</h1>
               </div>
-              <span className="battle-room__room-code">#{roomCode}</span>
+              <button type="button" className="battle-room__room-code" onClick={copyInvite}>#{roomCode} · Copy invite</button>
             </div>
 
             <div className="battle-room__status-strip">
-              {room?.status === "active" && room?.started_at && (
-                <div className="battle-room__status-card battle-room__status-card--timer">
-                  <span className="battle-room__status-label">Time Left</span>
-                  <CountdownTimer startedAt={room.started_at} limitMinutes={room.time_limit_minutes} />
-                </div>
-              )}
-              <div className="battle-room__status-card">
-                <span className="battle-room__status-label">Status</span>
-                <strong>{roomStatus}</strong>
+              <div className="battle-room__status-card battle-room__status-card--timer">
+                <span className="battle-room__status-label">{roomStatus === "finished" ? "Battle" : "Time Left"}</span>
+                {roomStatus === "active" ? <CountdownTimer room={room} /> : <strong>{roomStatus === "finished" ? "Time Up" : "--:--"}</strong>}
               </div>
-              <div className="battle-room__status-card">
-                <span className="battle-room__status-label">Difficulty</span>
-                <strong>{difficultyLabel}</strong>
-              </div>
-              <div className="battle-room__status-card">
-                <span className="battle-room__status-label">Host</span>
-                <strong>{room?.host}</strong>
-              </div>
+              <div className="battle-room__status-card"><span className="battle-room__status-label">Status</span><strong>{roomStatus}</strong></div>
+              <div className="battle-room__status-card"><span className="battle-room__status-label">Difficulty</span><strong>{difficultyLabel}</strong></div>
+              <div className="battle-room__status-card"><span className="battle-room__status-label">Host</span><strong>{room?.host}</strong></div>
             </div>
           </div>
         </Card>
 
-        {error && <div className="room-error">{error}</div>}
+        {toast && <div className="battle-room__toast">{toast}</div>}
+        {error && <div className="room-error" role="alert">{error}</div>}
 
         {room?.status === "waiting" ? (
           <Card className="battle-room__waiting-panel">
             <div className="battle-room__waiting-copy">
               <p className="label-text">Lobby</p>
-              <h2>{isHost ? "Start the battle when everyone is ready" : "Waiting for the host to start"}</h2>
-              <p className="section-subtitle">
-                {isHost
-                  ? "This room is ready. Launch the challenge to open the coding workspace."
-                  : "The LeetCode-style coding workspace will appear as soon as the host starts the match."}
-              </p>
+              <h2>{isHost ? "Start when everyone is ready" : "Waiting for host"}</h2>
+              <p className="section-subtitle">The competitive coding workspace opens once the battle starts.</p>
             </div>
             <div className="battle-room__waiting-actions">
-              <span className="battle-room__chip battle-room__chip--ghost">
-                {room?.players?.length ?? 0} players in lobby
-              </span>
-              {isHost && (
-                <Button onClick={handleStart} disabled={starting} size="lg">
-                  {starting ? "Starting..." : "Start Battle"}
-                </Button>
-              )}
+              <span className="battle-room__chip battle-room__chip--ghost">{room?.players?.length ?? 0} players</span>
+              {isHost && <Button onClick={handleStart} disabled={starting} size="lg">{starting ? "Starting..." : "Start Battle"}</Button>}
             </div>
+            <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
           </Card>
         ) : (
-          <div className="battle-room__workspace battle-room__workspace--leetcode">
-            <div className="battle-room__left-column">
-              <Card className="battle-room__problem-panel battle-room__leetcode-card">
-                <QuestionPanel question={room?.question} difficulty={room?.difficulty} />
-              </Card>
+          <>
+            <div className="battle-room__mobile-tabs" role="tablist" aria-label="Battle workspace">
+              {MOBILE_TABS.map((tab) => <button key={tab} type="button" className={mobileTab === tab ? "is-active" : ""} onClick={() => setMobileTab(tab)}>{tab}</button>)}
             </div>
 
-            <div className="battle-room__middle-column">
-              <Card className="battle-room__editor-panel battle-room__leetcode-card">
+            <div className="battle-room__workspace battle-room__workspace--pro" style={gridStyle}>
+              {showProblem && (
+                <Card className={`battle-room__problem-panel battle-room__leetcode-card battle-room__mobile-pane ${mobileTab === "Problem" ? "is-active" : ""}`}>
+                  <ProblemPane question={room?.question} difficulty={room?.difficulty} active={problemTab} onTab={setProblemTab} />
+                </Card>
+              )}
+              {showProblem && <button type="button" className="battle-room__resize-handle battle-room__resize-handle--left" onPointerDown={(event) => startResize("left", event)} aria-label="Resize problem panel" />}
+
+              <Card className={`battle-room__editor-panel battle-room__leetcode-card battle-room__mobile-pane ${mobileTab === "Code" || mobileTab === "Console" ? "is-active" : ""}`}>
                 <div className="battle-room__editor-top battle-room__editor-top--leetcode">
                   <div className="battle-room__editor-heading">
                     <span className="battle-room__panel-tab battle-room__panel-tab--active">Code</span>
-                    <span className="battle-room__chip battle-room__chip--ghost">
-                      {myPlayer?.status === "submitted" ? "Submitted" : "In progress"}
-                    </span>
+                    <StatusPill status={locked ? (myPlayer?.status === "time_up" ? "Time Up" : "Locked") : "Editing"} />
                   </div>
 
                   <div className="battle-room__editor-controls">
-                    <select
-                      value={language}
-                      onChange={(event) => setLanguage(event.target.value)}
-                      className="battle-room__language-select"
-                      aria-label="Language"
-                    >
-                      <option value="python">Python</option>
-                      <option value="javascript">JavaScript</option>
-                      <option value="java">Java</option>
-                      <option value="cpp">C++</option>
+                    <select value={language} onChange={(event) => setLanguage(event.target.value)} className="battle-room__language-select" aria-label="Language">
+                      {Object.entries(LANGUAGE_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
                     </select>
-                    <Button
-                      onClick={handleResetCode}
-                      disabled={!room?.question}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Reset
-                    </Button>
-                    <Button
-                      onClick={handleRun}
-                      disabled={running || language !== "python"}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {running ? "Running..." : "Run"}
-                    </Button>
-                    <Button
-                      onClick={handleTest}
-                      disabled={testing || language !== "python"}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {testing ? "Testing..." : "Test"}
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={submitting || myPlayer?.status === "submitted"}
-                      size="sm"
-                    >
-                      {submitting ? "Submitting..." : myPlayer?.status === "submitted" ? "Submitted" : "Submit"}
-                    </Button>
+                    <Button onClick={resetCode} disabled={locked} size="sm" variant="secondary">Reset</Button>
+                    <Button onClick={() => setFocusMode((current) => ({ ...current, problem: !current.problem }))} size="sm" variant="secondary">{focusMode.problem ? "Show Problem" : "Focus"}</Button>
+                    <Button onClick={handleRun} disabled={running || locked} size="sm" variant="secondary">{running ? "Running..." : "Run Code"}</Button>
+                    <Button onClick={handleSubmit} disabled={submitting || locked} size="sm">{submitting ? "Submitting..." : "Submit"}</Button>
                   </div>
                 </div>
 
-                <CodeEditor value={code} onChange={setCode} language={language} />
-
-                <ConsoleTabs
-                  runOutput={runOutput}
-                  testResults={testResults}
-                  submissionResult={submissionResult}
-                  question={room?.question}
-                />
-              </Card>
-            </div>
-
-            <div className="battle-room__right-column">
-              <Card className="battle-room__dock-card battle-room__leetcode-card">
-                <div className="battle-room__dock-header">
-                  <div>
-                    <p className="label-text">Room</p>
-                    <h3>Battle details</h3>
+                <div className={`battle-room__editor-console-grid ${showConsole ? "" : "battle-room__editor-console-grid--no-console"}`}>
+                  <div className={`battle-room__code-pane battle-room__mobile-pane ${mobileTab === "Code" ? "is-active" : ""}`}>
+                    <MonacoCodeEditor code={code} language={language} locked={locked} onChange={handleCodeChange} onMount={handleEditorMount} />
                   </div>
-                </div>
-                <div className="battle-room__info-list">
-                  {[
-                    { label: "Room Code", value: roomCode },
-                    { label: "Time Limit", value: `${room?.time_limit_minutes ?? 0} min` },
-                    { label: "Difficulty", value: difficultyLabel },
-                    { label: "Points", value: room?.question?.points ?? "—" },
-                  ].map((row) => (
-                    <div key={row.label} className="battle-room__info-row">
-                      <span className="muted-text">{row.label}</span>
-                      <strong>{row.value}</strong>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className="battle-room__dock-card battle-room__leetcode-card">
-                <div className="battle-room__dock-header">
-                  <div>
-                    <p className="label-text">Participants</p>
-                    <h3>{room?.players?.length ?? 0} coders</h3>
-                  </div>
-                </div>
-
-                <div className="battle-room__player-list">
-                  {room?.players?.length ? (
-                    room.players.map((player) => (
-                      <PlayerRow
-                        key={player.username}
-                        player={player}
-                        isMe={player.username === user?.username}
-                        host={room.host}
+                  {showConsole && (
+                    <div className={`battle-room__mobile-pane ${mobileTab === "Console" ? "is-active" : ""}`}>
+                      <ConsolePane
+                        active={consoleTab}
+                        onActive={setConsoleTab}
+                        runResult={runResult}
+                        submitResult={submitResult}
+                        running={running}
+                        customInput={customInput}
+                        onCustomInput={setCustomInput}
+                        onClear={() => { setRunResult(null); setSubmitResult(null); }}
+                        cases={visibleCases}
+                        selectedCase={selectedCase}
+                        onSelectCase={setSelectedCase}
                       />
-                    ))
-                  ) : (
-                    <div className="room-empty">
-                      <p>Waiting for players to join...</p>
                     </div>
                   )}
                 </div>
               </Card>
+
+              {showSidebar && <button type="button" className="battle-room__resize-handle battle-room__resize-handle--right" onPointerDown={(event) => startResize("right", event)} aria-label="Resize sidebar" />}
+              {showSidebar && (
+                <aside className={`battle-room__right-column battle-room__mobile-pane ${mobileTab === "Players" ? "is-active" : ""}`}>
+                  <Card className="battle-room__dock-card battle-room__leetcode-card">
+                    <div className="battle-room__dock-header">
+                      <div><p className="label-text">Leaderboard</p><h3>Live battle</h3></div>
+                      <button type="button" className="battle-room__icon-button" onClick={() => setFocusMode((current) => ({ ...current, sidebar: true }))} aria-label="Hide sidebar">×</button>
+                    </div>
+                    <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
+                  </Card>
+
+                  <Card className="battle-room__dock-card battle-room__leetcode-card">
+                    <div className="battle-room__dock-header"><div><p className="label-text">Submissions</p><h3>History</h3></div></div>
+                    <SubmissionHistory submissions={submissions} />
+                  </Card>
+
+                  <Card className="battle-room__dock-card battle-room__leetcode-card">
+                    <div className="battle-room__dock-header"><div><p className="label-text">Events</p><h3>Battle feed</h3></div></div>
+                    <EventFeed events={room?.events} />
+                  </Card>
+                </aside>
+              )}
             </div>
-          </div>
+
+            {(!showSidebar || !showConsole || !showProblem) && (
+              <div className="battle-room__focus-restore">
+                {!showProblem && <button type="button" onClick={() => setFocusMode((current) => ({ ...current, problem: false }))}>Show Problem</button>}
+                {!showConsole && <button type="button" onClick={() => setFocusMode((current) => ({ ...current, console: false }))}>Show Console</button>}
+                {!showSidebar && <button type="button" onClick={() => setFocusMode((current) => ({ ...current, sidebar: false }))}>Show Players</button>}
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

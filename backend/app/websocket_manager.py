@@ -1,31 +1,52 @@
-from fastapi import WebSocket, WebSocketDisconnect
-from typing import Dict, List
-import logging
+from __future__ import annotations
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+import logging
+from dataclasses import dataclass
+
+from fastapi import WebSocket
+
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Connection:
+    websocket: WebSocket
+    username: str | None = None
+
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, List[WebSocket]] = {}
+        self.active_connections: dict[str, list[Connection]] = {}
 
-    async def connect(self, room_code: str, websocket: WebSocket):
+    async def connect(self, room_code: str, websocket: WebSocket, username: str | None = None):
         await websocket.accept()
-        logger.info(f"WebSocket connected: room={room_code}, client={websocket.client})")
-        if room_code not in self.active_connections:
-            self.active_connections[room_code] = []
-        self.active_connections[room_code].append(websocket)
+        room_key = room_code.strip().upper()
+        logger.info("WebSocket connected: room=%s user=%s client=%s", room_key, username, websocket.client)
+        self.active_connections.setdefault(room_key, []).append(Connection(websocket, username))
 
     def disconnect(self, room_code: str, websocket: WebSocket):
-        if room_code in self.active_connections:
-            self.active_connections[room_code].remove(websocket)
-            if not self.active_connections[room_code]:
-                del self.active_connections[room_code]
+        room_key = room_code.strip().upper()
+        connections = self.active_connections.get(room_key)
+        if not connections:
+            return
+        self.active_connections[room_key] = [
+            connection for connection in connections if connection.websocket is not websocket
+        ]
+        if not self.active_connections[room_key]:
+            del self.active_connections[room_key]
 
     async def broadcast(self, room_code: str, message: dict):
-        if room_code in self.active_connections:
-            for connection in self.active_connections[room_code]:
-                await connection.send_json(message)
+        room_key = room_code.strip().upper()
+        connections = list(self.active_connections.get(room_key, []))
+        stale: list[WebSocket] = []
+        for connection in connections:
+            try:
+                await connection.websocket.send_json(message)
+            except Exception as exc:
+                logger.warning("Dropping stale WebSocket: room=%s user=%s error=%s", room_key, connection.username, exc)
+                stale.append(connection.websocket)
+        for websocket in stale:
+            self.disconnect(room_key, websocket)
+
 
 manager = ConnectionManager()

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import ErrorBoundary from "./components/ErrorBoundary";
 import AppShell from "./layouts/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -22,19 +23,21 @@ function App() {
             <Navbar />
             <AppShell>
               <div className="app-page-offset">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/create-room" element={<CreateRoom />} />
-                    <Route path="/battle-room/:roomCode" element={<CodingInterface />} />
-                    <Route path="/coding-interface" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/profile" element={<Profile />} />
-                  </Route>
-                </Routes>
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/create-room" element={<CreateRoom />} />
+                      <Route path="/battle-room/:roomCode" element={<CodingInterface />} />
+                      <Route path="/coding-interface" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/profile" element={<Profile />} />
+                    </Route>
+                  </Routes>
+                </ErrorBoundary>
               </div>
             </AppShell>
           </div>

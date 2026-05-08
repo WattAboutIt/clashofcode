@@ -8,11 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
-from app.database import get_db
+from app.database import AsyncSessionLocal, get_db
 from app.models import CodingQuestion, MatchHistory, User
 from app.room_store import room_store
 from app.schemas import RoomCreateRequest, RoomJoinRequest, SubmissionRequest
 from app.websocket_manager import manager
+from app.routers.execution import evaluate_python_cases, unsupported_language_response
 
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
@@ -21,6 +22,40 @@ VALID_LEVELS = {"easy", "medium", "hard"}
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _timer_payload(room: dict) -> dict:
+    started_at = _parse_iso(room.get("started_at"))
+    ends_at = None
+    remaining_seconds = None
+    if started_at and room.get("time_limit_minutes"):
+        ends_at_dt = started_at.timestamp() + room["time_limit_minutes"] * 60
+        now_ts = datetime.now(timezone.utc).timestamp()
+        ends_at = datetime.fromtimestamp(ends_at_dt, timezone.utc).isoformat()
+        remaining_seconds = max(0, int(ends_at_dt - now_ts))
+    return {
+        "server_now": _now_iso(),
+        "ends_at": ends_at,
+        "remaining_seconds": remaining_seconds,
+    }
+
+
+def _push_event(room: dict, kind: str, message: str, username: str | None = None) -> None:
+    events = room.setdefault("events", [])
+    events.append({
+        "id": f"{int(datetime.now(timezone.utc).timestamp() * 1000)}-{len(events)}",
+        "kind": kind,
+        "message": message,
+        "username": username,
+        "created_at": _now_iso(),
+    })
+    del events[:-80]
 
 
 def _generate_room_code(length: int = 6) -> str:
@@ -39,14 +74,18 @@ def _get_room_or_404(room_code: str) -> dict:
 def _serialize_question(question: CodingQuestion | None) -> dict | None:
     if not question:
         return None
+    examples = question.examples or []
+    visible_count = max(1, len(examples)) if examples else min(2, len(question.test_cases or []))
+    sample_cases = (question.test_cases or [])[:visible_count]
 
     return {
         "id": question.id,
         "title": question.title,
         "difficulty": question.difficulty,
         "description": question.description,
-        "test_cases": question.test_cases,
-        "examples": question.examples or [],
+        "test_cases": [],
+        "sample_cases": sample_cases,
+        "examples": examples,
         "constraints": question.constraints,
         "points": question.points,
         "starter_code": question.starter_code,
@@ -66,8 +105,10 @@ async def _get_question_by_id(db: AsyncSession, question_id: int | None) -> Codi
 
 
 async def _serialize_room(room: dict, db: AsyncSession) -> dict:
+    await _expire_room_if_needed(room, db)
     question = await _get_question_by_id(db, room.get("question_id"))
     players = sorted(room["players"].values(), key=lambda item: item["joined_at"])
+    timer = _timer_payload(room)
     return {
         "roomCode": room["room_code"],
         "host": room["host"],
@@ -75,18 +116,48 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
         "difficulty": room["difficulty"],
         "created_at": room["created_at"],
         "started_at": room.get("started_at"),
+        "finished_at": room.get("finished_at"),
+        "server_now": timer["server_now"],
+        "ends_at": timer["ends_at"],
+        "remaining_seconds": timer["remaining_seconds"],
         "time_limit_minutes": room["time_limit_minutes"],
         "question": _serialize_question(question),
+        "events": room.get("events", []),
         "players": [
             {
                 "username": player["username"],
                 "status": player["status"],
                 "score": player["score"],
                 "language": player.get("language"),
+                "online": player.get("online", False),
+                "typing": player.get("typing", False),
+                "progress": player.get("progress", 0),
+                "last_action": player.get("last_action"),
+                "submitted_at": player.get("submitted_at"),
+                "runtime_ms": player.get("runtime_ms"),
+                "memory_kb": player.get("memory_kb"),
+                "passed": player.get("passed", 0),
+                "total": player.get("total", 0),
+                "submissions": player.get("submissions", []),
             }
             for player in players
         ],
     }
+
+
+async def _broadcast_room(room: dict, db: AsyncSession) -> dict:
+    payload = await _serialize_room(room, db)
+    await manager.broadcast(room["room_code"], {"event": "room_updated", "room": payload})
+    return payload
+
+
+async def _expire_room_if_needed(room: dict, db: AsyncSession) -> None:
+    if room.get("status") != "active":
+        return
+    remaining = _timer_payload(room).get("remaining_seconds")
+    if remaining == 0:
+        _push_event(room, "timer", "Time is up. Battle finished.")
+        await _finalize_room(room, db)
 
 
 async def _finalize_room(room: dict, db: AsyncSession) -> None:
@@ -95,6 +166,10 @@ async def _finalize_room(room: dict, db: AsyncSession) -> None:
 
     room["status"] = "finished"
     room["finished_at"] = _now_iso()
+    for player in room["players"].values():
+        if player["status"] != "submitted":
+            player["status"] = "time_up"
+            player["typing"] = False
 
     players = list(room["players"].values())
     scored_players = sorted(
@@ -170,9 +245,20 @@ async def create_room(
                 "submitted_at": None,
                 "code": "",
                 "language": None,
+                "online": False,
+                "typing": False,
+                "progress": 0,
+                "last_action": "joined",
+                "runtime_ms": None,
+                "memory_kb": None,
+                "passed": 0,
+                "total": 0,
+                "submissions": [],
             }
         },
+        "events": [],
     }
+    _push_event(room_store[room_code], "room", f"{host} created the room.", host)
 
     return {"roomCode": room_code, "difficulty": difficulty}
 
@@ -195,10 +281,19 @@ async def join_room(
             "submitted_at": None,
             "code": "",
             "language": None,
+            "online": False,
+            "typing": False,
+            "progress": 0,
+            "last_action": "joined",
+            "runtime_ms": None,
+            "memory_kb": None,
+            "passed": 0,
+            "total": 0,
+            "submissions": [],
         }
+        _push_event(room, "join", f"{username} joined the room.", username)
 
-    payload = await _serialize_room(room, db)
-    await manager.broadcast(request.roomCode, {"event": "room_updated", "room": payload})
+    payload = await _broadcast_room(room, db)
     return {"roomCode": payload["roomCode"]}
 
 
@@ -237,10 +332,28 @@ async def start_room(
 
     for player in room["players"].values():
         player["status"] = "active"
+        player["typing"] = False
+        player["last_action"] = "started"
 
-    payload = await _serialize_room(room, db)
-    await manager.broadcast(room_code, {"event": "room_updated", "room": payload})
+    _push_event(room, "start", f"Battle started with {question.title}.", current_username)
+    asyncio.create_task(_finish_room_when_timer_expires(room_code))
+    payload = await _broadcast_room(room, db)
     return payload
+
+
+async def _finish_room_when_timer_expires(room_code: str):
+    room = room_store.get(room_code)
+    if not room or room.get("status") != "active":
+        return
+    remaining = _timer_payload(room).get("remaining_seconds") or 0
+    await asyncio.sleep(max(remaining, 0) + 1)
+    room = room_store.get(room_code)
+    if not room or room.get("status") != "active":
+        return
+    async with AsyncSessionLocal() as db:
+        _push_event(room, "timer", "Time is up. Battle finished.")
+        await _finalize_room(room, db)
+        await _broadcast_room(room, db)
 
 
 async def calculate_platform_stats(room_code: str):
@@ -258,6 +371,7 @@ async def submit_solution(
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     room = _get_room_or_404(room_code)
+    await _expire_room_if_needed(room, db)
     if room["status"] != "active":
         raise HTTPException(status_code=400, detail="This room is not accepting submissions right now.")
 
@@ -275,30 +389,62 @@ async def submit_solution(
     if not code:
         raise HTTPException(status_code=400, detail="Submission code cannot be empty.")
 
+    if request.language.lower() != "python":
+        judge_result = unsupported_language_response(request.language)
+    else:
+        judge_result = evaluate_python_cases(request.code, question.test_cases or [], timeout_seconds=12)
+
+    passed = judge_result.status == "Accepted" and judge_result.total > 0 and judge_result.passed == judge_result.total
+    score = question.points if passed else 0
+    status_label = judge_result.status
+    submission_record = {
+        "id": f"{current_username}-{int(datetime.now(timezone.utc).timestamp() * 1000)}",
+        "language": request.language,
+        "status": status_label,
+        "runtime_ms": judge_result.runtime_ms,
+        "memory_kb": judge_result.memory_kb,
+        "score": score,
+        "passed": judge_result.passed,
+        "total": judge_result.total,
+        "submitted_at": _now_iso(),
+    }
+
     player["code"] = request.code
     player["language"] = request.language
     player["submitted_at"] = _now_iso()
-    player["status"] = "submitted"
-
-    passed = request.passed if request.passed is not None else True
-    score = request.score if request.score is not None else question.points
+    player["status"] = "submitted" if passed else "active"
     player["score"] = score
+    player["typing"] = False
+    player["last_action"] = "submitted" if passed else "wrong_answer"
+    player["progress"] = int((judge_result.passed / judge_result.total) * 100) if judge_result.total else 0
+    player["runtime_ms"] = judge_result.runtime_ms
+    player["memory_kb"] = judge_result.memory_kb
+    player["passed"] = judge_result.passed
+    player["total"] = judge_result.total
+    player.setdefault("submissions", []).insert(0, submission_record)
+    del player["submissions"][20:]
+
+    if passed:
+        _push_event(room, "submit", f"{current_username} submitted an accepted solution.", current_username)
+    else:
+        _push_event(room, "submit", f"{current_username} submitted: {status_label}.", current_username)
 
     if all(member["status"] == "submitted" for member in room["players"].values()):
         await _finalize_room(room, db)
         background_tasks.add_task(calculate_platform_stats, room_code)
 
-    payload = await _serialize_room(room, db)
-    await manager.broadcast(room_code, {"event": "room_updated", "room": payload})
+    await _broadcast_room(room, db)
 
     return {
         "passed": passed,
+        "status": status_label,
         "score": score,
-        "test_results": [
-            {"name": f"Case {index + 1}", "passed": True}
-            for index, _ in enumerate(question.test_cases or [])
-        ],
-        "message": "Submission recorded.",
+        "runtime_ms": judge_result.runtime_ms,
+        "memory_kb": judge_result.memory_kb,
+        "passed_count": judge_result.passed,
+        "total_count": judge_result.total,
+        "test_results": [result.model_dump() for result in judge_result.results],
+        "message": "Accepted." if passed else status_label,
     }
 
 
@@ -344,6 +490,15 @@ async def matchmake(
                     "submitted_at": None,
                     "code": "",
                     "language": None,
+                    "online": False,
+                    "typing": False,
+                    "progress": 0,
+                    "last_action": "joined",
+                    "runtime_ms": None,
+                    "memory_kb": None,
+                    "passed": 0,
+                    "total": 0,
+                    "submissions": [],
                 },
                 current_username: {
                     "username": current_username,
@@ -353,9 +508,20 @@ async def matchmake(
                     "submitted_at": None,
                     "code": "",
                     "language": None,
+                    "online": False,
+                    "typing": False,
+                    "progress": 0,
+                    "last_action": "joined",
+                    "runtime_ms": None,
+                    "memory_kb": None,
+                    "passed": 0,
+                    "total": 0,
+                    "submissions": [],
                 }
             },
+            "events": [],
         }
+        _push_event(room_store[room_code], "match", f"{matched_username} matched with {current_username}.")
         user_match_status[matched_username] = room_code
         user_match_status[current_username] = room_code
         return {"status": "matched", "roomCode": room_code}
@@ -407,12 +573,57 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await manager.connect(room_code, websocket)
+    room = room_store.get(room_code.strip().upper())
+    if not room:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    if username in room["players"]:
+        room["players"][username]["online"] = True
+        room["players"][username]["last_action"] = "online"
+        _push_event(room, "presence", f"{username} is online.", username)
+
+    await manager.connect(room_code, websocket, username)
+    async with AsyncSessionLocal() as db:
+        await _broadcast_room(room, db)
+
     try:
         while True:
-            await websocket.receive_text()
+            raw = await websocket.receive_json()
+            event_type = raw.get("event")
+            player = room["players"].get(username)
+            if not player:
+                continue
+
+            if event_type == "ping":
+                await websocket.send_json({"event": "pong", "server_now": _now_iso(), **_timer_payload(room)})
+                continue
+
+            if event_type == "typing":
+                player["typing"] = bool(raw.get("typing"))
+                player["last_action"] = "typing" if player["typing"] else "editing"
+            elif event_type == "run_code":
+                player["last_action"] = "ran code"
+                _push_event(room, "run", f"{username} ran code.", username)
+            elif event_type == "focus":
+                player["last_action"] = raw.get("target") or "focused"
+            else:
+                continue
+
+            async with AsyncSessionLocal() as db:
+                await _broadcast_room(room, db)
     except WebSocketDisconnect:
+        if username in room["players"]:
+            room["players"][username]["online"] = False
+            room["players"][username]["typing"] = False
+            room["players"][username]["last_action"] = "offline"
+            _push_event(room, "presence", f"{username} went offline.", username)
         manager.disconnect(room_code, websocket)
+        async with AsyncSessionLocal() as db:
+            await _broadcast_room(room, db)
     except Exception as e:
         print(f"WS error in {room_code}: {e}")
+        if username in room["players"]:
+            room["players"][username]["online"] = False
+            room["players"][username]["typing"] = False
         manager.disconnect(room_code, websocket)

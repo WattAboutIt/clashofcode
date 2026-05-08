@@ -1637,3 +1637,502 @@
     grid-template-columns: 1fr;
   }
 }
+
+.battle-room--pro {
+  width: min(1760px, 100%);
+}
+
+.battle-room--pro button:focus-visible,
+.battle-room--pro select:focus-visible,
+.battle-room--pro textarea:focus-visible {
+  outline: 3px solid rgba(44, 187, 93, 0.35);
+  outline-offset: 2px;
+}
+
+.battle-room__workspace--pro {
+  display: grid;
+  grid-template-columns: var(--battle-left, 34%) 6px minmax(420px, 1fr) 6px var(--battle-right, 19%);
+  gap: 0.55rem;
+  min-height: calc(100vh - 13.5rem);
+}
+
+.battle-room__workspace--pro > .battle-room__editor-panel {
+  grid-column: 3;
+}
+
+.battle-room__workspace--pro > .battle-room__right-column {
+  grid-column: 5;
+}
+
+.battle-room__resize-handle {
+  width: 6px;
+  min-height: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.battle-room__resize-handle:hover {
+  background: rgba(44, 187, 93, 0.25);
+}
+
+.battle-room__resize-handle--left {
+  grid-column: 2;
+}
+
+.battle-room__resize-handle--right {
+  grid-column: 4;
+}
+
+.battle-room__editor-console-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(320px, 1fr) minmax(230px, 0.5fr);
+}
+
+.battle-room__editor-console-grid--no-console {
+  grid-template-rows: 1fr;
+}
+
+.battle-room__monaco-shell {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  background: #1e1e1e;
+}
+
+.battle-room__code-pane {
+  min-height: 0;
+  display: block;
+}
+
+.battle-room__code-pane .battle-room__monaco-shell {
+  height: 100%;
+}
+
+.battle-room__editor-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #d1d5db;
+  background: #1e1e1e;
+}
+
+.battle-room__console {
+  flex-basis: auto;
+  min-height: 0;
+  border-top: 1px solid #edf0f3;
+}
+
+.battle-room__console-clear,
+.battle-room__icon-button {
+  margin-left: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.battle-room__console-clear {
+  padding: 0.42rem 0.65rem;
+}
+
+.battle-room__icon-button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.battle-room__running-strip {
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.battle-room__case-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+}
+
+.battle-room__case-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #4b5563;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.battle-room__case-tab--active {
+  border-color: #111827;
+  background: #ffffff;
+  color: #111827;
+}
+
+.battle-room__case-detail-grid,
+.battle-room__stdout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.battle-room__case-detail-grid label,
+.battle-room__stdout-grid label {
+  display: grid;
+  gap: 0.35rem;
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.battle-room__case-detail-grid pre,
+.battle-room__stdout-grid pre {
+  min-height: 72px;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid #edf0f3;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.battle-room__custom-input {
+  width: 100%;
+  min-height: 160px;
+  padding: 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  resize: vertical;
+}
+
+.battle-room__execution-result {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.battle-room__execution-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.battle-room__execution-head p {
+  margin: 0.4rem 0 0;
+  color: #6b7280;
+  font-size: 0.86rem;
+}
+
+.battle-room__perf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  color: #4b5563;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.battle-room__perf-row span,
+.battle-room__perf-row strong {
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  background: #f3f4f6;
+}
+
+.battle-room__status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.6rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.battle-room__status-pill--accepted,
+.battle-room__status-pill--editing {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.battle-room__status-pill--wrong-answer {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.battle-room__status-pill--runtime-error,
+.battle-room__status-pill--compilation-error,
+.battle-room__status-pill--time-limit-exceeded,
+.battle-room__status-pill--time-up,
+.battle-room__status-pill--locked {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.battle-room__leaderboard,
+.battle-room__event-feed,
+.battle-room__submission-history {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.battle-room__leader-row,
+.battle-room__submission-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.72rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.battle-room__leader-row--me {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.battle-room__rank {
+  width: 2rem;
+  color: #6b7280;
+  font-weight: 800;
+}
+
+.battle-room__leader-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.battle-room__leader-main p,
+.battle-room__leader-main small,
+.battle-room__submission-row p,
+.battle-room__submission-row span {
+  margin: 0;
+}
+
+.battle-room__leader-main small {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #6b7280;
+}
+
+.battle-room__online,
+.battle-room__offline {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.battle-room__online {
+  background: #22c55e;
+}
+
+.battle-room__offline {
+  background: #9ca3af;
+}
+
+.battle-room__leader-score,
+.battle-room__submission-row > div:last-child {
+  display: grid;
+  gap: 0.1rem;
+  text-align: right;
+  font-size: 0.78rem;
+}
+
+.battle-room__leader-score strong,
+.battle-room__submission-row strong {
+  color: #111827;
+  font-size: 1rem;
+}
+
+.battle-room__event {
+  padding: 0.7rem;
+  border-left: 3px solid #2cbb5d;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
+.battle-room__event span {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.battle-room__event p {
+  margin: 0.2rem 0 0;
+  color: #374151;
+}
+
+.battle-room__toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  padding: 0.75rem 1rem;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 800;
+  box-shadow: 0 18px 45px -30px rgba(15, 23, 42, 0.5);
+}
+
+.battle-room__mobile-tabs {
+  display: none;
+}
+
+.battle-room__focus-restore {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 12;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.battle-room__focus-restore button {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.battle-room__timer--danger {
+  color: #dc2626;
+}
+
+.battle-room__empty-pane {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  padding: 2rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.app-error-boundary {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+@media (max-width: 1180px) {
+  .battle-room__workspace--pro {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .battle-room__workspace--pro > .battle-room__editor-panel,
+  .battle-room__workspace--pro > .battle-room__right-column {
+    grid-column: auto;
+  }
+
+  .battle-room__resize-handle {
+    display: none;
+  }
+
+  .battle-room__mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .battle-room__mobile-tabs button {
+    min-height: 2.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #4b5563;
+    cursor: pointer;
+    font-weight: 800;
+  }
+
+  .battle-room__mobile-tabs button.is-active {
+    background: #111827;
+    color: #ffffff;
+  }
+
+  .battle-room__mobile-pane {
+    display: none;
+  }
+
+  .battle-room__mobile-pane.is-active {
+    display: block;
+  }
+
+  .battle-room__code-pane.battle-room__mobile-pane.is-active {
+    display: block;
+  }
+
+  .battle-room__editor-panel.battle-room__mobile-pane.is-active {
+    display: flex;
+  }
+
+  .battle-room__editor-console-grid {
+    display: block;
+  }
+
+  .battle-room__mobile-pane.is-active .battle-room__console,
+  .battle-room__monaco-shell {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 760px) {
+  .battle-room__status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .battle-room__editor-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .battle-room__editor-controls .ui-button,
+  .battle-room__language-select {
+    width: 100%;
+  }
+
+  .battle-room__case-detail-grid,
+  .battle-room__stdout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-room__mobile-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
