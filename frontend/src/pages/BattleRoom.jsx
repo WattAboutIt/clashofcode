@@ -179,6 +179,89 @@ function PlayerRow({ player, isMe, host }) {
   );
 }
 
+function ResultCard({ title, success, results, score, error, type = "test" }) {
+  if (!results && !error && !title) return null;
+
+  const isAccepted = success || (results && results.every(r => r.passed) && results.length > 0);
+  const statusLabel = error ? "Runtime Error" : isAccepted ? "Accepted" : "Wrong Answer";
+  const statusColor = error ? "text-red-500" : isAccepted ? "text-green-500" : "text-orange-500";
+  const bgColor = error ? "bg-red-50 dark:bg-red-900/10" : isAccepted ? "bg-green-50 dark:bg-green-900/10" : "bg-orange-50 dark:bg-orange-900/10";
+  const borderColor = error ? "border-red-200" : isAccepted ? "border-green-200" : "border-orange-200";
+
+  return (
+    <div className={`battle-room__result-container ${bgColor} ${borderColor} border rounded-2xl p-6 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">
+            {type === "submit" ? "Submission Result" : "Test Result"}
+          </span>
+          <h2 className={`text-2xl font-black ${statusColor} italic uppercase`}>{statusLabel}</h2>
+        </div>
+        {score !== undefined && (
+          <div className="text-right">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">Score Earned</span>
+            <span className="text-2xl font-black text-amber-500">{score} pts</span>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl border border-red-100 font-mono text-sm overflow-auto max-h-40">
+          <p className="text-red-600 font-bold mb-1">Error Message:</p>
+          <pre className="whitespace-pre-wrap">{error}</pre>
+        </div>
+      )}
+
+      {results && results.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+              {results.map((r, i) => (
+                <div 
+                  key={i} 
+                  className={`h-full ${r.passed ? 'bg-green-500' : 'bg-red-500'} border-r border-white/20`}
+                  style={{ width: `${100 / results.length}%` }}
+                />
+              ))}
+            </div>
+            <span className="text-sm font-bold whitespace-nowrap">
+              {results.filter(r => r.passed).length} / {results.length} Passed
+            </span>
+          </div>
+
+          <div className="grid gap-3 mt-4">
+            {results.map((res, idx) => {
+              const isPassed = res.passed === true || res.status === "passed";
+              return (
+                <div key={idx} className="bg-white/40 dark:bg-black/10 rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm">Test Case {idx + 1}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {isPassed ? "Passed" : "Failed"}
+                    </span>
+                  </div>
+                  {!isPassed && (
+                    <div className="grid grid-cols-2 gap-4 mt-3 text-[11px] font-mono">
+                      <div>
+                        <span className="text-muted-foreground block mb-1">Expected</span>
+                        <pre className="p-2 bg-black/5 dark:bg-white/5 rounded overflow-auto">{res.expected || "N/A"}</pre>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block mb-1">Actual</span>
+                        <pre className="p-2 bg-black/5 dark:bg-white/5 rounded overflow-auto">{res.actual || res.error || "N/A"}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BattleRoom() {
   const { roomCode } = useParams();
   const { user, token } = useAuth();
@@ -324,6 +407,9 @@ function BattleRoom() {
     }
     setSubmitting(true);
     setError("");
+    setRunOutput(null);
+    setTestResults(null);
+    setSubmissionResult(null);
 
     if (language === "python" && workerRef.current) {
       workerRef.current.onmessage = async (e) => {
@@ -387,6 +473,8 @@ function BattleRoom() {
     setRunning(true);
     setError("");
     setRunOutput(null);
+    setTestResults(null); // Clear other results
+    setSubmissionResult(null);
 
     try {
       const response = await api.post("/execution/run", { code });
@@ -413,7 +501,9 @@ function BattleRoom() {
 
     setTesting(true);
     setError("");
+    setRunOutput(null);
     setTestResults(null);
+    setSubmissionResult(null);
 
     try {
       const testCases = (room?.question?.test_cases || []).map((tc) => ({
@@ -572,80 +662,31 @@ function BattleRoom() {
                 <CodeEditor value={code} onChange={setCode} language={language} />
 
                 {runOutput && (
-                  <div className="battle-room__result battle-room__result--info">
-                    <strong>Code Output</strong>
-                    {runOutput.output && (
-                      <div className="mt-2">
-                        <p className="muted-text font-mono text-xs">Output:</p>
-                        <pre className="font-mono text-xs mt-1 p-2 bg-[var(--surface-color)] rounded whitespace-pre-wrap">{runOutput.output}</pre>
-                      </div>
-                    )}
-                    {runOutput.error && (
-                      <div className="mt-2">
-                        <p className="muted-text font-mono text-xs text-red-500">Error:</p>
-                        <pre className="font-mono text-xs mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded whitespace-pre-wrap text-red-700 dark:text-red-300">{runOutput.error}</pre>
-                      </div>
-                    )}
-                  </div>
+                  <ResultCard 
+                    type="test"
+                    title="Code Execution"
+                    success={!runOutput.error}
+                    error={runOutput.error}
+                    results={runOutput.output ? [{ name: "Stdout", passed: true, actual: runOutput.output }] : []}
+                  />
                 )}
 
-                {testResults && (
-                  <div className={`battle-room__result ${testResults.success ? "battle-room__result--success" : "battle-room__result--pending"}`}>
-                    <strong>{testResults.success ? "All tests passed! ✓" : "Some tests failed"}</strong>
-                    <p className="muted-text mt-2">
-                      {testResults.passed}/{testResults.total} test cases passed
-                    </p>
-                    {testResults.results && (
-                      <div className="mt-3">
-                        {testResults.results.map((result) => (
-                          <div
-                            key={result.test_case}
-                            className={`mt-2 p-2 rounded text-xs font-mono ${
-                              result.status === "passed"
-                                ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                                : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
-                            }`}
-                          >
-                            <div className="font-bold">
-                              Test {result.test_case}: {result.status === "passed" ? "✓ PASSED" : "✗ FAILED"}
-                            </div>
-                            {result.status === "failed" && (
-                              <>
-                                <div className="mt-1">
-                                  <strong>Expected:</strong>
-                                  <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.expected}</pre>
-                                </div>
-                                <div className="mt-1">
-                                  <strong>Got:</strong>
-                                  <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.actual}</pre>
-                                </div>
-                                {result.error && (
-                                  <div className="mt-1">
-                                    <strong>Error:</strong>
-                                    <pre className="whitespace-pre-wrap bg-[var(--surface-color)] p-1 mt-1 rounded">{result.error}</pre>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <ResultCard 
+                  type="test"
+                  title="Test Results"
+                  success={testResults?.success}
+                  results={testResults?.results}
+                  error={testResults?.error}
+                />
 
-                {submissionResult && (
-                  <div className={`battle-room__result ${submissionResult.passed ? "battle-room__result--success" : "battle-room__result--pending"}`}>
-                    <strong>{submissionResult.passed ? "Accepted in battle" : submissionResult.error ? "Runtime Error" : "Failed some test cases"}</strong>
-                    {submissionResult.error ? (
-                      <p className="muted-text font-mono text-xs mt-2 p-2 bg-[var(--surface-color)] rounded">{submissionResult.error}</p>
-                    ) : (
-                      <p className="muted-text">
-                        Score: {submissionResult.score} pts · {submissionResult.test_results?.filter(t => t.passed)?.length ?? 0}/{submissionResult.test_results?.length ?? 0} test cases
-                      </p>
-                    )}
-                  </div>
-                )}
+                <ResultCard 
+                  type="submit"
+                  title="Submission Accepted"
+                  success={submissionResult?.passed}
+                  results={submissionResult?.test_results}
+                  score={submissionResult?.score}
+                  error={submissionResult?.error}
+                />
               </Card>
             </div>
 

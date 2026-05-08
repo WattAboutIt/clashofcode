@@ -800,6 +800,49 @@
   background: rgba(239, 246, 255, 0.96);
 }
 
+.battle-room__result-container {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.battle-room__result-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -10px rgba(0,0,0,0.15);
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.italic { font-style: italic; }
+.font-black { font-weight: 900; }
+.tracking-widest { letter-spacing: 0.15em; }
+.text-muted-foreground { color: var(--text-muted); }
+.text-green-500 { color: #10b981; }
+.text-red-500 { color: #ef4444; }
+.text-orange-500 { color: #f59e0b; }
+.text-amber-500 { color: #f59e0b; }
+.bg-green-500 { background-color: #10b981; }
+.bg-red-500 { background-color: #ef4444; }
+.bg-green-100 { background-color: #d1fae5; }
+.bg-red-100 { background-color: #fee2e2; }
+.text-green-700 { color: #047857; }
+.text-red-700 { color: #b91c1c; }
+.duration-500 { animation-duration: 500ms; }
+
+
 .battle-room__dock-grid {
   display: grid;
   gap: 1rem;
