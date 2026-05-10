@@ -10,6 +10,7 @@ const guestLinks = [
 ];
 
 const authLinks = [
+  { label: "Home", to: "/" },
   { label: "Dashboard", to: "/dashboard" },
   { label: "Create Room", to: "/create-room" },
   { label: "Profile", to: "/profile" },
