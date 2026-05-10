@@ -15,7 +15,7 @@ const LANGUAGE_META = {
   java: { label: "Java", monaco: "java", extension: "java" },
   cpp: { label: "C++", monaco: "cpp", extension: "cpp" },
 };
-const MOBILE_TABS = ["Problem", "Code", "Console", "Players"];
+const MOBILE_TABS = ["Problem", "Code", "Console", "Players", "Chat"];
 
 function toDisplay(value, fallback = "N/A") {
   if (value === null || value === undefined || value === "") return fallback;
@@ -352,6 +352,51 @@ function SubmissionHistory({ submissions }) {
   );
 }
 
+function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messages]);
+
+  return (
+    <div className="battle-room__chat">
+      <div className="battle-room__chat-messages" aria-live="polite">
+        {(messages || []).length ? messages.map((item) => {
+          const mine = item.username === currentUsername;
+          return (
+            <div key={item.id || `${item.username}-${item.created_at}`} className={`battle-room__chat-message ${mine ? "battle-room__chat-message--me" : ""}`}>
+              <div className="battle-room__chat-meta">
+                <strong>{mine ? "You" : item.username}</strong>
+                <span>{item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+              </div>
+              <p>{item.message}</p>
+            </div>
+          );
+        }) : <div className="room-empty">No messages yet.</div>}
+        <div ref={bottomRef} />
+      </div>
+
+      <form className="battle-room__chat-form" onSubmit={onSend}>
+        <textarea
+          value={draft}
+          onChange={(event) => onDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onSend(event);
+            }
+          }}
+          maxLength={500}
+          placeholder="Message competitors..."
+          aria-label="Chat message"
+        />
+        <Button type="submit" size="sm" disabled={!draft.trim()}>Send</Button>
+      </form>
+    </div>
+  );
+}
+
 function BattleRoom() {
   const { roomCode } = useParams();
   const { user, token } = useAuth();
@@ -373,6 +418,7 @@ function BattleRoom() {
   const [mobileTab, setMobileTab] = useState("Code");
   const [focusMode, setFocusMode] = useState({ problem: false, sidebar: false, console: false });
   const [columns, setColumns] = useState({ left: 34, right: 19 });
+  const [chatDraft, setChatDraft] = useState("");
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
   const wsRef = useRef(null);
@@ -482,6 +528,7 @@ function BattleRoom() {
         try {
           const data = JSON.parse(event.data);
           if (data.event === "room_updated") setRoom(data.room);
+          if (data.event === "chat_error") setError(data.message || "Unable to send chat message.");
         } catch {
           // Ignore malformed socket packets.
         }
@@ -639,6 +686,14 @@ function BattleRoom() {
     window.setTimeout(() => setToast(""), 1800);
   };
 
+  const handleSendChat = (event) => {
+    event.preventDefault();
+    const message = chatDraft.trim();
+    if (!message) return;
+    sendSocket({ event: "chat_message", message });
+    setChatDraft("");
+  };
+
   const startResize = (side, event) => {
     event.preventDefault();
     const startX = event.clientX;
@@ -778,7 +833,7 @@ function BattleRoom() {
 
               {showSidebar && <button type="button" className="battle-room__resize-handle battle-room__resize-handle--right" onPointerDown={(event) => startResize("right", event)} aria-label="Resize sidebar" />}
               {showSidebar && (
-                <aside className={`battle-room__right-column battle-room__mobile-pane ${mobileTab === "Players" ? "is-active" : ""}`}>
+                <aside className={`battle-room__right-column battle-room__mobile-pane ${mobileTab === "Players" || mobileTab === "Chat" ? "is-active" : ""}`}>
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
                     <div className="battle-room__dock-header">
                       <div><p className="label-text">Leaderboard</p><h3>Live battle</h3></div>
@@ -790,6 +845,17 @@ function BattleRoom() {
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
                     <div className="battle-room__dock-header"><div><p className="label-text">Submissions</p><h3>History</h3></div></div>
                     <SubmissionHistory submissions={submissions} />
+                  </Card>
+
+                  <Card className="battle-room__dock-card battle-room__leetcode-card">
+                    <div className="battle-room__dock-header"><div><p className="label-text">Chat</p><h3>Room messages</h3></div></div>
+                    <ChatPanel
+                      messages={room?.chat_messages}
+                      currentUsername={user?.username}
+                      draft={chatDraft}
+                      onDraft={setChatDraft}
+                      onSend={handleSendChat}
+                    />
                   </Card>
 
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
