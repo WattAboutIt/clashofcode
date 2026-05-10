@@ -60,6 +60,19 @@ def _push_event(room: dict, kind: str, message: str, username: str | None = None
     del events[:-80]
 
 
+def _push_chat_message(room: dict, username: str, message: str) -> dict:
+    messages = room.setdefault("chat_messages", [])
+    chat_message = {
+        "id": f"{int(datetime.now(timezone.utc).timestamp() * 1000)}-{len(messages)}",
+        "username": username,
+        "message": message,
+        "created_at": _now_iso(),
+    }
+    messages.append(chat_message)
+    del messages[:-100]
+    return chat_message
+
+
 def _generate_room_code(length: int = 6) -> str:
     alphabet = string.ascii_uppercase + string.digits
     return "".join(random.choices(alphabet, k=length))
@@ -126,6 +139,7 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
         "time_limit_minutes": room["time_limit_minutes"],
         "question": _serialize_question(question),
         "events": room.get("events", []),
+        "chat_messages": room.get("chat_messages", []),
         "players": [
             {
                 "username": player["username"],
@@ -266,8 +280,12 @@ async def create_room(
             }
         },
         "events": [],
+<<<<<<< HEAD
         "used_questions": [],
         "all_questions_finished": False,
+=======
+        "chat_messages": [],
+>>>>>>> 16a2eecc2b2844633fff835fbb4287b5b3c6b326
     }
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
 
@@ -669,6 +687,7 @@ async def matchmake(
                 }
             },
             "events": [],
+            "chat_messages": [],
         }
         _push_event(room_store[room_code], "match", f"{matched_username} matched with {current_username}.")
         user_match_status[matched_username] = room_code
@@ -780,6 +799,15 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
             if event_type == "typing":
                 player["typing"] = bool(raw.get("typing"))
                 player["last_action"] = "typing" if player["typing"] else "editing"
+            elif event_type == "chat_message":
+                message = str(raw.get("message") or "").strip()
+                if not message:
+                    continue
+                if len(message) > 500:
+                    await websocket.send_json({"event": "chat_error", "message": "Messages must be 500 characters or fewer."})
+                    continue
+                _push_chat_message(room, username, message)
+                player["last_action"] = "sent a message"
             elif event_type == "run_code":
                 player["last_action"] = "ran code"
                 _push_event(room, "run", f"{username} ran code.", username)

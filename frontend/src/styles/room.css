@@ -1994,6 +1994,75 @@
   color: #374151;
 }
 
+.battle-room__chat {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.battle-room__chat-messages {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.battle-room__chat-message {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.battle-room__chat-message--me {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.battle-room__chat-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #6b7280;
+  font-size: 0.72rem;
+}
+
+.battle-room__chat-meta strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-room__chat-message p {
+  margin: 0;
+  color: #374151;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.battle-room__chat-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.battle-room__chat-form textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  padding: 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
 .battle-room__toast {
   position: fixed;
   right: 1rem;
