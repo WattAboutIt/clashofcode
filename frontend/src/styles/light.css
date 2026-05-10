@@ -29,17 +29,15 @@
 
 /* Light mode body background override */
 :root[data-theme="light"] body {
-  background: 
+  background:
     linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 12% 0%, rgba(255, 122, 89, 0.08), transparent 26%),
-    radial-gradient(circle at 92% 14%, rgba(242, 182, 104, 0.08), transparent 24%),
-    linear-gradient(180deg, #f9fafb, #f3f4f6) !important;
-  background-size: 56px 56px, 56px 56px, auto, auto, auto !important;
+    #d1d5db !important;
+  background-size: 56px 56px, 56px 56px, auto !important;
 }
 
 :root[data-theme="light"] .app-shell__grid {
-  background-image: 
+  background-image:
     linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px) !important;
   opacity: 0.12 !important;
