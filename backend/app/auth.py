@@ -8,7 +8,7 @@ from jose import JWTError, jwt
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*24 
 DEV_ALLOWED_USERNAMES = {"safal", "sparsha","sabin"}
 
 security = HTTPBearer()

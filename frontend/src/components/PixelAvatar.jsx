@@ -154,7 +154,6 @@ export default function PixelAvatar({ rank = "Satyr", scale = 8 }) {
                 fontFamily: "'Press Start 2P', monospace",
                 fontSize: '10px',
                 color: '#ffcc00',
-                textShadow: '2px 2px 0px #000'
             }}>
                 {rank.toUpperCase()}
             </div>

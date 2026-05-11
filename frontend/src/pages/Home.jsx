@@ -65,9 +65,9 @@ function Home() {
               </div>
               <div className="metric-row">
                 {[
-                  { value: "10K+", label: "Battles fought" },
+                  { value: "100+", label: "Battles fought" },
                   { value: "50+", label: "Challenges" },
-                  { value: "1K+", label: "Developers" },
+                  { value: "3", label: "Developers" },
                 ].map((stat) => (
                   <div key={stat.label} className="metric-pill">
                     <span className="metric-value">{stat.value}</span>
@@ -84,7 +84,7 @@ function Home() {
                 <span className="terminal-dot terminal-dot--rose" />
                 <span className="terminal-dot terminal-dot--gold" />
                 <span className="terminal-dot terminal-dot--green" />
-                <span className="landing-terminal__meta">Live match</span>
+                <span className="landing-terminal__meta">Demo Preview</span>
               </div>
               <div className="landing-terminal__body">
                 <div>

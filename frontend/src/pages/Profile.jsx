@@ -23,6 +23,7 @@ function Profile() {
     Promise.all([api.get("/user/profile"), api.get("/user/stats")])
       .then(([profileRes, statsRes]) => {
         setStats({ ...statsRes.data, username: profileRes.data.username, email: profileRes.data.email });
+        setError("");
       })
       .catch(() => setError("Unable to load profile. Refresh to retry."))
       .finally(() => setLoading(false));
