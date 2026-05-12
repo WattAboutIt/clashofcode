@@ -6,10 +6,16 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
+
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*24 
-DEV_ALLOWED_USERNAMES = {"safal", "sparsha","sabin"}
+DEV_ALLOWED_USERNAMES = set(os.getenv("DEV_ALLOWED_USERNAMES", "").split(","))
 
 security = HTTPBearer()
 

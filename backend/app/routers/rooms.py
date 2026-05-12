@@ -128,6 +128,7 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
         "roomCode": room["room_code"],
         "host": room["host"],
         "status": room["status"],
+        "all_questions_finished": room.get("all_questions_finished", False),
         "difficulty": room["difficulty"],
         "created_at": room["created_at"],
         "started_at": room.get("started_at"),
@@ -183,10 +184,10 @@ async def _expire_room_if_needed(room: dict, db: AsyncSession) -> None:
 
 
 async def _finalize_room(room: dict, db: AsyncSession) -> None:
-    if room["status"] == "finished":
+    if room.get("status") in ("round_finished", "finished"):
         return
 
-    room["status"] = "finished"
+    room["status"] = "round_finished"
     room["finished_at"] = _now_iso()
     for player in room["players"].values():
         if player["status"] != "submitted":
@@ -279,6 +280,8 @@ async def create_room(
             }
         },
         "events": [],
+        "used_questions": [],
+        "all_questions_finished": False,
         "chat_messages": [],
     }
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
@@ -352,6 +355,10 @@ async def start_room(
     room["question_id"] = question.id
     room["status"] = "active"
     room["started_at"] = _now_iso()
+    # track used questions to avoid repeats
+    used = room.setdefault("used_questions", [])
+    if question.id not in used:
+        used.append(question.id)
 
     for player in room["players"].values():
         player["status"] = "active"
@@ -359,6 +366,77 @@ async def start_room(
         player["last_action"] = "started"
 
     _push_event(room, "start", f"Battle started with {question.title}.", current_username)
+    asyncio.create_task(_finish_room_when_timer_expires(room_code))
+    payload = await _broadcast_room(room, db)
+    return payload
+
+
+@router.post("/{room_code}/finish")
+async def finish_room(
+    room_code: str,
+    current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    room = _get_room_or_404(room_code)
+    if room["host"] != current_username:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the host can finish the room.")
+    # run finalization (compute scores / update histories) if needed
+    await _finalize_room(room, db)
+
+    if room.get("status") == "finished":
+        return await _broadcast_room(room, db)
+
+    room["status"] = "finished"
+    room["finished_at"] = _now_iso()
+    _push_event(room, "finish", "Battle finished by host.", current_username)
+    payload = await _broadcast_room(room, db)
+    return payload
+
+
+@router.post("/{room_code}/next")
+async def next_question(
+    room_code: str,
+    current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    room = _get_room_or_404(room_code)
+    if room["host"] != current_username:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the host can advance the room.")
+    # allow advancing only after a round has ended (round_finished)
+    if room.get("status") != "round_finished" and room.get("status") != "finished":
+        raise HTTPException(status_code=400, detail="Room must be finished to advance to next question.")
+
+    result = await db.execute(
+        select(CodingQuestion).where(CodingQuestion.difficulty == room["difficulty"])
+    )
+    questions = result.scalars().all()
+    if not questions:
+        raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
+
+    # choose a question not used previously in this room
+    used = set(room.get("used_questions", []))
+    remaining = [q for q in questions if q.id not in used]
+    if not remaining:
+        room["all_questions_finished"] = True
+        _push_event(room, "info", "All questions in the pool have been used.", current_username)
+        payload = await _broadcast_room(room, db)
+        return payload
+
+    question = random.choice(remaining)
+    room["question_id"] = question.id
+    room["status"] = "active"
+    room["started_at"] = _now_iso()
+    # mark used
+    used_list = room.setdefault("used_questions", [])
+    if question.id not in used_list:
+        used_list.append(question.id)
+
+    for player in room["players"].values():
+        player["status"] = "active"
+        player["typing"] = False
+        player["last_action"] = "started"
+
+    _push_event(room, "start", f"Next battle started with {question.title}.", current_username)
     asyncio.create_task(_finish_room_when_timer_expires(room_code))
     payload = await _broadcast_room(room, db)
     return payload
@@ -376,7 +454,47 @@ async def _finish_room_when_timer_expires(room_code: str):
     async with AsyncSessionLocal() as db:
         _push_event(room, "timer", "Time is up. Battle finished.")
         await _finalize_room(room, db)
+        # Auto-advance to next question if one is available
+        await _auto_advance_if_questions_remain(room, db)
         await _broadcast_room(room, db)
+
+
+async def _auto_advance_if_questions_remain(room: dict, db: AsyncSession) -> None:
+    """Auto-advance to next question if one is available after round finalization."""
+    if room.get("status") != "round_finished":
+        return
+
+    result = await db.execute(
+        select(CodingQuestion).where(CodingQuestion.difficulty == room["difficulty"])
+    )
+    questions = result.scalars().all()
+    if not questions:
+        room["all_questions_finished"] = True
+        return
+
+    used = set(room.get("used_questions", []))
+    remaining = [q for q in questions if q.id not in used]
+    if not remaining:
+        room["all_questions_finished"] = True
+        _push_event(room, "info", "All questions in the pool have been used.", None)
+        return
+
+    question = random.choice(remaining)
+    room["question_id"] = question.id
+    room["status"] = "active"
+    room["started_at"] = _now_iso()
+    # mark used
+    used_list = room.setdefault("used_questions", [])
+    if question.id not in used_list:
+        used_list.append(question.id)
+
+    for player in room["players"].values():
+        player["status"] = "active"
+        player["typing"] = False
+        player["last_action"] = "started"
+
+    _push_event(room, "start", f"Auto-advancing to next question: {question.title}", None)
+    asyncio.create_task(_finish_room_when_timer_expires(room["room_code"]))
 
 
 async def calculate_platform_stats(room_code: str):
@@ -413,14 +531,23 @@ async def submit_solution(
     if not code:
         raise HTTPException(status_code=400, detail="Submission code cannot be empty.")
 
-    if request.language.lower() != "python":
-        judge_result = unsupported_language_response(request.language)
-    else:
-        try:
+    lang = request.language.lower()
+    try:
+        if lang in ("python",):
             judge_result = evaluate_python_cases(request.code, question.test_cases or [], timeout_seconds=12)
-        except Exception:
-            logger.exception("SUBMIT EXECUTION FAILURE room_id=%s user_id=%s", room_code, current_username)
-            raise HTTPException(status_code=500, detail="Judge execution failed.")
+        elif lang in ("javascript", "js"):
+            from app.routers.execution import evaluate_js_cases
+
+            judge_result = evaluate_js_cases(request.code, question.test_cases or [], timeout_seconds=12)
+        elif lang in ("cpp", "c++"):
+            from app.routers.execution import evaluate_cpp_cases
+
+            judge_result = evaluate_cpp_cases(request.code, question.test_cases or [], timeout_seconds=12)
+        else:
+            judge_result = unsupported_language_response(request.language)
+    except Exception:
+        logger.exception("SUBMIT EXECUTION FAILURE room_id=%s user_id=%s", room_code, current_username)
+        raise HTTPException(status_code=500, detail="Judge execution failed.")
 
     passed = judge_result.status == "Accepted" and judge_result.total > 0 and judge_result.passed == judge_result.total
     score = question.points if passed else 0
