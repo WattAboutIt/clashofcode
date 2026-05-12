@@ -784,3 +784,53 @@
 :root[data-theme="light"] .navbar__dropdown-meta {
   color: #64748b !important;
 }
+
+/* Chat component styling for light mode */
+:root[data-theme="light"] .battle-room__chat-message {
+  background: #f3f4f6 !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-message--me {
+  background: #e8f5e9 !important;
+  border: 1px solid rgba(47, 176, 112, 0.3) !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-meta {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-meta strong {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-message p {
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-form textarea {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #111827 !important;
+}
+
+:root[data-theme="light"] .battle-room__chat-form textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .battle-room__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  background: #ff5d2e !important;
+  color: white !important;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: super;
+}

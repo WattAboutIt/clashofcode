@@ -805,3 +805,61 @@
   color: var(--danger) !important;
   border: 1px solid rgba(234,106,103,0.08) !important;
 }
+
+/* Chat component dark theme styling */
+:root[data-theme="warm"] .battle-room__chat-message,
+:root .battle-room__chat-message {
+  background: rgba(35, 31, 85, 0.85) !important;
+  border-color: rgba(129, 120, 206, 0.4) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-message--me,
+:root .battle-room__chat-message--me {
+  background: rgba(var(--accent-rgb), 0.15) !important;
+  border-color: rgba(var(--accent-rgb), 0.5) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-meta,
+:root .battle-room__chat-meta {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-meta strong,
+:root .battle-room__chat-meta strong {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-message p,
+:root .battle-room__chat-message p {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-form textarea,
+:root .battle-room__chat-form textarea {
+  background: rgba(35, 31, 85, 0.9) !important;
+  border-color: rgba(129, 120, 206, 0.5) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-form textarea::placeholder,
+:root .battle-room__chat-form textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__tab-badge,
+:root .battle-room__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: super;
+}

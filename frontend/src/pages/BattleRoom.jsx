@@ -46,6 +46,10 @@ function getDraftKey(roomCode, language) {
   return `clashofcode:draft:${roomCode}:${language}`;
 }
 
+function messageKey(item, index) {
+  return item?.id ?? `${item?.username || "anon"}-${item?.created_at || ""}-${index}-${item?.message || ""}`;
+}
+
 function StatusPill({ status }) {
   const normalized = String(status || "Idle").toLowerCase().replace(/\s+/g, "-");
   return <span className={`battle-room__status-pill battle-room__status-pill--${normalized}`}>{status || "Idle"}</span>;
@@ -418,12 +422,17 @@ function BattleRoom() {
   const [selectedCase, setSelectedCase] = useState(0);
   const [mobileTab, setMobileTab] = useState("Code");
   const [focusMode, setFocusMode] = useState({ problem: false, sidebar: false, console: false });
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [columns, setColumns] = useState({ left: 34, right: 19 });
   const [chatDraft, setChatDraft] = useState("");
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const mobileTabRef = useRef("Code");
+  const currentUsernameRef = useRef(user?.username || "");
+  const chatSnapshotRef = useRef([]);
 
   const myPlayer = useMemo(() => room?.players?.find((player) => player.username === user?.username), [room, user?.username]);
   const isHost = room?.host === user?.username;
@@ -479,6 +488,27 @@ function BattleRoom() {
   }, [code, language, room?.question?.id, roomCode]);
 
   useEffect(() => {
+    if (room?.status === "finished") {
+      setShowLeaderboard(true);
+    }
+  }, [room?.status]);
+
+  useEffect(() => {
+    mobileTabRef.current = mobileTab;
+    if (mobileTab === "Chat") {
+      setUnreadMessages(0);
+    }
+  }, [mobileTab]);
+
+  useEffect(() => {
+    currentUsernameRef.current = user?.username || "";
+  }, [user?.username]);
+
+  useEffect(() => {
+    chatSnapshotRef.current = room?.chat_messages || [];
+  }, [room?.chat_messages]);
+
+  useEffect(() => {
     if (!token || !roomCode) return undefined;
 
     let reconnectTimer = null;
@@ -531,7 +561,23 @@ function BattleRoom() {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.event === "room_updated") setRoom(data.room);
+          if (data.event === "room_updated") {
+            const previousMessages = chatSnapshotRef.current || [];
+            const nextMessages = data.room?.chat_messages || [];
+
+            if (mobileTabRef.current !== "Chat") {
+              const previousKeys = new Set(previousMessages.map((item, index) => messageKey(item, index)));
+              const newFromOthers = nextMessages.filter((item, index) => (
+                !previousKeys.has(messageKey(item, index)) && item?.username !== currentUsernameRef.current
+              ));
+              if (newFromOthers.length) {
+                setUnreadMessages((prev) => prev + newFromOthers.length);
+              }
+            }
+
+            chatSnapshotRef.current = nextMessages;
+            setRoom(data.room);
+          }
           if (data.event === "chat_error") setError(data.message || "Unable to send chat message.");
         } catch {
           // Ignore malformed socket packets.
@@ -801,7 +847,7 @@ function BattleRoom() {
           </Card>
         ) : (
           <>
-            {room?.status === "finished" && (
+            {room?.status === "finished" && showLeaderboard && (
               <div className="battle-room__finished-overlay">
                 <Card className="battle-room__finished-panel">
                   <div className="battle-room__finished-header">
@@ -812,7 +858,8 @@ function BattleRoom() {
                   </div>
                   <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
                   <div className="battle-room__finished-actions">
-                    <Button onClick={() => navigate('/dashboard')} size="sm" variant="secondary">Close</Button>
+                    <Button onClick={() => setShowLeaderboard(false)} size="sm" variant="secondary">Close</Button>
+                    <Button onClick={() => navigate('/dashboard')} size="sm">Return to Dashboard</Button>
                   </div>
                 </Card>
               </div>
@@ -860,7 +907,21 @@ function BattleRoom() {
               </div>
             )}
             <div className="battle-room__mobile-tabs" role="tablist" aria-label="Battle workspace">
-              {MOBILE_TABS.map((tab) => <button key={tab} type="button" className={mobileTab === tab ? "is-active" : ""} onClick={() => setMobileTab(tab)}>{tab}</button>)}
+              {MOBILE_TABS.map((tab) => (
+                <button 
+                  key={tab} 
+                  type="button" 
+                  className={mobileTab === tab ? "is-active" : ""} 
+                  onClick={() => {
+                    setMobileTab(tab);
+                  }}
+                >
+                  {tab}
+                  {tab === "Chat" && unreadMessages > 0 && (
+                    <span className="battle-room__tab-badge">{unreadMessages}</span>
+                  )}
+                </button>
+              ))}
             </div>
 
             <div className="battle-room__workspace battle-room__workspace--pro" style={gridStyle}>
@@ -919,7 +980,6 @@ function BattleRoom() {
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
                     <div className="battle-room__dock-header">
                       <div><p className="label-text">Leaderboard</p><h3>Live battle</h3></div>
-                      <button type="button" className="battle-room__icon-button" onClick={() => setFocusMode((current) => ({ ...current, sidebar: true }))} aria-label="Hide sidebar">×</button>
                     </div>
                     <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
                   </Card>

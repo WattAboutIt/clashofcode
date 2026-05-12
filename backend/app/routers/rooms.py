@@ -280,12 +280,9 @@ async def create_room(
             }
         },
         "events": [],
-<<<<<<< HEAD
         "used_questions": [],
         "all_questions_finished": False,
-=======
         "chat_messages": [],
->>>>>>> 16a2eecc2b2844633fff835fbb4287b5b3c6b326
     }
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
 

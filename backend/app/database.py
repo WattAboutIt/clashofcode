@@ -1,8 +1,15 @@
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from dotenv import load_dotenv
+from pathlib import Path
 
-DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:sabindon@localhost/clashofcode"
+
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
+
+DEFAULT_DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 
 def normalize_database_url(url: str) -> str:
