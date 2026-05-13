@@ -7,6 +7,49 @@ from .models import CodingQuestion
 
 QUESTION_SEED = [
     {
+    "title": "Zigzag Conversion",
+    "difficulty": "medium",
+    "description": """\
+The string "PAYPALISHIRING" is written in a zigzag pattern on a given number of rows like this:
+
+P   A   H   N
+A P L S I I G
+Y   I   R
+
+And then read line by line: "PAHNAPLSIIGYIR"
+Write the code that will take a string and make this conversion given a number of rows.
+    """,
+    "test_cases": [
+        {"input": {"s": "PAYPALISHIRING", "numRows": 3}, "expected": "PAHNAPLSIIGYIR"},
+        {"input": {"s": "PAYPALISHIRING", "numRows": 4}, "expected": "PINALSIGYAHRPI"},
+        {"input": {"s": "A", "numRows": 1}, "expected": "A"},
+    ],
+    "examples": [
+        {
+            "input": "s = 'PAYPALISHIRING', numRows = 3",
+            "output": "PAHNAPLSIIGYIR",
+            "explanation": "Characters placed in zigzag across 3 rows, read line by line."
+        },
+        {
+            "input": "s = 'PAYPALISHIRING', numRows = 4",
+            "output": "PINALSIGYAHRPI",
+            "explanation": "Characters placed in zigzag across 4 rows: P/I/N | A/L/S/I/G | Y/A/H/R | P/I, read line by line."
+        },
+        {
+            "input": "s = 'A', numRows = 1",
+            "output": "A",
+            "explanation": "Single character with one row stays the same."
+        },
+    ],
+    "constraints": """\
+1 <= s.length <= 1000
+s consists of English letters (lower-case and upper-case), ',' and '.'.
+1 <= numRows <= 1000\
+    """,
+    "points": 100,
+    "starter_code": "def convert(self, s: str, numRows: int) -> str:\n    pass"
+    },
+    {
     "title": "Longest Palindromic Substring",
     "difficulty": "medium",
     "description": """\
