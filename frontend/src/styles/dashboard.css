@@ -108,7 +108,6 @@
   padding: 1rem 1.1rem;
   border: 1px solid var(--surface-border);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
 }
 
 .dashboard-result {
