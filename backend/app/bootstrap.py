@@ -7,6 +7,89 @@ from .models import CodingQuestion
 
 QUESTION_SEED = [
     {
+    "title": "Longest Substring Without Repeating Characters",
+    "difficulty": "medium",
+    "description": """
+       Given a string s, find the length of the longest substring without duplicate characters.
+        """,
+    "test_cases": [
+            {"input": {"s": "abcabcbb"}, "expected": 3},
+            {"input": {"s": "bbbbb"}, "expected": 1},
+            {"input": {"s": "pwwkew"}, "expected": 3},
+        ],
+    "examples": [
+        {
+            "input": "s = 'abcabcbb'",
+            "output": 3,
+            "explanation": "abc, bca, cab are the longest substrings without repeating characters."
+        },
+        {
+            "input": "s = 'bbbbb'",
+            "output": 1,
+            "explanation": "b is the longest substring without repeating characters."
+        },
+        {
+            "input": "s = 'pwwkew'",
+            "output": 3,
+            "explanation": "wke is the longest substring without repeating characters."
+        }
+        ],
+    "constraints": "1 <= s.length <= 5 * 10^4 \n s contains only English letters, digits, symbols and spaces.",
+    "points": 100,
+    "starter_code": "def lengthOfLongestSubstring(self, s: str) -> int:\n    pass"
+    },
+    {
+        "title": "Roman to Integer",
+        "difficulty": "easy",
+        "description": """
+        Given a roman numeral, convert it to an integer.
+        
+        Roman numerals are represented by seven different symbols: I, V, X, L, C, D and M.
+
+        Symbol       Value
+        I            1
+        V            5
+        X            10
+        L            50
+        C            100
+        D            500
+        M            1000
+
+        For example, 2 is written as II in Roman numeral, just two ones added together. 12 is written as XII, which is simply X + II. The number 27 is written as XXVII, which is XX + V + II.
+        
+        Roman numerals are usually written largest to smallest from left to right. However, the numeral for four is not IIII. Instead, the number four is written as IV. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as IX. There are six instances where subtraction is used:
+
+            - I can be placed before V (5) and X (10) to make 4 and 9.
+            - X can be placed before L (50) and C (100) to make 40 and 90.
+            - C can be placed before D (500) and M (1000) to make 400 and 900.
+        """,
+        "test_cases": [
+            {"input": {"s": "III"}, "expected": 3},
+            {"input": {"s": "LVIII"}, "expected": 58},
+            {"input": {"s": "MCMXCIV"}, "expected": 1994},
+        ],
+        "examples": [
+        {
+            "input": "s = 'III'",
+            "output": 3,
+            "explanation": "III = 3."
+        },
+        {
+            "input": "s = 'LVIII'",
+            "output": 58,
+            "explanation": "L = 50, V= 5, III = 3."
+        },
+        {
+            "input": "s = 'MCMXCIV'",
+            "output": 1994,
+            "explanation": "M = 1000, CM = 900, XC = 90 and IV = 4."
+        }
+        ],
+        "constraints": "1 <= s.length <= 15 \n s contains only the characters ('I', 'V', 'X', 'L', 'C', 'D', 'M'). \n It is guaranteed that s is a valid roman numeral in the range [1, 3999]",
+        "points": 100,
+        "starter_code": "def romanToInt(self, s: str) -> int:\n    pass"
+    },
+    {
         "title": "Two Sum Arena",
         "difficulty": "easy",
         "description": (
