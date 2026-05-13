@@ -7,6 +7,63 @@ from .models import CodingQuestion
 
 QUESTION_SEED = [
     {
+    "title": "String to Integer (atoi)",
+    "difficulty": "medium",
+    "description": """\
+Implement the myAtoi(string s) function, which converts a string to a 32-bit signed integer.
+
+The algorithm for myAtoi(string s) is as follows:
+1. Whitespace: Ignore any leading whitespace (" ").
+2. Signedness: Determine the sign by checking if the next character is '-' or '+', assuming positivity if neither present.
+3. Conversion: Read the integer by skipping leading zeros until a non-digit character is encountered or the end of the string is reached. If no digits were read, then the result is 0.
+4. Rounding: If the integer is out of the 32-bit signed integer range [-2^31, 2^31 - 1], round the integer to remain in the range. Specifically, integers less than -2^31 should be rounded to -2^31, and integers greater than 2^31 - 1 should be rounded to 2^31 - 1.
+
+Return the integer as the final result.
+    """,
+    "test_cases": [
+        {"input": {"s": "42"}, "expected": 42},
+        {"input": {"s": " -042"}, "expected": -42},
+        {"input": {"s": "1337c0d3"}, "expected": 1337},
+        {"input": {"s": "0-1"}, "expected": 0},
+        {"input": {"s": "words and 987"}, "expected": 0},
+        {"input": {"s": "-91283472332"}, "expected": -2147483648},
+        {"input": {"s": "21474836460"}, "expected": 2147483647},
+    ],
+    "examples": [
+        {
+            "input": "s = '42'",
+            "output": 42,
+            "explanation": "No leading whitespace or sign, '42' is read in directly."
+        },
+        {
+            "input": "s = ' -042'",
+            "output": -42,
+            "explanation": "Leading whitespace ignored, '-' sets negative sign, '042' read with leading zeros ignored."
+        },
+        {
+            "input": "s = '1337c0d3'",
+            "output": 1337,
+            "explanation": "'1337' is read in; reading stops at the non-digit character 'c'."
+        },
+        {
+            "input": "s = '0-1'",
+            "output": 0,
+            "explanation": "'0' is read in; reading stops at '-' since it is a non-digit character."
+        },
+        {
+            "input": "s = 'words and 987'",
+            "output": 0,
+            "explanation": "Reading stops immediately at 'w' which is a non-digit character, result is 0."
+        },
+    ],
+    "constraints": """\
+0 <= s.length <= 200
+s consists of English letters (lower-case and upper-case), digits (0-9), ' ', '+', '-', and '.'.\
+    """,
+    "points": 220,
+    "starter_code": "def myAtoi(self, s: str) -> int:\n    pass"
+},
+    {
     "title": "Zigzag Conversion",
     "difficulty": "medium",
     "description": """\
@@ -46,7 +103,7 @@ Write the code that will take a string and make this conversion given a number o
 s consists of English letters (lower-case and upper-case), ',' and '.'.
 1 <= numRows <= 1000\
     """,
-    "points": 100,
+    "points": 200,
     "starter_code": "def convert(self, s: str, numRows: int) -> str:\n    pass"
     },
     {
