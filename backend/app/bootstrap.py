@@ -6,6 +6,51 @@ from .models import CodingQuestion
 
 
 QUESTION_SEED = [
+{
+    "title": "Regular Expression Matching",
+    "difficulty": "hard",
+    "description": """\
+Given an input string s and a pattern p, implement regular expression matching with support for '.' and '*' where:
+
+- '.' Matches any single character.
+- '*' Matches zero or more of the preceding element.
+
+Return a boolean indicating whether the matching covers the entire input string (not partial).
+    """,
+    "test_cases": [
+        {"input": {"s": "aa", "p": "a"}, "expected": False},
+        {"input": {"s": "aa", "p": "a*"}, "expected": True},
+        {"input": {"s": "ab", "p": ".*"}, "expected": True},
+        {"input": {"s": "aab", "p": "c*a*b"}, "expected": True},
+        {"input": {"s": "mississippi", "p": "mis*is*p*."}, "expected": False},
+    ],
+    "examples": [
+        {
+            "input": "s = 'aa', p = 'a'",
+            "output": False,
+            "explanation": "'a' does not match the entire string 'aa'."
+        },
+        {
+            "input": "s = 'aa', p = 'a*'",
+            "output": True,
+            "explanation": "'*' means zero or more of the preceding element 'a'. By repeating 'a' once, it becomes 'aa'."
+        },
+        {
+            "input": "s = 'ab', p = '.*'",
+            "output": True,
+            "explanation": "'.*' means zero or more of any character '.', which matches 'ab'."
+        },
+    ],
+    "constraints": """\
+1 <= s.length <= 20
+1 <= p.length <= 20
+s contains only lowercase English letters.
+p contains only lowercase English letters, '.', and '*'.
+It is guaranteed for each appearance of '*', there will be a previous valid character to match.\
+    """,
+    "points": 350,
+    "starter_code": "def isMatch(self, s: str, p: str) -> bool:\n    pass"
+    },
     {
     "title": "String to Integer (atoi)",
     "difficulty": "medium",
