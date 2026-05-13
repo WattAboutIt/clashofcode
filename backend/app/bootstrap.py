@@ -7,6 +7,39 @@ from .models import CodingQuestion
 
 QUESTION_SEED = [
     {
+    "title": "Median of Two Sorted Arrays",
+    "difficulty": "hard",
+    "description": """\
+        Given two sorted arrays nums1 and nums2 of size m and n respectively, 
+        return the median of the two sorted arrays.
+        The overall run time complexity should be O(log (m+n)).
+    """,
+    "test_cases": [
+        {"input": {"nums1": [1, 3], "nums2": [2]}, "expected": 2.00000},
+        {"input": {"nums1": [1, 2], "nums2": [3, 4]}, "expected": 2.50000},
+    ],
+    "examples": [
+        {
+            "input": "nums1 = [1,3], nums2 = [2]",
+            "output": 2.00000,
+            "explanation": "merged array = [1,2,3] and median is 2."
+        },
+        {
+            "input": "nums1 = [1,2], nums2 = [3,4]",
+            "output": 2.50000,
+            "explanation": "merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5."
+        },
+    ],
+    "constraints": """\
+        0 <= m <= 1000
+        0 <= n <= 1000
+        1 <= m + n <= 2000
+        -10^6 <= nums1[i], nums2[i] <= 10^6
+    """,
+    "points": 200,
+    "starter_code": "def findMedianSortedArrays(self, nums1: list[int], nums2: list[int]) -> float:\n    pass"
+    },
+    {
     "title": "Longest Substring Without Repeating Characters",
     "difficulty": "medium",
     "description": """
