@@ -7,6 +7,37 @@ from .models import CodingQuestion
 
 QUESTION_SEED = [
     {
+    "title": "Longest Palindromic Substring",
+    "difficulty": "medium",
+    "description": """\
+Given a string s, return the longest palindromic substring in s.
+    """,
+    "test_cases": [
+        {"input": {"s": "babad"}, "expected": "bab"},
+        {"input": {"s": "cbbd"}, "expected": "bb"},
+        {"input": {"s": "a"}, "expected": "a"},
+        {"input": {"s": "racecar"}, "expected": "racecar"},
+    ],
+    "examples": [
+        {
+            "input": "s = 'babad'",
+            "output": "bab",
+            "explanation": "'aba' is also a valid answer."
+        },
+        {
+            "input": "s = 'cbbd'",
+            "output": "bb",
+            "explanation": "'bb' is the longest palindromic substring."
+        },
+    ],
+    "constraints": """\
+1 <= s.length <= 1000
+s consist of only digits and English letters.\
+    """,
+    "points": 220,
+    "starter_code": "def longestPalindrome(self, s: str) -> str:\n    pass"
+},
+    {
     "title": "Median of Two Sorted Arrays",
     "difficulty": "hard",
     "description": """\
@@ -36,7 +67,7 @@ QUESTION_SEED = [
         1 <= m + n <= 2000
         -10^6 <= nums1[i], nums2[i] <= 10^6
     """,
-    "points": 200,
+    "points": 300,
     "starter_code": "def findMedianSortedArrays(self, nums1: list[int], nums2: list[int]) -> float:\n    pass"
     },
     {
@@ -68,7 +99,7 @@ QUESTION_SEED = [
         }
         ],
     "constraints": "1 <= s.length <= 5 * 10^4 \n s contains only English letters, digits, symbols and spaces.",
-    "points": 100,
+    "points": 200,
     "starter_code": "def lengthOfLongestSubstring(self, s: str) -> int:\n    pass"
     },
     {
