@@ -18,6 +18,31 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const legacyDeveloperToken = token.startsWith("developer-token-") ? token : "";
+    if (!legacyDeveloperToken || !user?.username) {
+      return;
+    }
+
+    let cancelled = false;
+    api.post("/auth/developer-login", { username: user.username })
+      .then((response) => {
+        if (!cancelled) {
+          setAuthState(response.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          localStorage.removeItem("clashofcode_token");
+          setToken("");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user?.username]);
+
+  useEffect(() => {
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
     } else {
@@ -59,22 +84,8 @@ export function AuthProvider({ children }) {
   const developerLogin = async (username) => {
     setLoading(true);
     try {
-      // Check if developer username is allowed without backend call
-      const allowedUsernames = ["safal", "sparsha", "sabin"];
-      const normalizedUsername = username.trim().toLowerCase();
-      if (!allowedUsernames.includes(normalizedUsername)) {
-        throw new Error("Developer access denied.");
-      }
-
-      // Create mock auth data
-      const mockUser = {
-        username: normalizedUsername,
-        email: `${normalizedUsername}@developer.local`,
-        stats: { rank: "Developer" }
-      };
-      const mockToken = `developer-token-${normalizedUsername}`;
-
-      setAuthState({ user: mockUser, access_token: mockToken });
+      const response = await api.post("/auth/developer-login", { username });
+      setAuthState(response.data);
       navigate("/dashboard", { replace: true });
     } finally {
       setLoading(false);

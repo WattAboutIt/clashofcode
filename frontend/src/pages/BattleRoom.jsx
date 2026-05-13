@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
 import Button from "../components/ui/Button";
@@ -44,6 +44,10 @@ function normalizeCases(question) {
 
 function getDraftKey(roomCode, language) {
   return `clashofcode:draft:${roomCode}:${language}`;
+}
+
+function messageKey(item, index) {
+  return item?.id ?? `${item?.username || "anon"}-${item?.created_at || ""}-${index}-${item?.message || ""}`;
 }
 
 function StatusPill({ status }) {
@@ -131,7 +135,7 @@ function MonacoCodeEditor({ code, language, locked, onChange, onMount }) {
 
   return (
     <div className="battle-room__monaco-shell">
-      <div className="battle-room__editor-bar">
+        <div className="battle-room__editor-bar">
         <div className="battle-room__editor-file">
           <span className="battle-room__editor-pill">{meta.label}</span>
           <span className="battle-room__editor-name">solution.{meta.extension}</span>
@@ -400,6 +404,7 @@ function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
 function BattleRoom() {
   const { roomCode } = useParams();
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -417,17 +422,25 @@ function BattleRoom() {
   const [selectedCase, setSelectedCase] = useState(0);
   const [mobileTab, setMobileTab] = useState("Code");
   const [focusMode, setFocusMode] = useState({ problem: false, sidebar: false, console: false });
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [columns, setColumns] = useState({ left: 34, right: 19 });
   const [chatDraft, setChatDraft] = useState("");
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const mobileTabRef = useRef("Code");
+  const currentUsernameRef = useRef(user?.username || "");
+  const chatSnapshotRef = useRef([]);
 
   const myPlayer = useMemo(() => room?.players?.find((player) => player.username === user?.username), [room, user?.username]);
   const isHost = room?.host === user?.username;
   const visibleCases = useMemo(() => normalizeCases(room?.question), [room?.question]);
   const locked = room?.status === "finished" || myPlayer?.status === "submitted" || myPlayer?.status === "time_up";
+  // treat a round that has ended as locked (but not final game finish)
+  const roundLocked = room?.status === "round_finished";
+  const isLocked = locked || roundLocked;
   const submissions = myPlayer?.submissions || [];
 
   const sendSocket = useCallback((payload) => {
@@ -473,6 +486,27 @@ function BattleRoom() {
     }, 700);
     return () => window.clearTimeout(id);
   }, [code, language, room?.question?.id, roomCode]);
+
+  useEffect(() => {
+    if (room?.status === "finished") {
+      setShowLeaderboard(true);
+    }
+  }, [room?.status]);
+
+  useEffect(() => {
+    mobileTabRef.current = mobileTab;
+    if (mobileTab === "Chat") {
+      setUnreadMessages(0);
+    }
+  }, [mobileTab]);
+
+  useEffect(() => {
+    currentUsernameRef.current = user?.username || "";
+  }, [user?.username]);
+
+  useEffect(() => {
+    chatSnapshotRef.current = room?.chat_messages || [];
+  }, [room?.chat_messages]);
 
   useEffect(() => {
     if (!token || !roomCode) return undefined;
@@ -527,7 +561,23 @@ function BattleRoom() {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.event === "room_updated") setRoom(data.room);
+          if (data.event === "room_updated") {
+            const previousMessages = chatSnapshotRef.current || [];
+            const nextMessages = data.room?.chat_messages || [];
+
+            if (mobileTabRef.current !== "Chat") {
+              const previousKeys = new Set(previousMessages.map((item, index) => messageKey(item, index)));
+              const newFromOthers = nextMessages.filter((item, index) => (
+                !previousKeys.has(messageKey(item, index)) && item?.username !== currentUsernameRef.current
+              ));
+              if (newFromOthers.length) {
+                setUnreadMessages((prev) => prev + newFromOthers.length);
+              }
+            }
+
+            chatSnapshotRef.current = nextMessages;
+            setRoom(data.room);
+          }
           if (data.event === "chat_error") setError(data.message || "Unable to send chat message.");
         } catch {
           // Ignore malformed socket packets.
@@ -583,6 +633,26 @@ function BattleRoom() {
     }
   };
 
+  const handleFinish = async () => {
+    setError("");
+    try {
+      const response = await api.post(`/rooms/${roomCode}/finish`);
+      setRoom(response.data);
+    } catch (err) {
+      setError(extractError(err, "Unable to finish room."));
+    }
+  };
+
+  const handleNext = async () => {
+    setError("");
+    try {
+      const response = await api.post(`/rooms/${roomCode}/next`);
+      setRoom(response.data);
+    } catch (err) {
+      setError(extractError(err, "Unable to advance to next question."));
+    }
+  };
+
   const runWithPyodide = (payload) => new Promise((resolve) => {
     workerRef.current.onmessage = (event) => resolve(event.data.result);
     workerRef.current.postMessage(payload);
@@ -624,7 +694,7 @@ function BattleRoom() {
     } finally {
       setRunning(false);
     }
-  }, [code, customInput, language, locked, sendSocket, visibleCases]);
+  }, [code, customInput, language, isLocked, sendSocket, visibleCases]);
 
   const handleSubmit = useCallback(async () => {
     if (locked) return;
@@ -648,7 +718,7 @@ function BattleRoom() {
     } finally {
       setSubmitting(false);
     }
-  }, [code, language, locked, roomCode]);
+  }, [code, language, isLocked, roomCode]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -777,8 +847,81 @@ function BattleRoom() {
           </Card>
         ) : (
           <>
+            {room?.status === "finished" && showLeaderboard && (
+              <div className="battle-room__finished-overlay">
+                <Card className="battle-room__finished-panel">
+                  <div className="battle-room__finished-header">
+                    <div>
+                      <p className="label-text">Final leaderboard</p>
+                      <h2>Results</h2>
+                    </div>
+                  </div>
+                  <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
+                  <div className="battle-room__finished-actions">
+                    <Button onClick={() => setShowLeaderboard(false)} size="sm" variant="secondary">Close</Button>
+                    <Button onClick={() => navigate('/dashboard')} size="sm">Return to Dashboard</Button>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {room?.status === "round_finished" && (
+              <div className="battle-room__finished-overlay">
+                <Card className="battle-room__finished-panel">
+                  <div className="battle-room__finished-header">
+                    <div>
+                      <p className="label-text">Round results</p>
+                      <h2>Round complete</h2>
+                    </div>
+                  </div>
+                  <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
+                  <div className="battle-room__finished-actions">
+                    {isHost ? (
+                      <>
+                        <Button onClick={handleNext} size="sm" variant="secondary">Next Question</Button>
+                        <Button onClick={handleFinish} size="sm">Finish</Button>
+                      </>
+                    ) : (
+                      <Button size="sm" variant="secondary" disabled>Waiting for host</Button>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {room?.all_questions_finished && (
+              <div className="battle-room__all-done-overlay">
+                <Card className="battle-room__all-done-panel">
+                  <div className="battle-room__finished-header">
+                    <div>
+                      <p className="label-text">All Questions Finished</p>
+                      <h2>No more questions</h2>
+                    </div>
+                  </div>
+                  <p className="muted-text">All questions for this difficulty have been used. Click Finish to finalize the competition and store results.</p>
+                  <div className="battle-room__finished-actions">
+                    {isHost ? <Button onClick={handleFinish} size="sm">Finish</Button> : <Button size="sm" variant="secondary" disabled>Waiting for host</Button>}
+                    <Button onClick={() => navigate('/dashboard')} size="sm" variant="secondary">Leave</Button>
+                  </div>
+                </Card>
+              </div>
+            )}
             <div className="battle-room__mobile-tabs" role="tablist" aria-label="Battle workspace">
-              {MOBILE_TABS.map((tab) => <button key={tab} type="button" className={mobileTab === tab ? "is-active" : ""} onClick={() => setMobileTab(tab)}>{tab}</button>)}
+              {MOBILE_TABS.map((tab) => (
+                <button 
+                  key={tab} 
+                  type="button" 
+                  className={mobileTab === tab ? "is-active" : ""} 
+                  onClick={() => {
+                    setMobileTab(tab);
+                  }}
+                >
+                  {tab}
+                  {tab === "Chat" && unreadMessages > 0 && (
+                    <span className="battle-room__tab-badge">{unreadMessages}</span>
+                  )}
+                </button>
+              ))}
             </div>
 
             <div className="battle-room__workspace battle-room__workspace--pro" style={gridStyle}>
@@ -791,25 +934,25 @@ function BattleRoom() {
 
               <Card className={`battle-room__editor-panel battle-room__leetcode-card battle-room__mobile-pane ${mobileTab === "Code" || mobileTab === "Console" ? "is-active" : ""}`}>
                 <div className="battle-room__editor-top battle-room__editor-top--leetcode">
-                  <div className="battle-room__editor-heading">
+                    <div className="battle-room__editor-heading">
                     <span className="battle-room__panel-tab battle-room__panel-tab--active">Code</span>
-                    <StatusPill status={locked ? (myPlayer?.status === "time_up" ? "Time Up" : "Locked") : "Editing"} />
+                    <StatusPill status={isLocked ? (myPlayer?.status === "time_up" ? "Time Up" : "Locked") : "Editing"} />
                   </div>
 
                   <div className="battle-room__editor-controls">
                     <select value={language} onChange={(event) => setLanguage(event.target.value)} className="battle-room__language-select" aria-label="Language">
                       {Object.entries(LANGUAGE_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
                     </select>
-                    <Button onClick={resetCode} disabled={locked} size="sm" variant="secondary">Reset</Button>
+                    <Button onClick={resetCode} disabled={isLocked} size="sm" variant="secondary">Reset</Button>
                     <Button onClick={() => setFocusMode((current) => ({ ...current, problem: !current.problem }))} size="sm" variant="secondary">{focusMode.problem ? "Show Problem" : "Focus"}</Button>
-                    <Button onClick={handleRun} disabled={running || locked} size="sm" variant="secondary">{running ? "Running..." : "Run Code"}</Button>
-                    <Button onClick={handleSubmit} disabled={submitting || locked} size="sm">{submitting ? "Submitting..." : "Submit"}</Button>
+                    <Button onClick={handleRun} disabled={running || isLocked} size="sm" variant="secondary">{running ? "Running..." : "Run Code"}</Button>
+                    <Button onClick={handleSubmit} disabled={submitting || isLocked} size="sm">{submitting ? "Submitting..." : "Submit"}</Button>
                   </div>
                 </div>
 
                 <div className={`battle-room__editor-console-grid ${showConsole ? "" : "battle-room__editor-console-grid--no-console"}`}>
                   <div className={`battle-room__code-pane battle-room__mobile-pane ${mobileTab === "Code" ? "is-active" : ""}`}>
-                    <MonacoCodeEditor code={code} language={language} locked={locked} onChange={handleCodeChange} onMount={handleEditorMount} />
+                    <MonacoCodeEditor code={code} language={language} locked={isLocked} onChange={handleCodeChange} onMount={handleEditorMount} />
                   </div>
                   {showConsole && (
                     <div className={`battle-room__mobile-pane ${mobileTab === "Console" ? "is-active" : ""}`}>
@@ -837,7 +980,6 @@ function BattleRoom() {
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
                     <div className="battle-room__dock-header">
                       <div><p className="label-text">Leaderboard</p><h3>Live battle</h3></div>
-                      <button type="button" className="battle-room__icon-button" onClick={() => setFocusMode((current) => ({ ...current, sidebar: true }))} aria-label="Hide sidebar">×</button>
                     </div>
                     <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
                   </Card>

@@ -518,3 +518,348 @@
 :root[data-theme="warm"] .battle-room__editor-textarea::placeholder {
   color: rgba(243, 240, 255, 0.45) !important;
 }
+
+/* Leaderboard and player list styling for dark mode */
+:root[data-theme="warm"] .battle-room__leader-row,
+:root[data-theme="warm"] .battle-room__submission-row {
+  border: 1px solid rgba(129, 120, 206, 0.35) !important;
+  background: rgba(25, 22, 65, 0.88) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__leader-row strong,
+:root[data-theme="warm"] .battle-room__submission-row strong {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__leader-row--me {
+  border-color: rgba(255, 111, 60, 0.5) !important;
+  background: rgba(40, 30, 75, 0.9) !important;
+}
+
+:root[data-theme="warm"] .battle-room__rank {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__leader-main small {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__online {
+  background: var(--success) !important;
+}
+
+:root[data-theme="warm"] .battle-room__offline {
+  background: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__leader-score strong,
+:root[data-theme="warm"] .battle-room__submission-row strong {
+  color: var(--accent-gold) !important;
+}
+
+:root[data-theme="warm"] .battle-room__leader-score {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__event {
+  padding: 0.7rem;
+  border-left: 3px solid var(--success) !important;
+  border-radius: 6px;
+  background: rgba(30, 50, 40, 0.6) !important;
+}
+
+:root[data-theme="warm"] .battle-room__event span {
+  color: var(--success) !important;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+:root[data-theme="warm"] .battle-room__event p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary) !important;
+}
+
+/* Console and testcases pane */
+:root[data-theme="warm"] .battle-room__console,
+:root[data-theme="warm"] .battle-room__console-tabs,
+:root[data-theme="warm"] .battle-room__console-body {
+  background: rgba(18, 15, 46, 0.9) !important;
+  border: 1px solid rgba(129, 120, 206, 0.28) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__case-tab,
+:root[data-theme="warm"] .battle-room__case-tab--active {
+  background: rgba(25, 22, 65, 0.9) !important;
+  border-color: rgba(129, 120, 206, 0.28) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__case-detail-grid label pre,
+:root[data-theme="warm"] .battle-room__stdout-grid pre {
+  background: rgba(12, 10, 30, 0.96) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(129, 120, 206, 0.2) !important;
+}
+
+:root[data-theme="warm"] .battle-room__custom-input {
+  background: rgba(12, 10, 30, 0.96) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(129, 120, 206, 0.2) !important;
+}
+
+:root[data-theme="warm"] .battle-room__execution-result,
+:root[data-theme="warm"] .battle-room__submission-history {
+  background: rgba(22, 18, 50, 0.92) !important;
+  border: 1px solid rgba(129, 120, 206, 0.25) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Console tab buttons */
+:root[data-theme="warm"] .battle-room__console-tabs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+:root[data-theme="warm"] .battle-room__console-tab {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid transparent !important;
+  padding: 0.45rem 0.8rem !important;
+  border-radius: 8px !important;
+}
+
+:root[data-theme="warm"] .battle-room__console-tab--active {
+  background: var(--text) !important;
+  color: #111 !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  box-shadow: 0 6px 18px rgba(2,2,10,0.55) !important;
+}
+
+/* Case tabs (left column) */
+:root[data-theme="warm"] .battle-room__case-tab {
+  display: inline-block;
+  margin: 0.3rem 0.4rem 0.6rem 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(25,22,65,0.82) !important;
+  border: 1px solid rgba(129,120,206,0.18) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__case-tab--active {
+  background: rgba(var(--accent-rgb), 1) !important;
+  color: #111 !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+}
+
+/* Case detail grid layout */
+:root[data-theme="warm"] .battle-room__case-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
+:root[data-theme="warm"] .battle-room__case-detail-grid label {
+  display: block;
+}
+
+:root[data-theme="warm"] .battle-room__case-detail-grid pre,
+:root[data-theme="warm"] .battle-room__stdout-grid pre {
+  border-radius: 8px;
+  padding: 0.9rem;
+  min-height: 88px;
+}
+
+/* Clear button alignment */
+:root[data-theme="warm"] .battle-room__console-clear {
+  margin-left: auto !important;
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--text) !important;
+  border-radius: 8px !important;
+  padding: 0.4rem 0.7rem !important;
+}
+
+/* Finished overlay */
+:root[data-theme="warm"] .battle-room__finished-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(4,4,12,0.6), rgba(4,4,12,0.8));
+  z-index: 1200;
+  padding: 2rem;
+}
+
+:root[data-theme="warm"] .battle-room__finished-panel {
+  width: 760px;
+  max-width: calc(100% - 48px);
+  padding: 1.2rem;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -44px rgba(5, 4, 22, 0.95) !important;
+}
+
+:root[data-theme="warm"] .battle-room__finished-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.8rem;
+}
+
+/* Reuse finished overlay styles for all-done notification */
+:root[data-theme="warm"] .battle-room__all-done-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(4,4,12,0.6), rgba(4,4,12,0.8));
+  z-index: 1200;
+  padding: 2rem;
+}
+
+:root[data-theme="warm"] .battle-room__all-done-panel {
+  width: 620px;
+  max-width: calc(100% - 48px);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 24px 60px -44px rgba(5, 4, 22, 0.95) !important;
+}
+
+/* Dashboard - Recent battles (dark mode) */
+:root[data-theme="warm"] .dashboard-panel,
+:root .dashboard-panel {
+  background: rgba(21, 18, 55, 0.9) !important;
+  border: 1px solid rgba(129, 120, 206, 0.32) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .dashboard-banner,
+:root .dashboard-banner {
+  background: linear-gradient(135deg, rgba(17,15,47,0.96), rgba(13,11,38,0.96)) !important;
+  border: 1px solid rgba(129, 120, 206, 0.28) !important;
+}
+
+:root[data-theme="warm"] .dashboard-history,
+:root .dashboard-history {
+  display: grid;
+  gap: 0.9rem;
+}
+
+:root[data-theme="warm"] .dashboard-history-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(129, 120, 206, 0.22) !important;
+  border-radius: 16px;
+  background: rgba(19, 16, 51, 0.88) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .dashboard-history-item h3,
+:root .dashboard-history-item h3 {
+  color: var(--text) !important;
+  margin: 0;
+}
+
+:root[data-theme="warm"] .dashboard-history-item .muted-text {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .dashboard-history-empty {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(19, 16, 51, 0.84) !important;
+  border: 1px solid rgba(129, 120, 206, 0.18) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .dashboard-result {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.03) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .dashboard-result--win {
+  background: rgba(58,199,125,0.12) !important;
+  color: var(--success) !important;
+  border: 1px solid rgba(58,199,125,0.12) !important;
+}
+
+:root[data-theme="warm"] .dashboard-result--loss {
+  background: rgba(234,106,103,0.08) !important;
+  color: var(--danger) !important;
+  border: 1px solid rgba(234,106,103,0.08) !important;
+}
+
+/* Chat component dark theme styling */
+:root[data-theme="warm"] .battle-room__chat-message,
+:root .battle-room__chat-message {
+  background: rgba(35, 31, 85, 0.85) !important;
+  border-color: rgba(129, 120, 206, 0.4) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-message--me,
+:root .battle-room__chat-message--me {
+  background: rgba(var(--accent-rgb), 0.15) !important;
+  border-color: rgba(var(--accent-rgb), 0.5) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-meta,
+:root .battle-room__chat-meta {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-meta strong,
+:root .battle-room__chat-meta strong {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-message p,
+:root .battle-room__chat-message p {
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-form textarea,
+:root .battle-room__chat-form textarea {
+  background: rgba(35, 31, 85, 0.9) !important;
+  border-color: rgba(129, 120, 206, 0.5) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="warm"] .battle-room__chat-form textarea::placeholder,
+:root .battle-room__chat-form textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="warm"] .battle-room__tab-badge,
+:root .battle-room__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: super;
+}

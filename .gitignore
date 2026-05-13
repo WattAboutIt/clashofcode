@@ -26,3 +26,7 @@ dist-ssr
 __pycache__/
 *.pyc
 scripts/generate_architecture_pdf.mjs
+
+
+frontend/.env
+backend/.env
