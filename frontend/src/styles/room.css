@@ -336,6 +336,42 @@
   background: rgba(21, 18, 55, 0.9);
 }
 
+.room-question-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.room-question-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.room-pool-card--selectable {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  cursor: pointer;
+}
+
+.room-pool-card--selectable input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.2rem;
+  accent-color: var(--accent-strong);
+}
+
+.room-pool-card__copy {
+  display: -webkit-box;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .room-empty {
   padding: 1.4rem;
   border: 1px dashed var(--surface-border);

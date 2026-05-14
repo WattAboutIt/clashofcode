@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -43,8 +43,10 @@ function parseJsonArray(value, label) {
 function DeveloperQuestions() {
   const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
+  const [questions, setQuestions] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [saving, setSaving] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   const isDeveloper = user?.role === "developer";
   const preview = useMemo(() => {
@@ -57,6 +59,24 @@ function DeveloperQuestions() {
       return { testCases: 0, examples: 0 };
     }
   }, [form.test_cases, form.examples]);
+
+  const loadQuestions = useCallback(async () => {
+    setLoadingQuestions(true);
+    try {
+      const response = await api.get("/questions");
+      setQuestions(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setQuestions([]);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isDeveloper) {
+      loadQuestions();
+    }
+  }, [isDeveloper, loadQuestions]);
 
   if (!isDeveloper) {
     return <Navigate to="/dashboard" replace />;
@@ -90,11 +110,26 @@ function DeveloperQuestions() {
         message: `Question saved: ${response.data.title}`,
       });
       setForm(initialForm);
+      loadQuestions();
     } catch (error) {
       const message = error.response?.data?.detail || error.message || "Unable to save question.";
       setStatus({ type: "error", message: Array.isArray(message) ? message[0]?.msg : message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (questionId) => {
+    setStatus({ type: "", message: "" });
+    try {
+      await api.delete(`/questions/${questionId}`);
+      setQuestions((current) => current.filter((question) => question.id !== questionId));
+      setStatus({ type: "success", message: "Question deleted." });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.response?.data?.detail || "Unable to delete question.",
+      });
     }
   };
 
@@ -172,6 +207,36 @@ function DeveloperQuestions() {
             </div>
           )}
         </form>
+
+        <div className="developer-form surface-card">
+          <div className="developer-form__footer">
+            <div>
+              <p className="label-text">Management Panel</p>
+              <h2>Question bank</h2>
+            </div>
+            <Button type="button" variant="secondary" onClick={loadQuestions} disabled={loadingQuestions}>
+              {loadingQuestions ? "Loading..." : "Refresh"}
+            </Button>
+          </div>
+
+          <div className="developer-question-list">
+            {questions.length === 0 ? (
+              <p className="muted-text">No questions found.</p>
+            ) : (
+              questions.map((question) => (
+                <div key={question.id} className="developer-question-row">
+                  <div>
+                    <strong>{question.title}</strong>
+                    <p className="muted-text">{question.difficulty} · {question.points} pts</p>
+                  </div>
+                  <Button type="button" variant="secondary" onClick={() => handleDelete(question.id)}>
+                    Delete
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -49,14 +49,15 @@ async def register(
     user = User(
         username=data.username,
         email=data.email,
-        hashed_pw=hash_password(data.password)
+        hashed_pw=hash_password(data.password),
+        role="developer" if is_developer_user(data.username) else "user",
     )
 
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    token = create_access_token({"sub": user.username})
+    token = create_access_token({"sub": user.username, "role": user.role})
 
     return {
         "access_token": token,
@@ -64,6 +65,7 @@ async def register(
         "user": {
             "username": user.username,
             "email": user.email,
+            "role": user.role,
         },
     }
 
@@ -95,8 +97,9 @@ async def login(data: LoginSchema):
                 detail="Invalid password"
             )
 
+        user_role = user.role or ("developer" if is_developer_user(user.username) else "user")
         token = create_access_token(
-            {"sub": user.username}
+            {"sub": user.username, "role": user_role}
         )
 
         return {
@@ -105,6 +108,7 @@ async def login(data: LoginSchema):
             "user": {
                 "username": user.username,
                 "email": user.email,
+                "role": user_role,
             },
         }
 

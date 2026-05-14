@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
@@ -9,34 +9,81 @@ import { useAuth } from "../context/AuthContext";
 import "../styles/room.css";
 
 const DIFFICULTIES = [
-  { key: "easy", label: "Easy", icon: "🌱", desc: "Beginner friendly" },
-  { key: "medium", label: "Medium", icon: "🔥", desc: "Intermediate" },
-  { key: "hard", label: "Hard", icon: "⚡", desc: "Expert level" },
+  { key: "all", label: "All", desc: "Browse every challenge" },
+  { key: "easy", label: "Easy", desc: "Beginner friendly" },
+  { key: "medium", label: "Medium", desc: "Intermediate" },
+  { key: "hard", label: "Hard", desc: "Expert level" },
 ];
+
+const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
+
+function groupQuestionsByDifficulty(questions) {
+  return questions.reduce((groups, question) => {
+    const key = question.difficulty || "uncategorized";
+    groups[key] = groups[key] || [];
+    groups[key].push(question);
+    return groups;
+  }, {});
+}
 
 function CreateRoom() {
   const { user } = useAuth();
+  const [roomName, setRoomName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
-  const [difficulty, setDifficulty] = useState("easy");
+  const [difficulty, setDifficulty] = useState("all");
   const [questions, setQuestions] = useState([]);
+  const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [error, setError] = useState("");
+  const [questionError, setQuestionError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
   const [created, setCreated] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    api.get(`/questions?level=${difficulty}`)
-      .then((response) => setQuestions(response.data || []))
-      .catch(() => setQuestions([]));
+  const loadQuestions = useCallback(async () => {
+    setQuestionError("");
+    setQuestionsLoading(true);
+    try {
+      const params = difficulty === "all" ? {} : { difficulty };
+      const response = await api.get("/questions", { params });
+      const nextQuestions = Array.isArray(response.data) ? response.data : [];
+      setQuestions(nextQuestions);
+      setSelectedQuestions((current) =>
+        current.filter((questionId) => nextQuestions.some((question) => question.id === questionId))
+      );
+    } catch (err) {
+      setQuestions([]);
+      setSelectedQuestions([]);
+      setQuestionError(err?.response?.data?.detail || "Unable to load questions.");
+    } finally {
+      setQuestionsLoading(false);
+    }
   }, [difficulty]);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
+
+  const toggleQuestion = (questionId) => {
+    setSelectedQuestions((current) =>
+      current.includes(questionId)
+        ? current.filter((id) => id !== questionId)
+        : [...current, questionId]
+    );
+  };
 
   const createRoom = async () => {
     setError("");
     setLoading(true);
     setCreated(false);
     try {
-      const response = await api.post("/rooms/create", { host: user?.username, difficulty });
+      const response = await api.post("/rooms", {
+        name: roomName.trim() || null,
+        difficulty,
+        questions: selectedQuestions,
+        created_by: user?.username,
+      });
       const code = response.data.roomCode || response.data.code;
       setRoomCode(code);
       setCreated(true);
@@ -66,6 +113,8 @@ function CreateRoom() {
     }
   };
 
+  const groupedQuestions = useMemo(() => groupQuestionsByDifficulty(questions), [questions]);
+  const visibleGroups = DIFFICULTY_ORDER.filter((key) => groupedQuestions[key]?.length);
   const selectedDiff = DIFFICULTIES.find((item) => item.key === difficulty);
 
   return (
@@ -75,32 +124,54 @@ function CreateRoom() {
           <p className="label-text">Battle Lobby</p>
           <h1 className="section-title">Create or Join</h1>
           <p className="section-subtitle">
-            Pick a difficulty, preview the live question pool, and launch your match.
+            Pick a difficulty, choose the exact questions you want, and launch your match.
           </p>
 
           <div className="panel-grid">
             <Card className="room-panel surface-card--soft">
               <p className="label-text">Create Room</p>
               <h2>Launch a new match</h2>
-              <p className="section-subtitle">One random question from your selected difficulty.</p>
+
+              <Input
+                label="Room Name"
+                value={roomName}
+                onChange={(event) => setRoomName(event.target.value)}
+                placeholder="Optional"
+              />
+
+              <label className="block">
+                <span className="ui-field-label">Difficulty</span>
+                <select
+                  className="ui-input"
+                  value={difficulty}
+                  onChange={(event) => setDifficulty(event.target.value)}
+                >
+                  {DIFFICULTIES.map((item) => (
+                    <option key={item.key} value={item.key}>{item.label}</option>
+                  ))}
+                </select>
+              </label>
 
               <div className="room-difficulty-grid">
-                {DIFFICULTIES.map((item) => (
+                {DIFFICULTIES.filter((item) => item.key !== "all").map((item) => (
                   <button
                     key={item.key}
                     type="button"
                     className={`room-difficulty-card ${difficulty === item.key ? "room-difficulty-card--active" : ""}`}
                     onClick={() => setDifficulty(item.key)}
                   >
-                    <div>{item.icon}</div>
                     <strong>{item.label}</strong>
                     <p className="muted-text">{item.desc}</p>
                   </button>
                 ))}
               </div>
 
+              <Button type="button" onClick={loadQuestions} className="w-full" variant="secondary" disabled={questionsLoading}>
+                {questionsLoading ? "Loading Questions..." : "Load Questions"}
+              </Button>
+
               <Button onClick={createRoom} className="w-full" size="lg" disabled={loading}>
-                {loading ? "Creating..." : "Create Room"}
+                {loading ? "Creating..." : "Create Room with Selected Questions"}
               </Button>
 
               {created && roomCode && (
@@ -136,24 +207,45 @@ function CreateRoom() {
           <div className="dashboard-banner__top">
             <div>
               <p className="label-text">Question Pool</p>
-              <h2>{selectedDiff?.icon} {difficulty} challenges</h2>
+              <h2>{selectedDiff?.label} challenges</h2>
             </div>
-            <span className="status-chip">{questions.length} available</span>
+            <span className="status-chip">{selectedQuestions.length} selected / {questions.length} available</span>
           </div>
 
+          {questionError && <div className="room-error">{questionError}</div>}
+
           <div className="room-pool-list">
-            {questions.length === 0 ? (
+            {questionsLoading ? (
+              <div className="room-empty"><p>Loading questions...</p></div>
+            ) : questions.length === 0 ? (
               <div className="room-empty">
-                <p>No questions for this level yet.</p>
+                <p>No questions for this difficulty yet.</p>
               </div>
             ) : (
-              questions.map((question) => (
-                <div key={question.id} className="room-pool-card">
-                  <div className="dashboard-row">
-                    <strong>{question.title}</strong>
-                    <span className="status-chip">{question.points} pts</span>
+              visibleGroups.map((group) => (
+                <div key={group} className="room-question-group">
+                  <div className="room-question-group__header">
+                    <strong>{group}</strong>
+                    <span className="status-chip">{groupedQuestions[group].length}</span>
                   </div>
-                  <p className="muted-text">{question.description}</p>
+                  {groupedQuestions[group].map((question) => (
+                    <label key={question.id} className="room-pool-card room-pool-card--selectable">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuestions.includes(question.id)}
+                        onChange={() => toggleQuestion(question.id)}
+                      />
+                      <span>
+                        <span className="dashboard-row">
+                          <strong>{question.title || "Untitled question"}</strong>
+                          <span className="status-chip">{question.points || 0} pts</span>
+                        </span>
+                        <span className="muted-text room-pool-card__copy">
+                          {question.question_text || question.description}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
               ))
             )}

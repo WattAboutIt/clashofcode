@@ -491,6 +491,7 @@ async def ensure_legacy_schema(conn: AsyncConnection) -> None:
         "total_points": "INTEGER NOT NULL DEFAULT 0",
         "current_streak": "INTEGER NOT NULL DEFAULT 0",
         "best_streak": "INTEGER NOT NULL DEFAULT 0",
+        "role": "VARCHAR(20) NOT NULL DEFAULT 'user'",
         "created_at": created_at_default,
     }
 

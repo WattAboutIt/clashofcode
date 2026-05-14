@@ -38,6 +38,8 @@ class TestCase(BaseModel):
 class CodingQuestionResponse(BaseModel):
     id: int
     title: str
+    question_text: str | None = None
+    options: list[str] = []
     difficulty: str
     description: str
     test_cases: list[TestCase]   # typed — was list[dict]
@@ -69,9 +71,33 @@ class CodingQuestionCreate(BaseModel):
         return normalized
 
 
+class CodingQuestionUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=3, max_length=150)
+    difficulty: str | None = None
+    description: str | None = Field(default=None, min_length=10)
+    test_cases: list[TestCase] | None = None
+    examples: list[QuestionExample] | None = None
+    constraints: str | None = None
+    points: int | None = Field(default=None, gt=0, le=10000)
+    starter_code: str | None = None
+
+    @field_validator("difficulty")
+    @classmethod
+    def validate_difficulty(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = value.lower().strip()
+        if normalized not in {"easy", "medium", "hard"}:
+            raise ValueError("Difficulty must be easy, medium, or hard")
+        return normalized
+
+
 class RoomCreateRequest(BaseModel):
     host: str | None = None
+    name: str | None = None
     difficulty: str = "easy"
+    questions: list[int] = []
+    created_by: str | None = None
 
 class RoomJoinRequest(BaseModel):
     roomCode: str

@@ -15,7 +15,11 @@ load_dotenv(env_path)
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*24 
-DEV_ALLOWED_USERNAMES = set(os.getenv("DEV_ALLOWED_USERNAMES", "").split(","))
+DEV_ALLOWED_USERNAMES = {
+    username.strip().lower()
+    for username in os.getenv("DEV_ALLOWED_USERNAMES", "sabin").split(",")
+    if username.strip()
+}
 
 security = HTTPBearer()
 

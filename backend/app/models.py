@@ -34,6 +34,7 @@ class User(Base):
     total_points = Column(Integer, nullable=False, default=0)
     current_streak = Column(Integer, nullable=False, default=0)
     best_streak = Column(Integer, nullable=False, default=0)
+    role = Column(String(20), nullable=False, default="user")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     matches = relationship("MatchHistory", back_populates="user", cascade="all, delete-orphan")

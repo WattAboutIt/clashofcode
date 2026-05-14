@@ -19,7 +19,7 @@ from app.routers.execution import evaluate_python_cases, unsupported_language_re
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
 logger = logging.getLogger(__name__)
 
-VALID_LEVELS = {"easy", "medium", "hard"}
+VALID_LEVELS = {"easy", "medium", "hard", "all"}
 
 
 def _now_iso() -> str:
@@ -117,6 +117,22 @@ async def _get_question_by_id(db: AsyncSession, question_id: int | None) -> Codi
         return None
     result = await db.execute(select(CodingQuestion).where(CodingQuestion.id == question_id))
     return result.scalar_one_or_none()
+
+
+async def _get_room_question_pool(db: AsyncSession, room: dict) -> list[CodingQuestion]:
+    selected_question_ids = room.get("selected_question_ids") or []
+    if selected_question_ids:
+        result = await db.execute(
+            select(CodingQuestion).where(CodingQuestion.id.in_(selected_question_ids))
+        )
+        questions_by_id = {question.id: question for question in result.scalars().all()}
+        return [questions_by_id[question_id] for question_id in selected_question_ids if question_id in questions_by_id]
+
+    query = select(CodingQuestion)
+    if room["difficulty"] != "all":
+        query = query.where(CodingQuestion.difficulty == room["difficulty"])
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 async def _serialize_room(room: dict, db: AsyncSession) -> dict:
@@ -235,14 +251,29 @@ async def _finalize_room(room: dict, db: AsyncSession) -> None:
     await db.commit()
 
 
+@router.post("")
 @router.post("/create")
 async def create_room(
     request: RoomCreateRequest,
     current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     difficulty = request.difficulty.lower()
     if difficulty not in VALID_LEVELS:
         raise HTTPException(status_code=400, detail="Invalid difficulty level.")
+
+    selected_question_ids = []
+    if request.questions:
+        unique_ids = list(dict.fromkeys(request.questions))
+        result = await db.execute(select(CodingQuestion).where(CodingQuestion.id.in_(unique_ids)))
+        found_questions = {question.id: question for question in result.scalars().all()}
+        missing_ids = [question_id for question_id in unique_ids if question_id not in found_questions]
+        if missing_ids:
+            raise HTTPException(status_code=400, detail="One or more selected questions do not exist.")
+        selected_question_ids = unique_ids
+        if difficulty == "all":
+            first_question = found_questions[selected_question_ids[0]]
+            difficulty = first_question.difficulty
 
     room_code = _generate_room_code()
     while room_code in room_store:
@@ -253,12 +284,13 @@ async def create_room(
         "room_code": room_code,
         "host": host,
         "difficulty": difficulty,
+        "name": request.name,
         "status": "waiting",
         "created_at": _now_iso(),
         "started_at": None,
         "finished_at": None,
         "question_id": None,
-        "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20}[difficulty],
+        "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20, "all": 15}[difficulty],
         "players": {
             host: {
                 "username": host,
@@ -280,13 +312,14 @@ async def create_room(
             }
         },
         "events": [],
+        "selected_question_ids": selected_question_ids,
         "used_questions": [],
         "all_questions_finished": False,
         "chat_messages": [],
     }
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
 
-    return {"roomCode": room_code, "difficulty": difficulty}
+    return {"roomCode": room_code, "difficulty": difficulty, "questions": selected_question_ids}
 
 
 @router.post("/join")
@@ -344,10 +377,7 @@ async def start_room(
     if room["status"] != "waiting":
         raise HTTPException(status_code=400, detail="Room has already started.")
 
-    result = await db.execute(
-        select(CodingQuestion).where(CodingQuestion.difficulty == room["difficulty"])
-    )
-    questions = result.scalars().all()
+    questions = await _get_room_question_pool(db, room)
     if not questions:
         raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
 
@@ -406,10 +436,7 @@ async def next_question(
     if room.get("status") != "round_finished" and room.get("status") != "finished":
         raise HTTPException(status_code=400, detail="Room must be finished to advance to next question.")
 
-    result = await db.execute(
-        select(CodingQuestion).where(CodingQuestion.difficulty == room["difficulty"])
-    )
-    questions = result.scalars().all()
+    questions = await _get_room_question_pool(db, room)
     if not questions:
         raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
 
@@ -464,10 +491,7 @@ async def _auto_advance_if_questions_remain(room: dict, db: AsyncSession) -> Non
     if room.get("status") != "round_finished":
         return
 
-    result = await db.execute(
-        select(CodingQuestion).where(CodingQuestion.difficulty == room["difficulty"])
-    )
-    questions = result.scalars().all()
+    questions = await _get_room_question_pool(db, room)
     if not questions:
         room["all_questions_finished"] = True
         return
