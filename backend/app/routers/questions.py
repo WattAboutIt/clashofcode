@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+import logging
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +28,14 @@ def _serialize_question(question: CodingQuestion) -> dict:
         "description": question.description,
         "test_cases": question.test_cases or [],
         "points": question.points,
-        "examples": question.examples or [],
+        "examples": [
+            {
+                "input": (ex.get("input") if isinstance(ex.get("input"), str) else __import__("json").dumps(ex.get("input"))),
+                "output": (ex.get("output") if isinstance(ex.get("output"), str) else __import__("json").dumps(ex.get("output"))),
+                "explanation": ex.get("explanation") if ex.get("explanation") is not None else None,
+            }
+            for ex in (question.examples or [])
+        ],
         "constraints": question.constraints,
         "starter_code": question.starter_code,
     }
@@ -49,9 +57,15 @@ async def list_questions(
         query = query.where(CodingQuestion.difficulty == normalized_level)
 
     result = await db.execute(query)
-    questions = [_serialize_question(question) for question in result.scalars().all()]
-    print(len(questions))
-    return questions
+    raw_questions = result.scalars().all()
+    serialized = []
+    for i, question in enumerate(raw_questions):
+        try:
+            serialized.append(_serialize_question(question))
+        except Exception as exc:
+            logging.exception("Failed serializing question at index %s (id=%s)", i, getattr(question, 'id', None))
+            raise HTTPException(status_code=500, detail=f"Serialization error on question id={getattr(question, 'id', None)}") from exc
+    return serialized
 
 
 @router.post(
