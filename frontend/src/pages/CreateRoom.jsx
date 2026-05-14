@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-import api from "../api/axios";
+import api, { API_BASE_URL } from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
@@ -19,11 +20,21 @@ const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
 
 function groupQuestionsByDifficulty(questions) {
   return questions.reduce((groups, question) => {
-    const key = question.difficulty || "uncategorized";
+    const key = String(question.difficulty || "uncategorized").toLowerCase();
     groups[key] = groups[key] || [];
     groups[key].push(question);
     return groups;
   }, {});
+}
+
+function normalizeQuestionResponse(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (Array.isArray(data?.questions)) {
+    return data.questions;
+  }
+  return [];
 }
 
 function CreateRoom() {
@@ -46,8 +57,8 @@ function CreateRoom() {
     setQuestionsLoading(true);
     try {
       const params = difficulty === "all" ? {} : { difficulty };
-      const response = await api.get("/questions", { params });
-      const nextQuestions = Array.isArray(response.data) ? response.data : [];
+      const response = await axios.get(`${API_BASE_URL}/questions`, { params });
+      const nextQuestions = normalizeQuestionResponse(response.data);
       setQuestions(nextQuestions);
       setSelectedQuestions((current) =>
         current.filter((questionId) => nextQuestions.some((question) => question.id === questionId))
@@ -55,13 +66,14 @@ function CreateRoom() {
     } catch (err) {
       setQuestions([]);
       setSelectedQuestions([]);
-      setQuestionError(err?.response?.data?.detail || "Unable to load questions.");
+      setQuestionError(err?.response?.data?.detail || "Unable to load questions. Please try again.");
     } finally {
       setQuestionsLoading(false);
     }
   }, [difficulty]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadQuestions();
   }, [loadQuestions]);
 
@@ -114,7 +126,11 @@ function CreateRoom() {
   };
 
   const groupedQuestions = useMemo(() => groupQuestionsByDifficulty(questions), [questions]);
-  const visibleGroups = DIFFICULTY_ORDER.filter((key) => groupedQuestions[key]?.length);
+  const visibleGroups = useMemo(() => {
+    const knownGroups = DIFFICULTY_ORDER.filter((key) => groupedQuestions[key]?.length);
+    const extraGroups = Object.keys(groupedQuestions).filter((key) => !DIFFICULTY_ORDER.includes(key));
+    return [...knownGroups, ...extraGroups];
+  }, [groupedQuestions]);
   const selectedDiff = DIFFICULTIES.find((item) => item.key === difficulty);
 
   return (
@@ -209,17 +225,17 @@ function CreateRoom() {
               <p className="label-text">Question Pool</p>
               <h2>{selectedDiff?.label} challenges</h2>
             </div>
-            <span className="status-chip">{selectedQuestions.length} selected / {questions.length} available</span>
+            <span className="status-chip">{selectedQuestions.length} selected / {(questions || []).length} available</span>
           </div>
-
-          {questionError && <div className="room-error">{questionError}</div>}
 
           <div className="room-pool-list">
             {questionsLoading ? (
               <div className="room-empty"><p>Loading questions...</p></div>
-            ) : questions.length === 0 ? (
+            ) : questionError ? (
+              <div className="room-error">{questionError}</div>
+            ) : !questions?.length ? (
               <div className="room-empty">
-                <p>No questions for this difficulty yet.</p>
+                <p>No questions found</p>
               </div>
             ) : (
               visibleGroups.map((group) => (

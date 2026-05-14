@@ -18,6 +18,10 @@ def _serialize_question(question: CodingQuestion) -> dict:
         "id": question.id,
         "title": question.title,
         "question_text": question.description,
+        "option_a": getattr(question, "option_a", None),
+        "option_b": getattr(question, "option_b", None),
+        "option_c": getattr(question, "option_c", None),
+        "option_d": getattr(question, "option_d", None),
         "options": [],
         "difficulty": question.difficulty,
         "description": question.description,
@@ -45,7 +49,9 @@ async def list_questions(
         query = query.where(CodingQuestion.difficulty == normalized_level)
 
     result = await db.execute(query)
-    return [_serialize_question(question) for question in result.scalars().all()]
+    questions = [_serialize_question(question) for question in result.scalars().all()]
+    print(len(questions))
+    return questions
 
 
 @router.post(

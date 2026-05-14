@@ -7,7 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from .bootstrap import ensure_legacy_schema, seed_questions
+from sqlalchemy import select
+
 from .database import AsyncSessionLocal, Base, engine
+from .models import CodingQuestion
 from .routers import auth
 from .routers import leaderboard
 from .routers import questions
@@ -63,7 +66,10 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -108,3 +114,28 @@ async def debug_routes():
         "websockets": [route for route in route_table(app) if route["type"] == "websocket"],
         "active_websockets": manager.snapshot(),
     }
+
+
+@app.get("/debug/questions")
+async def debug_questions():
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(CodingQuestion).order_by(CodingQuestion.points.asc(), CodingQuestion.id.asc())
+        )
+        questions = result.scalars().all()
+        sample = [
+            {
+                "id": question.id,
+                "question_text": question.description,
+                "option_a": getattr(question, "option_a", None),
+                "option_b": getattr(question, "option_b", None),
+                "option_c": getattr(question, "option_c", None),
+                "option_d": getattr(question, "option_d", None),
+                "difficulty": question.difficulty,
+            }
+            for question in questions[:2]
+        ]
+        return {
+            "count": len(questions),
+            "sample": sample,
+        }
