@@ -64,19 +64,13 @@ app = FastAPI(
 )
 
 # CORS configuration
-allowed_origins = os.getenv("ALLOWED_ORIGINS")
-if allowed_origins:
-    allow_origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
-else:
-    allow_origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://clashofcode-production.up.railway.app",
-    ]
-
+# Configure CORS middleware BEFORE including routers (critical for Railway)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,6 +106,11 @@ app.include_router(
 @app.get("/")
 async def home():
     return {"message": "Clash of Code Runner is running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/debug/routes")
