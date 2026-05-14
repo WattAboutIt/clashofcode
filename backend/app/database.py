@@ -7,12 +7,15 @@ from pathlib import Path
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
+load_dotenv()
 
-DEFAULT_DATABASE_URL = os.getenv("DATABASE_URL")
+DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./clashofcode.db"
 
 
+def normalize_database_url(url: str | None) -> str:
+    if not url:
+        raise ValueError("DATABASE_URL is not set")
 
-def normalize_database_url(url: str) -> str:
     if url.startswith("postgresql+asyncpg://"):
         return url
     if url.startswith("postgres://"):
