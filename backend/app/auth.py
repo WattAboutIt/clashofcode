@@ -71,3 +71,25 @@ async def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_current_developer(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str | None = payload.get("sub")
+        role: str | None = payload.get("role")
+        if username is None or role != "developer" or not is_developer_user(username):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Developer access required",
+            )
+        return username
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

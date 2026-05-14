@@ -12,9 +12,9 @@ from app.schemas import (
 )
 
 from app.auth import (
-    DEV_ALLOWED_USERNAMES,
     get_developer_email,
     hash_password,
+    is_developer_user,
     normalize_developer_username,
     verify_password,
     create_access_token
@@ -112,7 +112,7 @@ async def login(data: LoginSchema):
 @router.post("/developer-login")
 async def developer_login(data: DeveloperLoginSchema):
     username = normalize_developer_username(data.username)
-    if username not in DEV_ALLOWED_USERNAMES:
+    if not is_developer_user(username):
         raise HTTPException(
             status_code=401,
             detail="Developer access denied.",
@@ -125,5 +125,6 @@ async def developer_login(data: DeveloperLoginSchema):
         "user": {
             "username": username,
             "email": get_developer_email(username),
+            "role": "developer",
         },
     }

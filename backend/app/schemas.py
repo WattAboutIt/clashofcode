@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -48,6 +48,25 @@ class CodingQuestionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CodingQuestionCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=150)
+    difficulty: str
+    description: str = Field(min_length=10)
+    test_cases: list[TestCase] = Field(min_length=1)
+    examples: list[QuestionExample] = []
+    constraints: str | None = None
+    points: int = Field(gt=0, le=10000)
+    starter_code: str | None = None
+
+    @field_validator("difficulty")
+    @classmethod
+    def validate_difficulty(cls, value: str) -> str:
+        normalized = value.lower().strip()
+        if normalized not in {"easy", "medium", "hard"}:
+            raise ValueError("Difficulty must be easy, medium, or hard")
+        return normalized
 
 
 class RoomCreateRequest(BaseModel):

@@ -13,6 +13,7 @@ import CreateRoom from "./pages/CreateRoom";
 import CodingInterface from "./pages/CodingInterface";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
+import DeveloperQuestions from "./pages/DeveloperQuestions";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                       <Route path="/battle-room/:roomCode" element={<CodingInterface />} />
                       <Route path="/coding-interface" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/profile" element={<Profile />} />
+                      <Route path="/developer/questions" element={<DeveloperQuestions />} />
                     </Route>
                   </Routes>
                 </ErrorBoundary>

@@ -31,7 +31,11 @@ function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const nextThemeLabel = theme === "light" ? "Dark" : "Light";
   const dropdownRef = useRef(null);
-  const navItems = token ? authLinks : guestLinks;
+  const navItems = token
+    ? user?.role === "developer"
+      ? [...authLinks, { label: "Add Question", to: "/developer/questions" }]
+      : authLinks
+    : guestLinks;
   const initials = useMemo(() => (user?.username || "C").slice(0, 1).toUpperCase(), [user]);
 
   useEffect(() => {
@@ -96,6 +100,19 @@ function Navbar() {
       ),
     },
   ];
+
+  if (user?.role === "developer") {
+    dropdownItems.splice(2, 0, {
+      label: "Add Question",
+      to: "/developer/questions",
+      icon: (
+        <Icon>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </Icon>
+      ),
+    });
+  }
 
   return (
     <header className="navbar">
