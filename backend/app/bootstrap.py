@@ -49,7 +49,7 @@ p contains only lowercase English letters, '.', and '*'.
 It is guaranteed for each appearance of '*', there will be a previous valid character to match.\
     """,
     "points": 350,
-    "starter_code": "def isMatch(self, s: str, p: str) -> bool:\n    pass"
+    "starter_code": "def isMatch(s: str, p: str) -> bool:\n    pass"
     },
     {
     "title": "String to Integer (atoi)",
@@ -106,7 +106,7 @@ Return the integer as the final result.
 s consists of English letters (lower-case and upper-case), digits (0-9), ' ', '+', '-', and '.'.\
     """,
     "points": 220,
-    "starter_code": "def myAtoi(self, s: str) -> int:\n    pass"
+    "starter_code": "def myAtoi(s: str) -> int:\n    pass"
 },
     {
     "title": "Zigzag Conversion",
@@ -149,7 +149,7 @@ s consists of English letters (lower-case and upper-case), ',' and '.'.
 1 <= numRows <= 1000\
     """,
     "points": 200,
-    "starter_code": "def convert(self, s: str, numRows: int) -> str:\n    pass"
+    "starter_code": "def convert(s: str, numRows: int) -> str:\n    pass"
     },
     {
     "title": "Longest Palindromic Substring",
@@ -180,7 +180,7 @@ Given a string s, return the longest palindromic substring in s.
 s consist of only digits and English letters.\
     """,
     "points": 220,
-    "starter_code": "def longestPalindrome(self, s: str) -> str:\n    pass"
+    "starter_code": "def longestPalindrome(s: str) -> str:\n    pass"
 },
     {
     "title": "Median of Two Sorted Arrays",
@@ -213,7 +213,7 @@ s consist of only digits and English letters.\
         -10^6 <= nums1[i], nums2[i] <= 10^6
     """,
     "points": 300,
-    "starter_code": "def findMedianSortedArrays(self, nums1: list[int], nums2: list[int]) -> float:\n    pass"
+    "starter_code": "def findMedianSortedArrays(nums1: list[int], nums2: list[int]) -> float:\n    pass"
     },
     {
     "title": "Longest Substring Without Repeating Characters",
@@ -245,7 +245,7 @@ s consist of only digits and English letters.\
         ],
     "constraints": "1 <= s.length <= 5 * 10^4 \n s contains only English letters, digits, symbols and spaces.",
     "points": 200,
-    "starter_code": "def lengthOfLongestSubstring(self, s: str) -> int:\n    pass"
+    "starter_code": "def lengthOfLongestSubstring(s: str) -> int:\n    pass"
     },
     {
         "title": "Roman to Integer",
@@ -296,7 +296,7 @@ s consist of only digits and English letters.\
         ],
         "constraints": "1 <= s.length <= 15 \n s contains only the characters ('I', 'V', 'X', 'L', 'C', 'D', 'M'). \n It is guaranteed that s is a valid roman numeral in the range [1, 3999]",
         "points": 100,
-        "starter_code": "def romanToInt(self, s: str) -> int:\n    pass"
+        "starter_code": "def romanToInt(s: str) -> int:\n    pass"
     },
     {
         "title": "Two Sum Arena",
@@ -503,9 +503,12 @@ async def ensure_legacy_schema(conn: AsyncConnection) -> None:
 
 async def seed_questions(session_factory: sessionmaker) -> None:
     async with session_factory() as session:  # type: AsyncSession
-        count = await session.scalar(select(func.count(CodingQuestion.id)))
-        if count:
-            return
-
-        session.add_all([CodingQuestion(**question) for question in QUESTION_SEED])
+        for question_data in QUESTION_SEED:
+            # Check if a question with the same title already exists
+            existing = await session.execute(
+                select(CodingQuestion).where(CodingQuestion.title == question_data["title"])
+            )
+            if not existing.scalar_one_or_none():
+                session.add(CodingQuestion(**question_data))
+        
         await session.commit()
