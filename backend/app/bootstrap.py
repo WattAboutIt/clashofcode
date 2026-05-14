@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -474,13 +474,31 @@ s consist of only digits and English letters.\
 
 
 async def ensure_legacy_schema(conn: AsyncConnection) -> None:
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS games_played INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS wins INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS losses INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS total_points INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS best_streak INTEGER NOT NULL DEFAULT 0"))
-    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()"))
+    existing_columns = await conn.run_sync(
+        lambda sync_conn: {
+            column["name"] for column in inspect(sync_conn).get_columns("users")
+        }
+    )
+    created_at_default = (
+        "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        if conn.dialect.name == "sqlite"
+        else "TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()"
+    )
+    legacy_columns = {
+        "games_played": "INTEGER NOT NULL DEFAULT 0",
+        "wins": "INTEGER NOT NULL DEFAULT 0",
+        "losses": "INTEGER NOT NULL DEFAULT 0",
+        "total_points": "INTEGER NOT NULL DEFAULT 0",
+        "current_streak": "INTEGER NOT NULL DEFAULT 0",
+        "best_streak": "INTEGER NOT NULL DEFAULT 0",
+        "created_at": created_at_default,
+    }
+
+    for column_name, column_definition in legacy_columns.items():
+        if column_name not in existing_columns:
+            await conn.execute(
+                text(f"ALTER TABLE users ADD COLUMN {column_name} {column_definition}")
+            )
 
 
 async def seed_questions(session_factory: sessionmaker) -> None:
