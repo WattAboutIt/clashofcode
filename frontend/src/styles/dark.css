@@ -676,6 +676,69 @@
   min-height: 88px;
 }
 
+/* Improve visibility for submissions, case cards and outputs in dark mode */
+:root[data-theme="warm"] .battle-room__submission-history,
+:root[data-theme="warm"] .battle-room__submission-row {
+  background: rgba(22, 18, 50, 0.96) !important;
+  border: 1px solid rgba(129, 120, 206, 0.24) !important;
+  color: var(--text) !important;
+  border-radius: 10px;
+  padding: 0.9rem;
+  margin-bottom: 0.8rem;
+}
+
+:root[data-theme="warm"] .battle-room__submission-row p {
+  color: var(--text-secondary) !important;
+  margin: 0;
+}
+
+:root[data-theme="warm"] .battle-room__case-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+:root[data-theme="warm"] .battle-room__case-card {
+  background: rgba(19, 16, 51, 0.94) !important;
+  border: 1px solid rgba(129, 120, 206, 0.18) !important;
+  padding: 0.9rem !important;
+  border-radius: 10px !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="warm"] .battle-room__case-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+:root[data-theme="warm"] .battle-room__case-card-head span {
+  color: var(--text) !important;
+  font-weight: 700;
+}
+
+:root[data-theme="warm"] .battle-room__case-diff label span {
+  color: var(--text-muted) !important;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+:root[data-theme="warm"] .battle-room__case-diff pre,
+:root[data-theme="warm"] .battle-room__stdout-grid pre {
+  background: rgba(12, 10, 30, 0.98) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(129, 120, 206, 0.12) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem !important;
+  white-space: pre-wrap !important;
+}
+
+:root[data-theme="warm"] .battle-room__console-empty {
+  color: var(--text-muted) !important;
+  padding: 1rem;
+}
+
 /* Clear button alignment */
 :root[data-theme="warm"] .battle-room__console-clear {
   margin-left: auto !important;

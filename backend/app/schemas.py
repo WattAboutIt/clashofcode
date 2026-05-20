@@ -102,9 +102,13 @@ class RoomCreateRequest(BaseModel):
     difficulty: str = "easy"
     questions: list[int] = []
     created_by: str | None = None
+    open_matchmaking: bool = True
 
 class RoomJoinRequest(BaseModel):
     roomCode: str
+
+class RoomMatchmakingModeRequest(BaseModel):
+    open_matchmaking: bool
 
 class SubmissionRequest(BaseModel):
     code: str
