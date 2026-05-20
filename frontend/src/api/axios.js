@@ -40,8 +40,12 @@ export async function requestAPI(url, options = {}) {
     const method = (options.method || "get").toLowerCase();
     const data = options.data;
     const config = options.config || {};
+    const forceLocal = options.forceLocal || false;
+    const forceRailway = options.forceRailway || false;
 
-    const instance = chooseApiInstance(url);
+    let instance = chooseApiInstance(url);
+    if (forceLocal) instance = localAPI;
+    if (forceRailway) instance = railwayAPI;
 
     if (instance === localAPI) {
         console.log("LOCAL BACKEND → matchmaking request");

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateRoom from "./pages/CreateRoom";
 import CodingInterface from "./pages/CodingInterface";
 import MatchmakingLobby from "./pages/MatchmakingLobby";
+import FindMatch from "./pages/FindMatch";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import DeveloperQuestions from "./pages/DeveloperQuestions";
@@ -34,6 +35,7 @@ function App() {
                     <Route element={<ProtectedRoute />}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/matchmaking" element={<MatchmakingLobby />} />
+                      <Route path="/find-match" element={<FindMatch />} />
                       <Route path="/create-room" element={<CreateRoom />} />
                       <Route path="/battle-room/:roomCode" element={<CodingInterface />} />
                       <Route path="/coding-interface" element={<Navigate to="/dashboard" replace />} />
