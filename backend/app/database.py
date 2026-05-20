@@ -25,7 +25,20 @@ def normalize_database_url(url: str | None) -> str:
     return url
 
 
-DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+# Allow a simple hard override for demo/testing: set MAIN_DATABASE_URL to a full SQLAlchemy URL
+# Example: export MAIN_DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/dbname"
+MAIN_DATABASE_URL = os.getenv("MAIN_DATABASE_URL")
+# For manual editing, follow the example below:
+# Local Postgres: "postgresql+asyncpg://user:pass@127.0.0.1:5432/dbname"
+# Railway: "postgresql+asyncpg://user:pass@xxx.railway.app:5432/dbname"
+HARDCODED_DATABASE_URL = None  # <- Edit this value directly to switch DB
+
+if HARDCODED_DATABASE_URL:
+    DATABASE_URL = HARDCODED_DATABASE_URL
+elif MAIN_DATABASE_URL:
+    DATABASE_URL = MAIN_DATABASE_URL
+else:
+    DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
 
 engine = create_async_engine(
     DATABASE_URL,
