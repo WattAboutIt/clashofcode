@@ -183,14 +183,17 @@ function TestcaseTabs({ cases, result, selected, onSelect }) {
   return (
     <div className="battle-room__testcase-pane">
       <div className="battle-room__case-tabs" role="tablist" aria-label="Visible test cases">
-        {rows.map((item, index) => (
-          <button key={`${item.name || "case"}-${index}`} type="button" className={`battle-room__case-tab ${selected === index ? "battle-room__case-tab--active" : ""}`} onClick={() => onSelect(index)}>
-            {item.name || `Case ${index + 1}`}
-            {resultRow && index === selected && <StatusPill status={resultRow.status} />}
-          </button>
-        ))}
+        {rows.map((item, index) => {
+          const itemResult = results[index];
+          const status = itemResult?.status ?? (item.passed === true ? "Accepted" : item.passed === false ? "Wrong Answer" : undefined);
+          return (
+            <button key={`${item.name || "case"}-${index}`} type="button" className={`battle-room__case-tab ${selected === index ? "battle-room__case-tab--active" : ""}`} onClick={() => onSelect(index)}>
+              <span className="battle-room__case-tab-label">{item.name || `Case ${index + 1}`}</span>
+              {status && <StatusPill status={status} />}
+            </button>
+          );
+        })}
       </div>
-
       <div className="battle-room__case-detail-grid">
         <label>
           <span>Input</span>
@@ -200,12 +203,15 @@ function TestcaseTabs({ cases, result, selected, onSelect }) {
           <span>Expected</span>
           <pre>{toDisplay(row.expected)}</pre>
         </label>
-        {resultRow && (
-          <label>
-            <span>Actual</span>
-            <pre>{toDisplay(resultRow.actual, resultRow.error || "N/A")}</pre>
-          </label>
-        )}
+        <label>
+          <span>Obtained</span>
+          <pre>{toDisplay(resultRow?.actual ?? resultRow?.output, resultRow?.error ?? "Not run")}</pre>
+        </label>
+        <div style={{gridColumn: "1 / -1"}}>
+          <strong style={{color: resultRow?.passed ? "var(--success)" : resultRow ? "var(--danger)" : "var(--text-muted)"}}>
+            {resultRow ? (resultRow.passed ? "Passed" : "Failed") : "Not executed"}
+          </strong>
+        </div>
       </div>
     </div>
   );
@@ -410,6 +416,7 @@ function BattleRoom() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [starting, setStarting] = useState(false);
+  const [updatingMatchmaking, setUpdatingMatchmaking] = useState(false);
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
   const [running, setRunning] = useState(false);
@@ -633,6 +640,22 @@ function BattleRoom() {
     }
   };
 
+  const handleSetInviteOnly = async () => {
+    setUpdatingMatchmaking(true);
+    setError("");
+    try {
+      const nextOpenState = room?.matchmaking !== "open";
+      const response = await api.post(`/rooms/${roomCode}/matchmaking-mode`, { open_matchmaking: nextOpenState });
+      setRoom(response.data);
+      setToast(nextOpenState ? "Room is now global" : "Room is now invite-only");
+      window.setTimeout(() => setToast(""), 1800);
+    } catch (err) {
+      setError(extractError(err, "Unable to update room access mode."));
+    } finally {
+      setUpdatingMatchmaking(false);
+    }
+  };
+
   const handleFinish = async () => {
     setError("");
     try {
@@ -838,9 +861,23 @@ function BattleRoom() {
               <p className="label-text">Lobby</p>
               <h2>{isHost ? "Start when everyone is ready" : "Waiting for host"}</h2>
               <p className="section-subtitle">The competitive coding workspace opens once the battle starts.</p>
+              <div className="battle-room__chip-row">
+                <span className="battle-room__chip battle-room__chip--ghost">
+                  Room access: {room?.matchmaking === "open" ? "Global Matchmaking" : "Invite Only"}
+                </span>
+              </div>
             </div>
             <div className="battle-room__waiting-actions">
               <span className="battle-room__chip battle-room__chip--ghost">{room?.players?.length ?? 0} players</span>
+              {isHost && (
+                <Button onClick={handleSetInviteOnly} disabled={updatingMatchmaking} size="lg" variant="secondary">
+                  {updatingMatchmaking
+                    ? "Updating..."
+                    : room?.matchmaking === "open"
+                      ? "Turn Off Global Matchmaking"
+                      : "Turn On Global Matchmaking"}
+                </Button>
+              )}
               {isHost && <Button onClick={handleStart} disabled={starting} size="lg">{starting ? "Starting..." : "Start Battle"}</Button>}
             </div>
             <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />

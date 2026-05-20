@@ -324,6 +324,40 @@
   box-shadow: 0 0 0 2px rgba(255, 211, 79, 0.14);
 }
 
+.room-matchmaking-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.room-matchmaking-toggle:hover {
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+
+.room-matchmaking-toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.18rem;
+  accent-color: var(--accent-strong);
+}
+
+.room-matchmaking-toggle p {
+  margin: 0.2rem 0 0;
+}
+
+.room-matchmaking-toggle:has(input:checked) {
+  border-color: rgba(var(--accent-rgb), 0.65);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.14);
+}
+
 .room-pool-list {
   display: grid;
   gap: 0.85rem;
@@ -369,6 +403,7 @@
   margin-top: 0.5rem;
   overflow: hidden;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
 }
 

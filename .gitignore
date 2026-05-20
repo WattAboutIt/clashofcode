@@ -28,5 +28,4 @@ __pycache__/
 scripts/generate_architecture_pdf.mjs
 
 
-frontend/.env
-backend/.env
+**/.env

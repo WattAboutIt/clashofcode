@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 import api from "../api/axios";
 import Button from "../components/ui/Button";
@@ -35,45 +36,17 @@ function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [matchmaking, setMatchmaking] = useState(false);
+  const [showMatchPopup, setShowMatchPopup] = useState(false);
+  const [queueDifficulty, setQueueDifficulty] = useState("easy");
   const navigate = useNavigate();
 
-  const handleFindMatch = async () => {
-    setMatchmaking(true);
-    try {
-      const res = await api.post("/rooms/matchmake", { difficulty: "easy" });
-      if (res.data.status === "matched") {
-        navigate(`/room/${res.data.roomCode}`);
-      } else {
-        const interval = setInterval(async () => {
-          try {
-            const statusRes = await api.get("/rooms/matchmake/status");
-            if (statusRes.data.status === "matched") {
-              clearInterval(interval);
-              navigate(`/room/${statusRes.data.roomCode}`);
-            } else if (statusRes.data.status === "idle") {
-              clearInterval(interval);
-              setMatchmaking(false);
-            }
-          } catch (e) {
-            clearInterval(interval);
-            setMatchmaking(false);
-          }
-        }, 2000);
-      }
-    } catch (err) {
-      console.error(err);
-      setMatchmaking(false);
-    }
+  const handleFindMatch = () => {
+    setShowMatchPopup(true);
   };
 
-  const handleCancelMatch = async () => {
-    try {
-      await api.post("/rooms/matchmake/cancel");
-      setMatchmaking(false);
-    } catch (e) {
-      console.error(e);
-    }
+  const startMatchmaking = () => {
+    setShowMatchPopup(false);
+    navigate(`/matchmaking?difficulty=${encodeURIComponent(queueDifficulty)}`);
   };
 
   useEffect(() => {
@@ -97,6 +70,10 @@ function Dashboard() {
     { key: "medium", label: "Medium" },
     { key: "hard", label: "Hard" },
   ];
+  const matchLevels = [
+    { key: "all", label: "All" },
+    ...levels,
+  ];
 
   return (
     <section className="page-shell page-enter">
@@ -115,11 +92,7 @@ function Dashboard() {
                 Your live stats, battle history, and question pool all in one calm, polished command center.
               </p>
               <div className="dashboard-actions" style={{ marginTop: '1.5rem' }}>
-                {matchmaking ? (
-                  <Button onClick={handleCancelMatch} variant="secondary">Cancel Queue...</Button>
-                ) : (
-                  <Button onClick={handleFindMatch} className="battle-room__chip--difficulty">Find Match</Button>
-                )}
+                <Button onClick={handleFindMatch} className="battle-room__chip--difficulty">Find Match</Button>
                 <Link to="/create-room"><Button>Create Room</Button></Link>
                 <Link to="/create-room"><Button variant="secondary">Join Room</Button></Link>
               </div>
@@ -129,6 +102,34 @@ function Dashboard() {
             </div>
           </div>
         </Card>
+
+        {showMatchPopup && createPortal(
+          <div className="dashboard-modal" role="dialog" aria-modal="true" aria-label="Select match difficulty">
+            <div className="dashboard-modal__backdrop" onClick={() => setShowMatchPopup(false)} />
+            <Card className="dashboard-modal__panel">
+              <p className="label-text">Quick Match</p>
+              <h2>Select difficulty</h2>
+              <p className="section-subtitle">Choose your preferred challenge level before entering matchmaking.</p>
+              <div className="dashboard-modal__difficulty-grid">
+                {matchLevels.map((level) => (
+                  <button
+                    key={level.key}
+                    type="button"
+                    className={`dashboard-modal__difficulty ${queueDifficulty === level.key ? "is-active" : ""}`}
+                    onClick={() => setQueueDifficulty(level.key)}
+                  >
+                    <strong>{level.label}</strong>
+                  </button>
+                ))}
+              </div>
+              <div className="dashboard-modal__actions">
+                <Button type="button" variant="secondary" onClick={() => setShowMatchPopup(false)}>Cancel</Button>
+                <Button type="button" onClick={startMatchmaking}>Find Match</Button>
+              </div>
+            </Card>
+          </div>,
+          document.body,
+        )}
 
         <div className="dashboard-grid">
           {stats.map((stat) => (

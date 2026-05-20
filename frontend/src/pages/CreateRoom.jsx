@@ -43,6 +43,7 @@ function CreateRoom() {
   const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [difficulty, setDifficulty] = useState("all");
+  const [openMatchmaking, setOpenMatchmaking] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [error, setError] = useState("");
@@ -95,6 +96,7 @@ function CreateRoom() {
         difficulty,
         questions: selectedQuestions,
         created_by: user?.username,
+        open_matchmaking: openMatchmaking,
       });
       const code = response.data.roomCode || response.data.code;
       setRoomCode(code);
@@ -181,6 +183,19 @@ function CreateRoom() {
                   </button>
                 ))}
               </div>
+
+              <label className="room-matchmaking-toggle" htmlFor="open-matchmaking">
+                <input
+                  id="open-matchmaking"
+                  type="checkbox"
+                  checked={openMatchmaking}
+                  onChange={(event) => setOpenMatchmaking(event.target.checked)}
+                />
+                <span>
+                  <strong>Enable global matchmaking</strong>
+                  <p className="muted-text">Anyone using Find Match can be placed into this room.</p>
+                </span>
+              </label>
 
               <Button type="button" onClick={loadQuestions} className="w-full" variant="secondary" disabled={questionsLoading}>
                 {questionsLoading ? "Loading Questions..." : "Load Questions"}

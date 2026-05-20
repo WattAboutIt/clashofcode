@@ -12,7 +12,7 @@ from app.auth import get_current_user
 from app.database import AsyncSessionLocal, get_db
 from app.models import CodingQuestion, MatchHistory, User
 from app.room_store import room_store
-from app.schemas import RoomCreateRequest, RoomJoinRequest, SubmissionRequest
+from app.schemas import RoomCreateRequest, RoomJoinRequest, RoomMatchmakingModeRequest, SubmissionRequest
 from app.websocket_manager import manager
 from app.routers.execution import evaluate_python_cases, unsupported_language_response
 
@@ -86,6 +86,75 @@ def _get_room_or_404(room_code: str) -> dict:
     return room
 
 
+def _room_online_players(room: dict) -> list[str]:
+    return [username for username, player in room.get("players", {}).items() if player.get("online")]
+
+
+def _room_is_expired(room: dict) -> bool:
+    return room.get("status") == "expired"
+
+
+def _room_host_online(room: dict) -> bool:
+    host_username = room.get("host")
+    if not host_username:
+        return False
+    host_player = room.get("players", {}).get(host_username, {})
+    return bool(host_player.get("online"))
+
+
+def _room_allows_matchmaking_join(room: dict) -> bool:
+    return (
+        not _room_is_expired(room)
+        and room.get("status") == "waiting"
+        and _room_host_online(room)
+    )
+
+
+def _room_allows_rejoin(room: dict) -> bool:
+    return not _room_is_expired(room) and room.get("status") in {"waiting", "locked", "active", "round_finished"}
+
+
+def _remove_room_from_matchmaking(room: dict) -> None:
+    room_code = room.get("room_code")
+    difficulty = room.get("difficulty")
+    if room_code and difficulty in open_rooms and room_code in open_rooms[difficulty]:
+        try:
+            open_rooms[difficulty].remove(room_code)
+        except ValueError:
+            pass
+
+
+async def _expire_room(room: dict, reason: str | None = None, db: AsyncSession | None = None) -> None:
+    if room.get("status") == "expired":
+        return
+
+    room["status"] = "expired"
+    room["expired_at"] = _now_iso()
+    room["finished_at"] = room.get("finished_at") or room["expired_at"]
+    _remove_room_from_matchmaking(room)
+
+    if reason:
+        _push_event(room, "expired", reason)
+
+    async with matchmaking_lock:
+        for username in list(room.get("players", {}).keys()):
+            if user_match_status.get(username) == room.get("room_code"):
+                del user_match_status[username]
+            pending_redirects.pop(username, None)
+
+    if db is not None and _room_online_players(room):
+        await _broadcast_room(room, db)
+
+
+async def _maybe_expire_if_empty(room: dict, db: AsyncSession | None = None) -> bool:
+    if room.get("status") == "expired":
+        return True
+    if _room_online_players(room):
+        return False
+    await _expire_room(room, "Room expired because all players went offline.", db)
+    return True
+
+
 def _serialize_question(question: CodingQuestion | None) -> dict | None:
     if not question:
         return None
@@ -143,6 +212,7 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
     return {
         "roomCode": room["room_code"],
         "host": room["host"],
+        "matchmaking": room.get("matchmaking", "invite"),
         "status": room["status"],
         "all_questions_finished": room.get("all_questions_finished", False),
         "difficulty": room["difficulty"],
@@ -280,15 +350,19 @@ async def create_room(
         room_code = _generate_room_code()
 
     host = current_username
+    matchmaking_mode = "open" if getattr(request, "open_matchmaking", False) else "invite"
     room_store[room_code] = {
         "room_code": room_code,
         "host": host,
         "difficulty": difficulty,
+        "matchmaking": matchmaking_mode,
         "name": request.name,
         "status": "waiting",
         "created_at": _now_iso(),
         "started_at": None,
         "finished_at": None,
+        "locked_at": None,
+        "expired_at": None,
         "question_id": None,
         "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20, "all": 15}[difficulty],
         "players": {
@@ -318,8 +392,16 @@ async def create_room(
         "chat_messages": [],
     }
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
+    # If room is open for matchmaking, register it so matchmakers can join
+    if matchmaking_mode == "open":
+        open_rooms.setdefault(difficulty, []).append(room_code)
 
-    return {"roomCode": room_code, "difficulty": difficulty, "questions": selected_question_ids}
+    return {
+        "roomCode": room_code,
+        "difficulty": difficulty,
+        "questions": selected_question_ids,
+        "matchmaking": matchmaking_mode,
+    }
 
 
 @router.post("/join")
@@ -331,10 +413,25 @@ async def join_room(
     room = _get_room_or_404(request.roomCode)
     username = current_username
 
+    if _room_is_expired(room):
+        raise HTTPException(status_code=410, detail="Room has expired.")
+
+    host_username = room.get("host")
+    host_player = room.get("players", {}).get(host_username, {}) if host_username else {}
+    host_online = bool(host_player.get("online"))
+
+    if username not in room["players"]:
+        if room.get("status") != "waiting":
+            raise HTTPException(status_code=400, detail="Room is no longer accepting new players.")
+        if not host_online:
+            raise HTTPException(status_code=400, detail="Host is offline and the room is not joinable.")
+    elif room.get("status") == "expired":
+        raise HTTPException(status_code=410, detail="Room has expired.")
+
     if username not in room["players"]:
         room["players"][username] = {
             "username": username,
-            "status": "active" if room["status"] == "active" else "waiting",
+            "status": "waiting",
             "score": 0,
             "joined_at": _now_iso(),
             "submitted_at": None,
@@ -351,6 +448,10 @@ async def join_room(
             "submissions": [],
         }
         _push_event(room, "join", f"{username} joined the room.", username)
+
+    async with matchmaking_lock:
+        user_match_status[username] = room["room_code"]
+        pending_redirects.pop(username, None)
 
     payload = await _broadcast_room(room, db)
     return {"roomCode": payload["roomCode"]}
@@ -377,26 +478,73 @@ async def start_room(
     if room["status"] != "waiting":
         raise HTTPException(status_code=400, detail="Room has already started.")
 
-    questions = await _get_room_question_pool(db, room)
-    if not questions:
-        raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
+    room["status"] = "locked"
+    room["locked_at"] = _now_iso()
+    _remove_room_from_matchmaking(room)
 
-    question = random.choice(questions)
-    room["question_id"] = question.id
-    room["status"] = "active"
-    room["started_at"] = _now_iso()
-    # track used questions to avoid repeats
-    used = room.setdefault("used_questions", [])
-    if question.id not in used:
-        used.append(question.id)
+    try:
+        questions = await _get_room_question_pool(db, room)
+        if not questions:
+            raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
 
-    for player in room["players"].values():
-        player["status"] = "active"
-        player["typing"] = False
-        player["last_action"] = "started"
+        question = random.choice(questions)
+        room["question_id"] = question.id
+        room["status"] = "active"
+        room["started_at"] = _now_iso()
+        # track used questions to avoid repeats
+        used = room.setdefault("used_questions", [])
+        if question.id not in used:
+            used.append(question.id)
 
-    _push_event(room, "start", f"Battle started with {question.title}.", current_username)
-    asyncio.create_task(_finish_room_when_timer_expires(room_code))
+        for player in room["players"].values():
+            player["status"] = "active"
+            player["typing"] = False
+            player["last_action"] = "started"
+
+        async with matchmaking_lock:
+            for username in room["players"].keys():
+                user_match_status[username] = room["room_code"]
+                pending_redirects[username] = room["room_code"]
+
+        _push_event(room, "start", f"Battle started with {question.title}.", current_username)
+        asyncio.create_task(_finish_room_when_timer_expires(room_code))
+        payload = await _broadcast_room(room, db)
+        return payload
+    except Exception:
+        if room.get("status") != "expired":
+            room["status"] = "waiting"
+            room["locked_at"] = None
+            if room.get("matchmaking") == "open" and room.get("host") in _room_online_players(room):
+                open_rooms.setdefault(room.get("difficulty"), []).append(room["room_code"])
+        raise
+
+
+@router.post("/{room_code}/matchmaking-mode")
+async def update_matchmaking_mode(
+    room_code: str,
+    request: RoomMatchmakingModeRequest,
+    current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    room = _get_room_or_404(room_code)
+    if room["host"] != current_username:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the host can update matchmaking mode.")
+    if room.get("status") != "waiting":
+        raise HTTPException(status_code=400, detail="Matchmaking mode can only be changed while room is waiting.")
+
+    difficulty = room.get("difficulty")
+    room_key = room.get("room_code")
+    is_open = bool(request.open_matchmaking)
+    room["matchmaking"] = "open" if is_open else "invite"
+
+    if difficulty in open_rooms:
+        if is_open and room_key not in open_rooms[difficulty]:
+            open_rooms[difficulty].append(room_key)
+        if not is_open and room_key in open_rooms[difficulty]:
+            open_rooms[difficulty].remove(room_key)
+
+    mode_text = "global matchmaking" if is_open else "invite only"
+    _push_event(room, "room", f"Host switched room mode to {mode_text}.", current_username)
     payload = await _broadcast_room(room, db)
     return payload
 
@@ -419,6 +567,12 @@ async def finish_room(
     room["status"] = "finished"
     room["finished_at"] = _now_iso()
     _push_event(room, "finish", "Battle finished by host.", current_username)
+    # remove from open matchmaking if it was listed
+    try:
+        if room.get("difficulty") in open_rooms and room_code in open_rooms.get(room.get("difficulty"), []):
+            open_rooms[room.get("difficulty")].remove(room_code)
+    except Exception:
+        pass
     payload = await _broadcast_room(room, db)
     return payload
 
@@ -637,8 +791,42 @@ async def submit_solution(
 
 
 # Algorithmic Matchmaking state
-waitlist = {"easy": [], "medium": [], "hard": []}
+MATCH_DIFFICULTIES = ("easy", "medium", "hard")
+waitlist = {"easy": [], "medium": [], "hard": [], "all": []}
 user_match_status = {}
+open_rooms = {"easy": [], "medium": [], "hard": [], "all": []}
+matchmaking_lock = asyncio.Lock()
+pending_redirects = {}
+
+
+def _create_waiting_player(username: str) -> dict:
+    return {
+        "username": username,
+        "status": "waiting",
+        "score": 0,
+        "joined_at": _now_iso(),
+        "submitted_at": None,
+        "code": "",
+        "language": None,
+        "online": False,
+        "typing": False,
+        "progress": 0,
+        "last_action": "joined",
+        "runtime_ms": None,
+        "memory_kb": None,
+        "passed": 0,
+        "total": 0,
+        "submissions": [],
+    }
+
+
+def _find_user_room_code(username: str) -> str | None:
+    for room_code, room in room_store.items():
+        if room.get("status") in {"finished", "expired"}:
+            continue
+        if username in room.get("players", {}):
+            return room_code
+    return None
 
 @router.post("/matchmake")
 async def matchmake(
@@ -646,78 +834,131 @@ async def matchmake(
     current_username: str = Depends(get_current_user),
 ):
     difficulty = request.difficulty.lower()
-    
-    if current_username in waitlist.get(difficulty, []):
-        return {"status": "waiting"}
-        
-    other_users = [u for u in waitlist[difficulty] if u != current_username]
-    if other_users:
-        matched_username = other_users[0]
-        waitlist[difficulty].remove(matched_username)
-        room_code = _generate_room_code()
-        while room_code in room_store:
-            room_code = _generate_room_code()
-            
-        host = matched_username
-        room_store[room_code] = {
-            "room_code": room_code,
-            "host": host,
-            "difficulty": difficulty,
-            "status": "waiting",
-            "created_at": _now_iso(),
-            "started_at": None,
-            "finished_at": None,
-            "question_id": None,
-            "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20}[difficulty],
-            "players": {
-                host: {
-                    "username": host,
+    if difficulty not in VALID_LEVELS:
+        raise HTTPException(status_code=400, detail="Invalid difficulty level.")
+
+    room_to_broadcast = None
+    matched_room_code = None
+
+    async with matchmaking_lock:
+        existing_room_code = _find_user_room_code(current_username)
+        if existing_room_code:
+            existing_room = room_store.get(existing_room_code)
+            if existing_room and _room_allows_matchmaking_join(existing_room):
+                user_match_status[current_username] = existing_room_code
+                matched_room_code = existing_room_code
+            else:
+                user_match_status.pop(current_username, None)
+
+        for queued_users in waitlist.values():
+            if current_username in queued_users:
+                queued_users.remove(current_username)
+
+        # First try to join any existing open room.
+        # Specific difficulty requests must only match rooms of that exact difficulty.
+        if not matched_room_code:
+            open_scan = ["all", *MATCH_DIFFICULTIES] if difficulty == "all" else [difficulty]
+            for diff in open_scan:
+                if matched_room_code:
+                    break
+                open_list = list(open_rooms.get(diff, []))
+                for rc in open_list:
+                    room = room_store.get(rc)
+                    if not room:
+                        try:
+                            open_rooms[diff].remove(rc)
+                        except ValueError:
+                            pass
+                        continue
+                    if not _room_allows_matchmaking_join(room):
+                        if _room_is_expired(room) or room.get("status") != "waiting" or not _room_host_online(room):
+                            try:
+                                open_rooms[diff].remove(rc)
+                            except ValueError:
+                                pass
+                        continue
+                    if room.get("matchmaking") != "open":
+                        continue
+                    if current_username in room.get("players", {}):
+                        user_match_status[current_username] = rc
+                        matched_room_code = rc
+                        break
+
+                    room["players"][current_username] = _create_waiting_player(current_username)
+                    _push_event(room, "match", f"{current_username} joined open room {rc}.")
+                    user_match_status[current_username] = rc
+                    pending_redirects[current_username] = rc
+                    matched_room_code = rc
+                    room_to_broadcast = room
+                    break
+
+        # Then try to pair with a queued player.
+        # Specific difficulty requests must only pair within that exact queue.
+        if not matched_room_code:
+            queue_order = ["easy", "medium", "hard", "all"] if difficulty == "all" else [difficulty]
+            matched_username = None
+            matched_queue = None
+            for queue_name in queue_order:
+                candidate = next((u for u in waitlist.get(queue_name, []) if u != current_username), None)
+                if candidate:
+                    matched_username = candidate
+                    matched_queue = queue_name
+                    waitlist[queue_name].remove(candidate)
+                    break
+
+            if matched_username:
+                room_difficulty = difficulty
+                if room_difficulty == "all":
+                    room_difficulty = matched_queue if matched_queue in MATCH_DIFFICULTIES else random.choice(list(MATCH_DIFFICULTIES))
+
+                room_code = _generate_room_code()
+                while room_code in room_store:
+                    room_code = _generate_room_code()
+
+                host = matched_username
+                room_store[room_code] = {
+                    "room_code": room_code,
+                    "host": host,
+                    "difficulty": room_difficulty,
+                    "matchmaking": "invite",
                     "status": "waiting",
-                    "score": 0,
-                    "joined_at": _now_iso(),
-                    "submitted_at": None,
-                    "code": "",
-                    "language": None,
-                    "online": False,
-                    "typing": False,
-                    "progress": 0,
-                    "last_action": "joined",
-                    "runtime_ms": None,
-                    "memory_kb": None,
-                    "passed": 0,
-                    "total": 0,
-                    "submissions": [],
-                },
-                current_username: {
-                    "username": current_username,
-                    "status": "waiting",
-                    "score": 0,
-                    "joined_at": _now_iso(),
-                    "submitted_at": None,
-                    "code": "",
-                    "language": None,
-                    "online": False,
-                    "typing": False,
-                    "progress": 0,
-                    "last_action": "joined",
-                    "runtime_ms": None,
-                    "memory_kb": None,
-                    "passed": 0,
-                    "total": 0,
-                    "submissions": [],
+                    "created_at": _now_iso(),
+                    "started_at": None,
+                    "finished_at": None,
+                    "locked_at": None,
+                    "expired_at": None,
+                    "question_id": None,
+                    "time_limit_minutes": {"easy": 10, "medium": 15, "hard": 20}[room_difficulty],
+                    "players": {
+                        host: _create_waiting_player(host),
+                        current_username: _create_waiting_player(current_username),
+                    },
+                    "events": [],
+                    "chat_messages": [],
                 }
-            },
-            "events": [],
-            "chat_messages": [],
-        }
-        _push_event(room_store[room_code], "match", f"{matched_username} matched with {current_username}.")
-        user_match_status[matched_username] = room_code
-        user_match_status[current_username] = room_code
-        return {"status": "matched", "roomCode": room_code}
-    else:
-        waitlist[difficulty].append(current_username)
-        user_match_status[current_username] = "waiting"
-        
+                _push_event(room_store[room_code], "match", f"{matched_username} matched with {current_username}.")
+                user_match_status[matched_username] = room_code
+                user_match_status[current_username] = room_code
+                pending_redirects[matched_username] = room_code
+                pending_redirects[current_username] = room_code
+                matched_room_code = room_code
+
+        if not matched_room_code:
+            waitlist[difficulty].append(current_username)
+            user_match_status[current_username] = "waiting"
+
+    if room_to_broadcast:
+        try:
+            async with AsyncSessionLocal() as db:
+                await _broadcast_room(room_to_broadcast, db)
+        except Exception:
+            logger.exception(
+                "Failed to broadcast open-room matchmaking join for room %s",
+                room_to_broadcast.get("room_code"),
+            )
+
+    if matched_room_code:
+        return {"status": "matched", "roomCode": matched_room_code}
     return {"status": "waiting"}
 
 
@@ -725,21 +966,53 @@ async def matchmake(
 async def get_matchmake_status(
     current_username: str = Depends(get_current_user),
 ):
-    status = user_match_status.get(current_username, "idle")
-    if status not in ("waiting", "idle"):
-         return {"status": "matched", "roomCode": status}
-    return {"status": status}
+    async with matchmaking_lock:
+        redirect_room_code = pending_redirects.get(current_username)
+        if redirect_room_code:
+            room = room_store.get(redirect_room_code)
+            if room and current_username in room.get("players", {}):
+                if room.get("status") == "waiting" and not _room_allows_matchmaking_join(room):
+                    pending_redirects.pop(current_username, None)
+                else:
+                    return {"status": "matched", "roomCode": redirect_room_code, "trigger": "host_accept"}
+            pending_redirects.pop(current_username, None)
+
+        status_value = user_match_status.get(current_username)
+
+        if status_value not in (None, "waiting", "idle"):
+            room = room_store.get(status_value)
+            if room and current_username in room.get("players", {}):
+                if room.get("status") == "waiting":
+                    if _room_allows_matchmaking_join(room):
+                        return {"status": "matched", "roomCode": status_value}
+                elif _room_allows_rejoin(room):
+                    return {"status": "matched", "roomCode": status_value}
+
+        inferred_room_code = _find_user_room_code(current_username)
+        if inferred_room_code:
+            user_match_status[current_username] = inferred_room_code
+            return {"status": "matched", "roomCode": inferred_room_code}
+
+        in_waitlist = any(current_username in queue for queue in waitlist.values())
+        if in_waitlist:
+            user_match_status[current_username] = "waiting"
+            return {"status": "waiting"}
+
+        user_match_status[current_username] = "idle"
+        return {"status": "idle"}
 
 
 @router.post("/matchmake/cancel")
 async def cancel_matchmake(
     current_username: str = Depends(get_current_user),
 ):
-    for diff in waitlist:
-        if current_username in waitlist[diff]:
-            waitlist[diff].remove(current_username)
-    if current_username in user_match_status:
-        del user_match_status[current_username]
+    async with matchmaking_lock:
+        for diff in waitlist:
+            if current_username in waitlist[diff]:
+                waitlist[diff].remove(current_username)
+        if current_username in user_match_status:
+            del user_match_status[current_username]
+        pending_redirects.pop(current_username, None)
     return {"status": "idle"}
 
 
@@ -854,6 +1127,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
             _push_event(room, "presence", f"{username} went offline.", username)
         manager.disconnect(room_id, websocket)
         async with AsyncSessionLocal() as db:
+            if await _maybe_expire_if_empty(room, db):
+                return
             await _broadcast_room(room, db)
     except Exception as e:
         logger.exception("WS ERROR room_id=%s user_id=%s accepted=%s state=%s error=%s", room_id, username, accepted, websocket.client_state, e)
@@ -862,6 +1137,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
             room["players"][username]["typing"] = False
         manager.disconnect(room_id, websocket)
         try:
+            async with AsyncSessionLocal() as db:
+                if await _maybe_expire_if_empty(room, db):
+                    return
             await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="WebSocket error")
         except Exception:
             pass

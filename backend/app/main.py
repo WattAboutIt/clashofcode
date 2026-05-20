@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 
+def _env_list(name: str, default: list[str]) -> list[str]:
+    raw_value = os.getenv(name, "")
+    if not raw_value.strip():
+        return default
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
 def route_table(app: FastAPI) -> list[dict]:
     routes = []
     for route in app.routes:
@@ -67,10 +74,13 @@ app = FastAPI(
 # Configure CORS middleware BEFORE including routers (critical for Railway)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_env_list(
+        "CORS_ORIGINS",
+        [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
