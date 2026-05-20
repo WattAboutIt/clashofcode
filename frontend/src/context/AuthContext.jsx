@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import api, { setAuthToken } from "../api/axios";
 
 const AuthContext = createContext(null);
 
@@ -43,11 +43,7 @@ export function AuthProvider({ children }) {
   }, [token, user?.username]);
 
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete api.defaults.headers.common.Authorization;
-    }
+    setAuthToken(token || null);
   }, [token]);
 
   // Clean up corrupted localStorage
