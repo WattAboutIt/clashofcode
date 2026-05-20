@@ -18,17 +18,17 @@ export const API_BASE_URL = RAILWAY_API;
  */
 function chooseApiInstance(url) {
     const lower = String(url).toLowerCase();
+    // Certain room actions (coordination) should be routed to local backend
+    if (lower.includes("/ready") || lower.includes("/matchmake") || lower.includes("matchmake") || lower.includes("matchmaking") || lower.includes("find") || lower.includes("queue")) {
+        return localAPI;
+    }
+
     // Room-specific routes (e.g. /rooms/:roomCode/...) are room CRUD and must go to Railway
     try {
         const path = lower.split("?")[0];
         const roomPathMatch = path.match(/^\/rooms\/[^\/]+\//);
         if (roomPathMatch) return railwayAPI;
     } catch {}
-
-    // Matchmaking and queue related endpoints should go to local
-    if (lower.includes("/rooms/matchmake") || lower.includes("matchmake") || lower.includes("matchmaking") || lower.includes("find") || lower.includes("queue")) {
-        return localAPI;
-    }
 
     return railwayAPI;
 }
@@ -51,6 +51,17 @@ export async function requestAPI(url, options = {}) {
         console.log("LOCAL BACKEND → matchmaking request");
     } else {
         console.log("RAILWAY BACKEND → database request");
+    }
+
+    // Ensure Authorization header is present on the axios instance if token exists in localStorage.
+    try {
+        const stored = localStorage.getItem("clashofcode_token");
+        const header = stored && stored !== "undefined" ? `Bearer ${stored}` : null;
+        if (header && !instance.defaults.headers.common.Authorization) {
+            instance.defaults.headers.common.Authorization = header;
+        }
+    } catch (e) {
+        // ignore (e.g., non-browser env)
     }
 
     try {
@@ -86,6 +97,44 @@ const localAPI = axios.create({
     baseURL: LOCAL_API,
     timeout: 5000,
 });
+
+// Attach auth token from localStorage to both instances and provide matchmaking-specific error mapping
+function attachAuthInterceptors(instance, isLocal = false) {
+    instance.interceptors.request.use(
+        (config) => {
+            try {
+                const stored = localStorage.getItem("clashofcode_token");
+                if (stored && stored !== "undefined") {
+                    config.headers = config.headers || {};
+                    config.headers.Authorization = `Bearer ${stored}`;
+                }
+            } catch (e) {
+                // ignore
+            }
+            return config;
+        },
+        (err) => Promise.reject(err)
+    );
+
+    instance.interceptors.response.use(
+        (res) => res,
+        (err) => {
+            if (isLocal) {
+                // Map local backend failures to a friendly matchmaking error
+                const status = err?.response?.status;
+                if (!err.response || status === 401 || status >= 500) {
+                    const customErr = new Error("Matchmaking service unavailable");
+                    customErr.response = { data: { detail: "Matchmaking service unavailable" } };
+                    return Promise.reject(customErr);
+                }
+            }
+            return Promise.reject(err);
+        }
+    );
+}
+
+attachAuthInterceptors(railwayAPI, false);
+attachAuthInterceptors(localAPI, true);
 
 /**
  * Keep the old smart fallback util for code that used it directly.

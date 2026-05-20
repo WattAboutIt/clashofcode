@@ -641,19 +641,9 @@ function BattleRoom() {
   };
 
   const handleSetInviteOnly = async () => {
-    setUpdatingMatchmaking(true);
-    setError("");
-    try {
-      const nextOpenState = room?.matchmaking !== "open";
-      const response = await api.post(`/rooms/${roomCode}/matchmaking-mode`, { open_matchmaking: nextOpenState });
-      setRoom(response.data);
-      setToast(nextOpenState ? "Room is now global" : "Room is now invite-only");
-      window.setTimeout(() => setToast(""), 1800);
-    } catch (err) {
-      setError(extractError(err, "Unable to update room access mode."));
-    } finally {
-      setUpdatingMatchmaking(false);
-    }
+    // Deprecated: server-side room-based matchmaking mode is removed in favor of global queue.
+    setToast("This feature is deprecated — use Find Match instead.");
+    window.setTimeout(() => setToast(""), 1800);
   };
 
   const handleFinish = async () => {
@@ -879,6 +869,9 @@ function BattleRoom() {
                 </Button>
               )}
               {isHost && <Button onClick={handleStart} disabled={starting} size="lg">{starting ? "Starting..." : "Start Battle"}</Button>}
+              {!isHost && (
+                <Button onClick={() => sendSocket({ event: "player_ready" })} size="lg">Ready</Button>
+              )}
             </div>
             <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
           </Card>

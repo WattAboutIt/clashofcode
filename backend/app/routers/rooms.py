@@ -432,6 +432,7 @@ async def join_room(
         room["players"][username] = {
             "username": username,
             "status": "waiting",
+            "ready": False,
             "score": 0,
             "joined_at": _now_iso(),
             "submitted_at": None,
@@ -500,6 +501,7 @@ async def start_room(
             player["status"] = "active"
             player["typing"] = False
             player["last_action"] = "started"
+            player["ready"] = False
 
         async with matchmaking_lock:
             for username in room["players"].keys():
@@ -616,11 +618,69 @@ async def next_question(
         player["status"] = "active"
         player["typing"] = False
         player["last_action"] = "started"
+        player["ready"] = False
 
     _push_event(room, "start", f"Next battle started with {question.title}.", current_username)
     asyncio.create_task(_finish_room_when_timer_expires(room_code))
     payload = await _broadcast_room(room, db)
     return payload
+
+
+@router.post("/{room_code}/ready")
+async def player_ready(
+    room_code: str,
+    current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark the current player as ready. If all players are ready, start the room (match) automatically."""
+    room = _get_room_or_404(room_code)
+
+    if current_username not in room["players"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Join the room before marking ready.")
+
+    player = room["players"][current_username]
+    player["ready"] = True
+    player["last_action"] = "ready"
+    _push_event(room, "player", f"{current_username} is ready.", current_username)
+
+    # If all players are ready, start the battle (only when room is waiting)
+    all_ready = all(p.get("ready") for p in room.get("players", {}).values()) and len(room.get("players", {})) >= 2
+    if all_ready and room.get("status") == "waiting":
+        try:
+            questions = await _get_room_question_pool(db, room)
+            if not questions:
+                raise HTTPException(status_code=404, detail="No questions available for this difficulty.")
+
+            question = random.choice(questions)
+            room["question_id"] = question.id
+            room["status"] = "active"
+            room["started_at"] = _now_iso()
+            used = room.setdefault("used_questions", [])
+            if question.id not in used:
+                used.append(question.id)
+
+            for p in room["players"].values():
+                p["status"] = "active"
+                p["typing"] = False
+                p["last_action"] = "started"
+
+            async with matchmaking_lock:
+                for username in room["players"].keys():
+                    user_match_status[username] = room["room_code"]
+                    pending_redirects[username] = room["room_code"]
+
+            _push_event(room, "start", f"Battle started with {question.title}.", current_username)
+            asyncio.create_task(_finish_room_when_timer_expires(room_code))
+        except HTTPException:
+            raise
+        except Exception:
+            # revert if something goes wrong
+            if room.get("status") != "expired":
+                room["status"] = "waiting"
+            raise
+
+    payload = await _broadcast_room(room, db)
+    return {"status": "ok", "all_ready": all_ready, **({"roomCode": payload.get("roomCode")} if payload else {})}
 
 
 async def _finish_room_when_timer_expires(room_code: str):
@@ -670,6 +730,7 @@ async def _auto_advance_if_questions_remain(room: dict, db: AsyncSession) -> Non
         player["status"] = "active"
         player["typing"] = False
         player["last_action"] = "started"
+        player["ready"] = False
 
     _push_event(room, "start", f"Auto-advancing to next question: {question.title}", None)
     asyncio.create_task(_finish_room_when_timer_expires(room["room_code"]))
@@ -968,13 +1029,14 @@ async def get_matchmake_status(
 ):
     async with matchmaking_lock:
         redirect_room_code = pending_redirects.get(current_username)
+        players_in_queue = sum(len(q) for q in waitlist.values())
         if redirect_room_code:
             room = room_store.get(redirect_room_code)
             if room and current_username in room.get("players", {}):
                 if room.get("status") == "waiting" and not _room_allows_matchmaking_join(room):
                     pending_redirects.pop(current_username, None)
                 else:
-                    return {"status": "matched", "roomCode": redirect_room_code, "trigger": "host_accept"}
+                    return {"status": "matched", "roomCode": redirect_room_code, "trigger": "host_accept", "players_in_queue": players_in_queue}
             pending_redirects.pop(current_username, None)
 
         status_value = user_match_status.get(current_username)
@@ -984,22 +1046,25 @@ async def get_matchmake_status(
             if room and current_username in room.get("players", {}):
                 if room.get("status") == "waiting":
                     if _room_allows_matchmaking_join(room):
-                        return {"status": "matched", "roomCode": status_value}
+                        return {"status": "matched", "roomCode": status_value, "players_in_queue": players_in_queue}
                 elif _room_allows_rejoin(room):
-                    return {"status": "matched", "roomCode": status_value}
+                    return {"status": "matched", "roomCode": status_value, "players_in_queue": players_in_queue}
 
         inferred_room_code = _find_user_room_code(current_username)
         if inferred_room_code:
             user_match_status[current_username] = inferred_room_code
-            return {"status": "matched", "roomCode": inferred_room_code}
+            return {"status": "matched", "roomCode": inferred_room_code, "players_in_queue": players_in_queue}
 
         in_waitlist = any(current_username in queue for queue in waitlist.values())
+        # include total players in all queues for frontend display
+        players_in_queue = sum(len(q) for q in waitlist.values())
+
         if in_waitlist:
             user_match_status[current_username] = "waiting"
-            return {"status": "waiting"}
+            return {"status": "waiting", "players_in_queue": players_in_queue}
 
         user_match_status[current_username] = "idle"
-        return {"status": "idle"}
+        return {"status": "idle", "players_in_queue": players_in_queue}
 
 
 @router.post("/matchmake/cancel")
@@ -1107,6 +1172,44 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
                 _push_event(room, "run", f"{username} ran code.", username)
             elif event_type == "focus":
                 player["last_action"] = raw.get("target") or "focused"
+            elif event_type == "player_ready":
+                # Mark player ready via websocket. If all players ready, start the room.
+                player["ready"] = True
+                player["last_action"] = "ready"
+                _push_event(room, "player", f"{username} is ready.", username)
+
+                all_ready = all(p.get("ready") for p in room.get("players", {}).values()) and len(room.get("players", {})) >= 2
+                if all_ready and room.get("status") == "waiting":
+                    try:
+                        async with AsyncSessionLocal() as db:
+                            questions = await _get_room_question_pool(db, room)
+                            if not questions:
+                                await websocket.send_json({"event": "error", "message": "No questions available for this difficulty."})
+                            else:
+                                question = random.choice(questions)
+                                room["question_id"] = question.id
+                                room["status"] = "active"
+                                room["started_at"] = _now_iso()
+                                used = room.setdefault("used_questions", [])
+                                if question.id not in used:
+                                    used.append(question.id)
+
+                                for p in room["players"].values():
+                                    p["status"] = "active"
+                                    p["typing"] = False
+                                    p["last_action"] = "started"
+
+                                async with matchmaking_lock:
+                                    for u in room["players"].keys():
+                                        user_match_status[u] = room["room_code"]
+                                        pending_redirects[u] = room["room_code"]
+
+                                _push_event(room, "start", f"Battle started with {question.title}.", username)
+                                asyncio.create_task(_finish_room_when_timer_expires(room_code))
+                    except Exception:
+                        if room.get("status") != "expired":
+                            room["status"] = "waiting"
+                        raise
             else:
                 continue
 

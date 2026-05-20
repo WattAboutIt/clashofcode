@@ -15,7 +15,7 @@ import { requestAPI } from "./axios";
  * @param {{difficulty: string}} payload
  */
 export async function findMatch(payload) {
-  const res = await requestAPI("/rooms/matchmake", { method: "post", data: payload });
+  const res = await requestAPI("/rooms/matchmake", { method: "post", data: payload, forceLocal: true });
   return res.data;
 }
 
@@ -23,7 +23,16 @@ export async function findMatch(payload) {
  * Get matchmaking status
  */
 export async function getMatchStatus() {
-  const res = await requestAPI("/rooms/matchmake/status", { method: "get" });
+  const res = await requestAPI("/rooms/matchmake/status", { method: "get", forceLocal: true });
+  return res.data;
+}
+
+/**
+ * Request to join a specific room (used after matchmaking finds a match)
+ * @param {string} roomCode
+ */
+export async function requestJoin(roomCode) {
+  const res = await requestAPI("/rooms/join", { method: "post", data: { roomCode } });
   return res.data;
 }
 
@@ -31,7 +40,7 @@ export async function getMatchStatus() {
  * Cancel matchmaking / leave queue
  */
 export async function cancelMatchmaking() {
-  const res = await requestAPI("/rooms/matchmake/cancel", { method: "post" });
+  const res = await requestAPI("/rooms/matchmake/cancel", { method: "post", forceLocal: true });
   return res.data;
 }
 
@@ -39,13 +48,13 @@ export async function cancelMatchmaking() {
  * Mark player ready in a room
  */
 export async function setPlayerReady(roomCode) {
-  const res = await requestAPI(`/rooms/${roomCode}/ready`, { method: "post", data: {} });
-  return res.data;
+  // Deprecated: ready should be sent via WebSocket. Throw to prevent accidental HTTP calls.
+  throw new Error("Deprecated: use WebSocket PLAYER_READY instead of HTTP /ready");
 }
 
 export default {
   findMatch,
   getMatchStatus,
   cancelMatchmaking,
-  setPlayerReady,
+  requestJoin,
 };

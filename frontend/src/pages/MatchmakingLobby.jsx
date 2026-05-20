@@ -74,11 +74,16 @@ function MatchmakingLobby() {
 
   useEffect(() => {
     if (phase === "found" && foundRoom) {
-      // automatically attempt join (best-effort)
+      // automatically attempt join then navigate to the battle room
       (async () => {
         try {
           await matchmaking.requestJoin?.(foundRoom.roomCode);
-        } catch (_) {}
+        } catch (err) {
+          // ignore join failures here; navigation still proceeds to let the room UI handle join errors
+          console.warn("Auto-join failed", err);
+        }
+        // navigate to the battle room where WebSocket and ready handshake occur
+        navigate(`/battle-room/${encodeURIComponent(foundRoom.roomCode)}`);
       })();
     }
   }, [phase, foundRoom]);
@@ -98,19 +103,13 @@ function MatchmakingLobby() {
   };
 
   const onFoundComplete = () => {
-    // move to ready screen
-    setPhase("ready");
-    // navigate to battle-room ready page; keep within lobby to handle ready handshake
+    // move user to battle room UI (ready handshake happens there)
+    if (foundRoom?.roomCode) navigate(`/battle-room/${encodeURIComponent(foundRoom.roomCode)}`);
   };
 
   const onReady = async () => {
-    if (!foundRoom?.roomCode) return;
-    try {
-      await matchmaking.setPlayerReady(foundRoom.roomCode);
-      // wait for backend to emit READY_STATUS via polling
-    } catch (err) {
-      setError(err?.response?.data?.detail || "Unable to mark ready.");
-    }
+    // Deprecated: ready is handled via WebSocket in the battle room.
+    setError("Ready is handled in the battle room via WebSocket.");
   };
 
   if (phase === "found" && foundRoom) {
@@ -126,27 +125,9 @@ function MatchmakingLobby() {
   }
 
   if (phase === "ready" && foundRoom) {
-    return (
-      <section className="page-shell page-enter">
-        <div className="page-container">
-          <Card className="room-waiting">
-            <p className="label-text">Match Ready</p>
-            <h1 className="section-title">Prepare to start</h1>
-            <p className="section-subtitle">Waiting for both players to press Ready</p>
-            <div style={{ marginTop: 16 }}>
-              <div>Room: <strong>{foundRoom.roomCode}</strong></div>
-              <div style={{ marginTop: 12 }}>
-                <Button onClick={onReady}>Ready</Button>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <Button variant="secondary" onClick={() => navigate(`/battle-room/${foundRoom.roomCode}`)}>Enter Room (manual)</Button>
-              </div>
-              {error && <div className="room-error" style={{ marginTop: 12 }}>{error}</div>}
-            </div>
-          </Card>
-        </div>
-      </section>
-    );
+    // ready phase removed: users are navigated to the battle room where WebSocket ready handshake occurs
+    navigate(`/battle-room/${encodeURIComponent(foundRoom.roomCode)}`);
+    return null;
   }
 
   return (

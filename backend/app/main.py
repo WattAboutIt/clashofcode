@@ -21,6 +21,7 @@ from .websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logger.debug("Main module touched to trigger reload if running with --reload")
 
 
 def _env_list(name: str, default: list[str]) -> list[str]:
