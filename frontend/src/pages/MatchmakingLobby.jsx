@@ -24,14 +24,32 @@ function MatchmakingLobby() {
 
   const difficulty = String(searchParams.get("difficulty") || "easy").toLowerCase();
 
+  // Sequential poll loop: wait for each checkStatus to finish before scheduling next.
   const startPolling = () => {
     if (pollRef.current) return;
-    pollRef.current = setInterval(checkStatus, POLL_INTERVAL);
+    let stopped = false;
+    pollRef.current = { stopped };
+
+    (async function pollLoop() {
+      while (!pollRef.current || !pollRef.current.stopped) {
+        if (cancelledRef.current) break;
+        try {
+          // await checkStatus to ensure requests don't overlap
+          // eslint-disable-next-line no-await-in-loop
+          await checkStatus();
+        } catch (e) {
+          // swallow — checkStatus sets error state
+        }
+        // wait interval but allow early exit
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => setTimeout(res, POLL_INTERVAL));
+      }
+    })();
   };
 
   const stopPolling = () => {
     if (pollRef.current) {
-      clearInterval(pollRef.current);
+      pollRef.current.stopped = true;
       pollRef.current = null;
     }
   };
