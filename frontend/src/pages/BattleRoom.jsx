@@ -402,14 +402,22 @@ function SubmissionHistory({ submissions }) {
 
 function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
   const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    const el = messagesRef.current;
+    if (el) {
+      // scroll the messages container to its bottom so the page viewport
+      // doesn't jump (scrollIntoView can move the whole window).
+      el.scrollTop = el.scrollHeight;
+    } else {
+      bottomRef.current?.scrollIntoView({ block: "end" });
+    }
   }, [messages]);
 
   return (
     <div className="battle-room__chat">
-      <div className="battle-room__chat-messages" aria-live="polite">
+      <div className="battle-room__chat-messages" aria-live="polite" ref={messagesRef}>
         {(messages || []).length ? messages.map((item) => {
           const mine = item.username === currentUsername;
           return (
