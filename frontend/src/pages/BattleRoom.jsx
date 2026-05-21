@@ -401,23 +401,24 @@ function SubmissionHistory({ submissions }) {
 }
 
 function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
-  const bottomRef = useRef(null);
-  const messagesRef = useRef(null);
+  const listRef = useRef(null);
+  const prevCountRef = useRef(0);
 
   useEffect(() => {
-    const el = messagesRef.current;
-    if (el) {
-      // scroll the messages container to its bottom so the page viewport
-      // doesn't jump (scrollIntoView can move the whole window).
-      el.scrollTop = el.scrollHeight;
-    } else {
-      bottomRef.current?.scrollIntoView({ block: "end" });
+    const count = messages?.length ?? 0;
+    // Only scroll when new messages are added, not on every poll-driven re-render.
+    // Scrolling on every render was causing the page itself to jump to the top
+    // because scrollIntoView walks up to the nearest scrollable ancestor which
+    // could be the window rather than the chat container.
+    if (count > prevCountRef.current && listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
     }
+    prevCountRef.current = count;
   }, [messages]);
 
   return (
     <div className="battle-room__chat">
-      <div className="battle-room__chat-messages" aria-live="polite" ref={messagesRef}>
+      <div className="battle-room__chat-messages" aria-live="polite" ref={listRef}>
         {(messages || []).length ? messages.map((item) => {
           const mine = item.username === currentUsername;
           return (
@@ -433,7 +434,6 @@ function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
             </div>
           );
         }) : <div className="room-empty">No messages yet.</div>}
-        <div ref={bottomRef} />
       </div>
 
       <form className="battle-room__chat-form" onSubmit={onSend}>
@@ -454,6 +454,18 @@ function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
       </form>
     </div>
   );
+}
+
+// Merge incoming server chat_messages with local state, removing optimistic
+// duplicates. An optimistic message (id starts with "optimistic-") is removed
+// once the server confirms a real message with the same text from the same user.
+function mergeMessages(prev, incoming) {
+  const realMessages = incoming || [];
+  const realKeys = new Set(realMessages.map((m) => `${m.username}||${m.message}`));
+  const optimistics = (prev?.chat_messages || []).filter(
+    (m) => String(m.id).startsWith("optimistic-") && !realKeys.has(`${m.username}||${m.message}`)
+  );
+  return [...realMessages, ...optimistics];
 }
 
 function BattleRoom() {
@@ -663,7 +675,7 @@ function BattleRoom() {
         // An HTTP fetch here guarantees the second player always gets the latest
         // room state (active, question, etc.) regardless of WS broadcast timing.
         api.get(`/rooms/${roomCode}`)
-          .then((res) => { if (!closedByCleanup) setRoom(res.data); })
+          .then((res) => { if (!closedByCleanup) setRoom((prev) => ({ ...res.data, chat_messages: mergeMessages(prev, res.data?.chat_messages) })); })
           .catch(() => {}); // WS will keep retrying; silently ignore HTTP fetch errors
       };
 
@@ -683,7 +695,7 @@ function BattleRoom() {
             }
 
             chatSnapshotRef.current = nextMessages;
-            setRoom(data.room);
+            setRoom((prev) => ({ ...data.room, chat_messages: mergeMessages(prev, nextMessages) }));
 
             // ✅ FIX: auto-start when all players are ready (host only, no duplicate calls)
             if (
@@ -752,7 +764,7 @@ function BattleRoom() {
           const status = res.data?.status;
           // Replace room state with server truth, stripping any optimistic messages
           // that the server has now confirmed (server messages have real IDs).
-          setRoom(res.data);
+          setRoom((prev) => ({ ...res.data, chat_messages: mergeMessages(prev, res.data?.chat_messages) }));
           if (status && !["finished", "expired"].includes(status)) {
             timer = window.setTimeout(poll, POLL_MS);
           }
