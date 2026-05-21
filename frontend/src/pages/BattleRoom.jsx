@@ -456,6 +456,28 @@ function BattleRoom() {
     }
   }, []);
 
+  const handleReadyClick = async () => {
+    setError("");
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      try {
+        sendSocket({ event: "player_ready" });
+      } catch (err) {
+        setError(extractError(err, "Unable to send ready signal via realtime connection."));
+      }
+      return;
+    }
+
+    // Fallback to HTTP endpoint if websocket is not connected
+    try {
+      await api.post(`/rooms/${roomCode}/ready`);
+      // refresh room state
+      const updated = await api.get(`/rooms/${roomCode}`);
+      setRoom(updated.data);
+    } catch (err) {
+      setError(extractError(err, "Unable to mark ready via HTTP fallback."));
+    }
+  };
+
   useEffect(() => {
     workerRef.current = new Worker(new URL("../utils/pyodideWorker.js", import.meta.url), { type: "classic" });
     return () => workerRef.current?.terminate();
@@ -532,7 +554,10 @@ function BattleRoom() {
     };
 
     const buildWsUrl = () => {
-      const baseUrl = api.defaults.baseURL || window.location.origin;
+      // Prefer the page origin when running locally so websockets connect to the
+      // local backend during development. Otherwise fall back to configured API base.
+      const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const baseUrl = isLocalHost ? window.location.origin : (api.defaults.baseURL || window.location.origin);
       const normalizedBase = baseUrl.replace(/\/$/, "").replace(/^http/i, "ws");
       return `${normalizedBase}/rooms/${encodeURIComponent(roomCode)}/ws?token=${encodeURIComponent(token)}`;
     };
@@ -870,7 +895,7 @@ function BattleRoom() {
               )}
               {isHost && <Button onClick={handleStart} disabled={starting} size="lg">{starting ? "Starting..." : "Start Battle"}</Button>}
               {!isHost && (
-                <Button onClick={() => sendSocket({ event: "player_ready" })} size="lg">Ready</Button>
+                <Button onClick={handleReadyClick} size="lg">Ready</Button>
               )}
             </div>
             <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
