@@ -103,10 +103,15 @@ def _room_host_online(room: dict) -> bool:
 
 
 def _room_allows_matchmaking_join(room: dict) -> bool:
+    # NOTE: We do NOT require _room_host_online here. The host's online flag is
+    # only set when their WebSocket is connected. Since WS connectivity is
+    # unreliable (especially in dev), requiring host_online means rooms created
+    # by hosts whose WS hasn't fully connected yet are never joinable via
+    # matchmaking — causing both players to end up in separate rooms.
+    # A room in "waiting" status that hasn't expired is sufficient.
     return (
         not _room_is_expired(room)
         and room.get("status") == "waiting"
-        and _room_host_online(room)
     )
 
 
