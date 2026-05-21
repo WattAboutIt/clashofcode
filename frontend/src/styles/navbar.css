@@ -31,6 +31,15 @@
   min-width: 0;
 }
 
+/* ── Logo image (replaces .navbar__brand-mark) ── */
+.navbar__logo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
 .navbar__brand-mark {
   position: relative;
   display: inline-flex;

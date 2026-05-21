@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import logo from "../assets/logo.png";
 import "../styles/navbar.css";
 
 const guestLinks = [
@@ -119,7 +120,7 @@ function Navbar() {
       <div className="navbar__wrap">
         <div className="navbar__surface">
           <Link to="/" className="navbar__brand" onClick={() => setOpen(false)}>
-            <span className="navbar__brand-mark" aria-hidden="true">C</span>
+            <img src={logo} alt="Clash of Code Logo" className="navbar__logo" />
             <div className="navbar__brand-copy">
               <p className="navbar__brand-title">Clash of Code</p>
               <span className="navbar__brand-subtitle">Premium Arena</span>
