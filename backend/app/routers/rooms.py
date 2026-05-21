@@ -350,7 +350,8 @@ async def create_room(
         room_code = _generate_room_code()
 
     host = current_username
-    matchmaking_mode = "open" if getattr(request, "open_matchmaking", False) else "invite"
+    # Default to open matchmaking when the flag is omitted
+    matchmaking_mode = "open" if getattr(request, "open_matchmaking", True) else "invite"
     room_store[room_code] = {
         "room_code": room_code,
         "host": host,
@@ -394,7 +395,9 @@ async def create_room(
     _push_event(room_store[room_code], "room", f"{host} created the room.", host)
     # If room is open for matchmaking, register it so matchmakers can join
     if matchmaking_mode == "open":
-        open_rooms.setdefault(difficulty, []).append(room_code)
+        open_rooms.setdefault(difficulty, [])
+        if room_code not in open_rooms[difficulty]:
+            open_rooms[difficulty].append(room_code)
 
     return {
         "roomCode": room_code,
@@ -513,11 +516,14 @@ async def start_room(
         payload = await _broadcast_room(room, db)
         return payload
     except Exception:
-        if room.get("status") != "expired":
-            room["status"] = "waiting"
-            room["locked_at"] = None
-            if room.get("matchmaking") == "open" and room.get("host") in _room_online_players(room):
-                open_rooms.setdefault(room.get("difficulty"), []).append(room["room_code"])
+            if room.get("status") != "expired":
+                room["status"] = "waiting"
+                room["locked_at"] = None
+                if room.get("matchmaking") == "open" and room.get("host") in _room_online_players(room):
+                    d = room.get("difficulty")
+                    open_rooms.setdefault(d, [])
+                    if room["room_code"] not in open_rooms[d]:
+                        open_rooms[d].append(room["room_code"])
         raise
 
 
