@@ -38,7 +38,7 @@ function normalizeQuestionResponse(data) {
 }
 
 function CreateRoom() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [roomName, setRoomName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
@@ -118,7 +118,11 @@ function CreateRoom() {
     }
     setLoading(true);
     try {
-      const response = await api.post("/rooms/join", { roomCode: joinCode.trim() });
+      const response = await api.post(
+        "/rooms/join",
+        { roomCode: joinCode.trim() },
+        { headers: { Authorization: token ? `Bearer ${token}` : undefined } }
+      );
       navigate(`/battle-room/${response.data.roomCode || response.data.code}`);
     } catch (err) {
       setError(err?.response?.data?.detail || "Unable to join room. Check the code and try again.");

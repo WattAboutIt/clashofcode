@@ -13,31 +13,13 @@ const LOCAL_API = "http://localhost:8000";
 export const API_BASE_URL = RAILWAY_API;
 
 /**
- * Auto-routing logic: choose local for matchmaking-related endpoints, otherwise railway.
- * Matching keywords: match, matchmaking, find, queue
+ * All /rooms/* endpoints live exclusively on Railway.
+ * Routing any of them to localhost causes 404s because the local dev server
+ * does not implement room or matchmaking routes.
+ * This function always returns railwayAPI — kept as a function for
+ * future extensibility (e.g. forceLocal flag).
  */
-function chooseApiInstance(url) {
-    const lower = String(url).toLowerCase();
-    // If the app is running locally, prefer the local backend for matchmaking
-    // and join/ready flows so dev UX doesn't hit the deployed Railway server first.
-    const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-    if (lower.includes("/ready") || lower.includes("/matchmake") || lower.includes("matchmake") || lower.includes("matchmaking") || lower.includes("find") || lower.includes("queue")) {
-        return isLocalHost ? localAPI : railwayAPI;
-    }
-
-    // Explicitly route the simple join endpoint to local in dev (the deployed
-    // Railway backend may return unexpected 400s during development).
-    if (lower.includes("/rooms/join")) {
-        return isLocalHost ? localAPI : railwayAPI;
-    }
-
-    // Room-specific routes (e.g. /rooms/:roomCode/...) are room CRUD and must go to Railway
-    try {
-        const path = lower.split("?")[0];
-        const roomPathMatch = path.match(/^\/rooms\/[^\/]+\//);
-        if (roomPathMatch) return railwayAPI;
-    } catch {}
-
+function chooseApiInstance() {
     return railwayAPI;
 }
 
@@ -48,20 +30,12 @@ export async function requestAPI(url, options = {}) {
     const method = (options.method || "get").toLowerCase();
     const data = options.data;
     const config = options.config || {};
-    const forceLocal = options.forceLocal || false;
-    const forceRailway = options.forceRailway || false;
 
-    let instance = chooseApiInstance(url);
-    if (forceLocal) instance = localAPI;
-    if (forceRailway) instance = railwayAPI;
+    // forceLocal is intentionally ignored — local has no room routes.
+    // All requests go to Railway.
+    const instance = chooseApiInstance();
 
-    if (instance === localAPI) {
-        console.log("LOCAL BACKEND → matchmaking request");
-    } else {
-        console.log("RAILWAY BACKEND → database request");
-    }
-
-    // Ensure Authorization header is present on the axios instance if token exists in localStorage.
+    // Ensure Authorization header is set if token exists in localStorage.
     try {
         const stored = localStorage.getItem("clashofcode_token");
         const header = stored && stored !== "undefined" ? `Bearer ${stored}` : null;
@@ -79,28 +53,12 @@ export async function requestAPI(url, options = {}) {
         // for post/put/patch/delete, axios expects (url, data, config)
         return await instance[method](url, data, config);
     } catch (err) {
-        const isLocal = instance === localAPI;
-        // If the primary (Railway) failed and this was not explicitly a local request, try local fallback.
-        if (!isLocal) {
-            console.warn(`⚠ Primary backend failed for ${url}, attempting local fallback`, err?.message || err);
-            try {
-                if (method === "get") {
-                    return await localAPI.get(url, { params: data, ...config });
-                }
-                return await localAPI[method](url, data, config);
-            } catch (localErr) {
-                console.error(`❌ Both Railway and Local backend failed for ${url}`, localErr?.message || localErr);
-                const customErr = new Error("Matchmaking service unavailable (both Railway and local failed)");
-                customErr.response = { data: { detail: "Matchmaking service unavailable (both Railway and local failed)" } };
-                throw customErr;
-            }
-        }
-
-        // If we were already trying local, give a friendly matchmaking-specific error
-        console.warn(`⚠ Local backend failed for ${url}`, err?.message || err);
-        const customErr = new Error("Matchmaking service unavailable (local server not running)");
-        customErr.response = { data: { detail: "Matchmaking service unavailable (local server not running)" } };
-        throw customErr;
+        // Surface the real Railway error so callers can read
+        // err.response.data.detail and show a meaningful message.
+        const httpStatus = err?.response?.status;
+        const detail = err?.response?.data?.detail || err?.message || "Request failed";
+        console.error(`❌ Railway request failed for ${url} [${httpStatus ?? "network"}]:`, detail);
+        throw err;
     }
 }
 
@@ -111,7 +69,7 @@ export async function requestAPI(url, options = {}) {
  */
 const railwayAPI = axios.create({
     baseURL: RAILWAY_API,
-    timeout: 5000,
+    timeout: 8000,
 });
 
 const localAPI = axios.create({
@@ -119,8 +77,8 @@ const localAPI = axios.create({
     timeout: 5000,
 });
 
-// Attach auth token from localStorage to both instances and provide matchmaking-specific error mapping
-function attachAuthInterceptors(instance, isLocal = false) {
+// Attach auth token from localStorage to both instances
+function attachAuthInterceptors(instance) {
     instance.interceptors.request.use(
         (config) => {
             try {
@@ -139,23 +97,12 @@ function attachAuthInterceptors(instance, isLocal = false) {
 
     instance.interceptors.response.use(
         (res) => res,
-        (err) => {
-            if (isLocal) {
-                // Map local backend failures to a friendly matchmaking error
-                const status = err?.response?.status;
-                if (!err.response || status === 401 || status >= 500) {
-                    const customErr = new Error("Matchmaking service unavailable");
-                    customErr.response = { data: { detail: "Matchmaking service unavailable" } };
-                    return Promise.reject(customErr);
-                }
-            }
-            return Promise.reject(err);
-        }
+        (err) => Promise.reject(err)
     );
 }
 
-attachAuthInterceptors(railwayAPI, false);
-attachAuthInterceptors(localAPI, true);
+attachAuthInterceptors(railwayAPI);
+attachAuthInterceptors(localAPI);
 
 /**
  * Keep the old smart fallback util for code that used it directly.
@@ -165,18 +112,7 @@ export const apiRequest = async (config) => {
         const response = await railwayAPI(config);
         return response.data;
     } catch (error) {
-        console.warn("⚠ Railway failed. Switching to local backend...");
-
-        const shouldFallback = !error.response || error.response.status === 404 || error.response.status >= 500;
-        if (shouldFallback) {
-            try {
-                const response = await localAPI(config);
-                return response.data;
-            } catch (localError) {
-                console.error("❌ Both Railway and Local backend failed");
-                throw localError;
-            }
-        }
+        console.warn("⚠ Railway request failed:", error?.response?.data?.detail || error?.message);
         throw error;
     }
 };

@@ -418,15 +418,15 @@ async def join_room(
     if _room_is_expired(room):
         raise HTTPException(status_code=410, detail="Room has expired.")
 
-    host_username = room.get("host")
-    host_player = room.get("players", {}).get(host_username, {}) if host_username else {}
-    host_online = bool(host_player.get("online"))
-
     if username not in room["players"]:
         if room.get("status") != "waiting":
             raise HTTPException(status_code=400, detail="Room is no longer accepting new players.")
-        if not host_online:
-            raise HTTPException(status_code=400, detail="Host is offline and the room is not joinable.")
+        # NOTE: We intentionally do NOT check host_online here.
+        # The host's `online` flag is only set when their WebSocket connects, which happens
+        # AFTER the HTTP /rooms/join call. Blocking on host_online at join time causes a
+        # race condition where the second player gets a 400 because the host's WS hasn't
+        # connected yet. The room being in "waiting" status is sufficient proof the
+        # host created it and intends to play.
     elif room.get("status") == "expired":
         raise HTTPException(status_code=410, detail="Room has expired.")
 
