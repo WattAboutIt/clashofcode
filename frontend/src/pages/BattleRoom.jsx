@@ -605,9 +605,12 @@ function BattleRoom() {
     };
 
     const buildWsUrl = () => {
-      const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      const baseUrl = isLocalHost ? window.location.origin : (api.defaults.baseURL || window.location.origin);
-      const normalizedBase = baseUrl.replace(/\/$/, "").replace(/^http/i, "ws");
+      // Always connect to the Railway backend, never to the Vite dev server.
+      // On localhost, window.location.origin is the Vite port (5173) which does
+      // NOT proxy WebSockets — this was causing WS to silently fail and the UI
+      // to only update on manual refresh.
+      const backendBase = api.defaults.baseURL || "https://clashofcode-production.up.railway.app";
+      const normalizedBase = backendBase.replace(/\/$/, "").replace(/^http/i, "ws");
       return `${normalizedBase}/rooms/${encodeURIComponent(roomCode)}/ws?token=${encodeURIComponent(token)}`;
     };
 
@@ -725,6 +728,35 @@ function BattleRoom() {
       wsRef.current = null;
     };
   }, [roomCode, sendSocket, token]);
+
+  // Polling fallback: re-fetch room state every 3s when in waiting/active status.
+  // This ensures the UI stays live even if the WebSocket broadcast is missed
+  // (e.g. the host doesn't see Player 2 join until they manually refresh).
+  // The poll is cheap and stops once the room is finished/expired.
+  useEffect(() => {
+    if (!roomCode) return undefined;
+    const POLL_MS = 1500;
+    let timer = null;
+
+    const poll = () => {
+      api.get(`/rooms/${roomCode}`)
+        .then((res) => {
+          const status = res.data?.status;
+          // Replace room state with server truth, stripping any optimistic messages
+          // that the server has now confirmed (server messages have real IDs).
+          setRoom(res.data);
+          if (status && !["finished", "expired"].includes(status)) {
+            timer = window.setTimeout(poll, POLL_MS);
+          }
+        })
+        .catch(() => {
+          timer = window.setTimeout(poll, POLL_MS);
+        });
+    };
+
+    timer = window.setTimeout(poll, POLL_MS);
+    return () => { if (timer) window.clearTimeout(timer); };
+  }, [roomCode]);
 
   // ✅ FIX: reset autoStartingRef when room status changes away from waiting
   useEffect(() => {
@@ -866,12 +898,38 @@ function BattleRoom() {
     showToast("Invite link copied");
   };
 
-  const handleSendChat = (event) => {
+  const handleSendChat = async (event) => {
     event.preventDefault();
     const message = chatDraft.trim();
     if (!message) return;
-    sendSocket({ event: "chat_message", message });
     setChatDraft("");
+
+    // Optimistic UI: show message instantly for the sender
+    const optimisticMsg = {
+      id: `optimistic-${Date.now()}`,
+      username: user?.username,
+      message,
+      created_at: new Date().toISOString(),
+    };
+    setRoom((prev) => prev ? {
+      ...prev,
+      chat_messages: [...(prev.chat_messages || []), optimisticMsg],
+    } : prev);
+
+    // Try WebSocket first (instant delivery to others if WS is connected)
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      sendSocket({ event: "chat_message", message });
+    }
+
+    // Always also POST via HTTP — this is the reliable path that persists the
+    // message server-side and triggers a broadcast to all WS clients.
+    // If WS is broken, HTTP is the only way the message reaches others.
+    try {
+      await api.post(`/rooms/${roomCode}/chat`, { message });
+    } catch (err) {
+      // If HTTP also fails, show an error but keep the optimistic message visible
+      setError(extractError(err, "Failed to send message."));
+    }
   };
 
   const startResize = (side, event) => {

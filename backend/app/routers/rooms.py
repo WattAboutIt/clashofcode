@@ -457,21 +457,6 @@ async def join_room(
         pending_redirects.pop(username, None)
 
     payload = await _broadcast_room(room, db)
-    # Schedule a short delayed broadcast to cover timing races where a
-    # websocket connection may not be fully registered on other clients yet.
-    # This makes the UI resilient so hosts see newly-joined players without
-    # needing a manual page refresh.
-    async def _delayed_broadcast(code: str):
-        await asyncio.sleep(0.25)
-        r = room_store.get(code)
-        if r:
-            try:
-                async with AsyncSessionLocal() as _db:
-                    await _broadcast_room(r, _db)
-            except Exception:
-                logger.exception("Delayed broadcast failed for room=%s", code)
-
-    asyncio.create_task(_delayed_broadcast(room.get("room_code")))
     return {"roomCode": payload["roomCode"]}
 
 
@@ -482,6 +467,39 @@ async def get_room(
 ):
     room = _get_room_or_404(room_code)
     return await _serialize_room(room, db)
+
+
+@router.post("/{room_code}/chat")
+async def send_chat_message(
+    room_code: str,
+    payload: dict,
+    current_username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """HTTP fallback for chat when WebSocket is unavailable.
+    Stores the message in room state and broadcasts to all connected WS clients.
+    """
+    room = _get_room_or_404(room_code)
+
+    if _room_is_expired(room):
+        raise HTTPException(status_code=410, detail="Room has expired.")
+
+    if current_username not in room["players"]:
+        raise HTTPException(status_code=403, detail="You are not in this room.")
+
+    message = str(payload.get("message") or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+    if len(message) > 500:
+        raise HTTPException(status_code=400, detail="Messages must be 500 characters or fewer.")
+
+    chat_message = _push_chat_message(room, current_username, message)
+    room["players"].get(current_username, {})["last_action"] = "sent a message"
+
+    # Broadcast updated room to all connected WebSocket clients
+    await _broadcast_room(room, db)
+
+    return {"ok": True, "message": chat_message}
 
 
 @router.post("/{room_code}/start")
