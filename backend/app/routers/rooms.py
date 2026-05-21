@@ -516,14 +516,14 @@ async def start_room(
         payload = await _broadcast_room(room, db)
         return payload
     except Exception:
-            if room.get("status") != "expired":
-                room["status"] = "waiting"
-                room["locked_at"] = None
-                if room.get("matchmaking") == "open" and room.get("host") in _room_online_players(room):
-                    d = room.get("difficulty")
-                    open_rooms.setdefault(d, [])
-                    if room["room_code"] not in open_rooms[d]:
-                        open_rooms[d].append(room["room_code"])
+        if room.get("status") != "expired":
+            room["status"] = "waiting"
+            room["locked_at"] = None
+            if room.get("matchmaking") == "open" and room.get("host") in _room_online_players(room):
+                d = room.get("difficulty")
+                open_rooms.setdefault(d, [])
+                if room["room_code"] not in open_rooms[d]:
+                    open_rooms[d].append(room["room_code"])
         raise
 
 
