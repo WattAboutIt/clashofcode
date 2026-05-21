@@ -55,65 +55,66 @@ def route_table(app: FastAPI) -> list[dict]:
 async def lifespan(app: FastAPI):
     logger.info("Registered FastAPI routes:")
     for route in route_table(app):
-        logger.info("ROUTE type=%s methods=%s path=%s name=%s", route["type"], route["methods"], route["path"], route["name"])
+        logger.info(
+            "ROUTE type=%s methods=%s path=%s name=%s",
+            route["type"], route["methods"], route["path"], route["name"],
+        )
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await ensure_legacy_schema(conn)
         await seed_questions(AsyncSessionLocal)
     except Exception:
-        logger.exception("Database startup failed; the app will continue, but database functionality may be degraded.")
+        logger.exception(
+            "Database startup failed; the app will continue, "
+            "but database functionality may be degraded."
+        )
     yield
 
 
 app = FastAPI(
     title="Clash of Code API",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
-# CORS configuration
-# Configure CORS middleware BEFORE including routers (critical for Railway)
+# ---------------------------------------------------------------------------
+# CORS — must be added BEFORE routers are included.
+# Origins are read from the CORS_ORIGINS env var (comma-separated) so you can
+# add new Vercel preview URLs in Railway without redeploying the backend.
+#
+# Railway env var example:
+#   CORS_ORIGINS=https://clashofcode-three.vercel.app,http://localhost:5173
+# ---------------------------------------------------------------------------
+_DEFAULT_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "https://clashofcode-three.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_env_list(
-        "CORS_ORIGINS",
-        [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ],
-    ),
+    allow_origins=_env_list("CORS_ORIGINS", _DEFAULT_ORIGINS),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ---------------------------------------------------------------------------
 # Routers
-app.include_router(
-    auth.router,
-    tags=["Authentication"]
-)
+# ---------------------------------------------------------------------------
+app.include_router(auth.router, tags=["Authentication"])
+app.include_router(questions.router)
+app.include_router(user.router)
+app.include_router(leaderboard.router)
+app.include_router(rooms.router)
+app.include_router(execution.router)
 
-app.include_router(
-    questions.router,
-)
 
-app.include_router(
-    user.router,
-)
-
-app.include_router(
-    leaderboard.router,
-)
-
-app.include_router(
-    rooms.router,
-)
-
-app.include_router(
-    execution.router,
-)
-
-# Test route
+# ---------------------------------------------------------------------------
+# Health / utility routes
+# ---------------------------------------------------------------------------
 @app.get("/")
 async def home():
     return {"message": "Clash of Code Runner is running"}
@@ -128,7 +129,7 @@ def health():
 async def debug_routes():
     return {
         "routes": route_table(app),
-        "websockets": [route for route in route_table(app) if route["type"] == "websocket"],
+        "websockets": [r for r in route_table(app) if r["type"] == "websocket"],
         "active_websockets": manager.snapshot(),
     }
 
@@ -137,22 +138,24 @@ async def debug_routes():
 async def debug_questions():
     async with AsyncSessionLocal() as db:
         result = await db.execute(
-            select(CodingQuestion).order_by(CodingQuestion.points.asc(), CodingQuestion.id.asc())
+            select(CodingQuestion).order_by(
+                CodingQuestion.points.asc(), CodingQuestion.id.asc()
+            )
         )
-        questions = result.scalars().all()
+        all_questions = result.scalars().all()
         sample = [
             {
-                "id": question.id,
-                "question_text": question.description,
-                "option_a": getattr(question, "option_a", None),
-                "option_b": getattr(question, "option_b", None),
-                "option_c": getattr(question, "option_c", None),
-                "option_d": getattr(question, "option_d", None),
-                "difficulty": question.difficulty,
+                "id": q.id,
+                "question_text": q.description,
+                "option_a": getattr(q, "option_a", None),
+                "option_b": getattr(q, "option_b", None),
+                "option_c": getattr(q, "option_c", None),
+                "option_d": getattr(q, "option_d", None),
+                "difficulty": q.difficulty,
             }
-            for question in questions[:2]
+            for q in all_questions[:2]
         ]
         return {
-            "count": len(questions),
+            "count": len(all_questions),
             "sample": sample,
         }
