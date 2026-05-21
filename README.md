@@ -2,316 +2,473 @@
 
 ## 📌 1. Project Title
 
-**Clash of Code** is a multiplayer coding battle platform where developers compete in real-time coding challenges. Users can create rooms, join battles, and climb the leaderboard in a competitive coding arena.
+**Clash of Code** is a multiplayer coding battle platform where developers compete in real-time coding challenges. Users can create rooms, join battles, and climb the leaderboard in a competitive environment.
 
 -----
 
 ## 📖 2. Overview
 
-Clash of Code is a web application that lets developers battle each other by solving coding problems as fast as possible. It's like a competitive coding game where speed and accuracy matter.
+Clash of Code is a full-stack web application that lets developers battle each other by solving coding problems as fast as possible. It's a competitive coding game where speed and accuracy matter.
 
 ### What Users Can Do:
 - **Login/Register**: Create an account or sign in to access the platform.
 - **Create Room**: Start a new battle room and invite others.
 - **Join Room**: Enter a room code to join an existing battle.
-- **Battle**: (Future feature) Compete in real-time coding challenges.
+- **Matchmaking**: Find opponents through the matchmaking system.
+- **Code Battles**: Compete in real-time coding challenges with live code execution.
 - **View Profile**: Check personal stats like wins, losses, and ranking.
+- **Leaderboard**: Climb the rankings and see your performance vs. other players.
 
-This is a real-time multiplayer system, meaning multiple users can interact in the same room at the same time. The app is built to handle live updates and shared experiences.
+This is a real-time multiplayer system, meaning multiple users can interact in the same room at the same time. The app is built to handle live updates and shared experiences using WebSockets for instant communication.
 
 ---
 
 ## 🛠️ 3. Tech Stack
 
-### Frontend:
-- **React**: A JavaScript library for building user interfaces.
-- **Vite**: A fast build tool for React projects.
-- **React Router v6**: Handles navigation between different pages.
-- **Context API**: Manages shared data across the app (like user login status).
-- **Axios**: A tool to make HTTP requests to the backend.
+### Frontend (React 18 with Vite):
+- **React 18**: Modern JavaScript library for building dynamic user interfaces.
+- **Vite**: Ultra-fast build tool for development and production.
+- **React Router v6**: Client-side routing between pages.
+- **Context API**: Global state management (Auth, Theme).
+- **Axios**: HTTP client for backend API communication.
+- **WebSocket**: Real-time bidirectional communication with the server.
 
-### Backend:
-- **FastAPI** (or Node.js): A framework to build the server-side logic.
-- **JWT Authentication**: A secure way to verify users with tokens.
-- **WebSocket**: (Future) For real-time communication between users.
+### Backend (Python with FastAPI):
+- **FastAPI**: Modern, fast Python web framework with automatic API documentation.
+- **SQLAlchemy**: ORM for database operations.
+- **Alembic**: Database migrations.
+- **JWT (JSON Web Tokens)**: Secure authentication tokens.
+- **WebSocket (Starlette)**: Real-time communication protocol.
+- **SQLite/PostgreSQL**: Database storage.
+- **Python Code Execution**: Safe sandbox environment for running user code.
 
 ### Styling:
-- **CSS Modules or Global Styles**: Custom CSS for visual design.
-- **Dark/Light Mode System**: Switch between dark and light themes.
+- **CSS Modules**: Scoped component styling.
+- **Dark/Light Mode System**: Theme switching with persistent storage.
 
 ---
 
 ## 📁 4. Project Structure
 
-The project is organized into folders to keep things neat and easy to find. Here's the main structure for the frontend:
-
 ```
-src/
- ├── api/
- │    └── axios.js          # Handles all API calls to the backend
- ├── components/
- │    ├── Navbar.jsx        # The top navigation bar
- │    ├── ProtectedRoute.jsx # Checks if user is logged in
- │    └── ui/               # Reusable UI parts like buttons and cards
- ├── context/
- │    ├── AuthContext.jsx   # Manages user login state
- │    └── ThemeContext.jsx  # Manages dark/light mode
- ├── pages/
- │    ├── Home.jsx          # Landing page
- │    ├── Login.jsx         # Login form
- │    ├── Register.jsx      # Sign-up form
- │    ├── Dashboard.jsx     # User dashboard
- │    ├── CreateRoom.jsx    # Create a new battle room
- │    ├── BattleRoom.jsx    # The battle lobby
- │    ├── Profile.jsx       # User stats page
- │    └── Leaderboard.jsx   # Rankings
- ├── styles/
- │    ├── global.css        # Main styles
- │    ├── theme.css         # Theme setup
- │    ├── dark.css          # Dark mode styles
- │    └── light.css         # Light mode styles
- ├── hooks/                 # Custom React hooks (if needed)
- ├── utils/
- │    └── socket.js         # WebSocket setup (for future real-time features)
- ├── App.jsx                # Main app component
- ├── main.jsx               # Entry point
- └── index.css              # Additional styles
+clashofcode/
+├── frontend/                    # React Vite application
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── axios.js        # Centralized API client with interceptors
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx      # Top navigation bar
+│   │   │   ├── ProtectedRoute.jsx # Authentication guard
+│   │   │   ├── ErrorBoundary.jsx  # Error handling wrapper
+│   │   │   └── ui/             # Reusable UI components
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx # User login state management
+│   │   │   └── ThemeContext.jsx # Dark/light theme management
+│   │   ├── pages/
+│   │   │   ├── Home.jsx        # Landing page
+│   │   │   ├── Login.jsx       # Login form
+│   │   │   ├── Register.jsx    # Sign-up form
+│   │   │   ├── Dashboard.jsx   # Main user dashboard
+│   │   │   ├── CreateRoom.jsx  # Create new battle room
+│   │   │   ├── MatchmakingLobby.jsx # Matchmaking interface
+│   │   │   ├── FindMatch.jsx   # Find match UI
+│   │   │   ├── CodingInterface.jsx # Battle arena with code editor
+│   │   │   ├── Profile.jsx     # User profile & stats
+│   │   │   ├── Leaderboard.jsx # Global rankings
+│   │   │   └── DeveloperQuestions.jsx # Question management
+│   │   ├── layouts/
+│   │   │   └── AppShell.jsx    # Main app layout wrapper
+│   │   ├── styles/
+│   │   │   ├── global.css      # Global styles
+│   │   │   ├── theme.css       # Theme definitions
+│   │   │   ├── dark.css        # Dark mode styles
+│   │   │   └── light.css       # Light mode styles
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── utils/
+│   │   │   └── socket.js       # WebSocket client setup
+│   │   ├── App.jsx             # Root app component
+│   │   └── main.jsx            # Entry point
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md
+│
+├── backend/                     # FastAPI Python application
+│   ├── app/
+│   │   ├── main.py            # FastAPI app initialization & routes
+│   │   ├── database.py        # Database connection & session management
+│   │   ├── models/            # SQLAlchemy database models
+│   │   │   ├── user.py        # User model
+│   │   │   ├── room.py        # Battle room model
+│   │   │   ├── question.py    # Coding questions model
+│   │   │   └── execution.py   # Code execution results model
+│   │   ├── schemas/           # Pydantic request/response schemas
+│   │   ├── routers/           # API route handlers
+│   │   │   ├── auth.py        # Authentication endpoints
+│   │   │   ├── user.py        # User profile endpoints
+│   │   │   ├── rooms.py       # Room management endpoints
+│   │   │   ├── questions.py   # Questions endpoints
+│   │   │   ├── execution.py   # Code execution endpoints
+│   │   │   └── leaderboard.py # Leaderboard endpoints
+│   │   ├── services/          # Business logic layer
+│   │   ├── utils/
+│   │   │   ├── auth.py        # JWT utilities
+│   │   │   ├── code_runner.py # Safe code execution
+│   │   │   └── validation.py  # Input validation
+│   │   └── websocket_manager.py # WebSocket connection manager
+│   ├── requirements.txt       # Python dependencies
+│   ├── .env.example          # Environment variables template
+│   └── README.md
+│
+└── README.md                  # This file
 ```
 
-### Explanation of Each Folder:
-- **api/**: Contains files for talking to the backend server.
-- **components/**: Reusable parts of the UI, like buttons or navigation.
-- **context/**: Shared data that multiple parts of the app need, like user info.
-- **pages/**: Each page of the website, like Home or Login.
-- **styles/**: CSS files for making the app look good.
-- **hooks/**: Special functions for React logic.
-- **utils/**: Helper tools, like WebSocket connection.
+### Folder Explanations:
+- **api/**: Centralized API client with JWT token injection and error handling.
+- **components/**: Reusable UI parts (buttons, modals, cards, etc.).
+- **context/**: React Context for global state (user data, theme).
+- **pages/**: Full-page components for each route.
+- **routers/**: FastAPI route handlers organized by feature.
+- **models/**: Database ORM definitions (SQLAlchemy).
+- **schemas/**: Request/response validation (Pydantic).
+- **utils/**: Helper utilities (JWT, code execution, validation).
 
 ---
 
 ## 🔐 5. Authentication Flow (Very Important)
 
-Authentication is how we make sure users are who they say they are. Here's how it works step-by-step:
+Authentication ensures users are who they claim to be.
 
-1. **User Logs In**: The user fills out the login form with email and password.
-2. **Frontend Sends Request**: The app sends the login info to the backend.
-3. **Backend Validates**: The server checks if the email and password are correct.
-4. **Backend Returns Data**: If correct, the server sends back:
-   - A JWT token (a special code proving the user is logged in).
-   - User data (like username and email).
-5. **Frontend Stores Data**: The app saves the token and user info in localStorage (browser storage).
-6. **Context Updates**: The AuthContext (shared state) is updated with the user info.
-7. **UI Updates**: The app shows the user as logged in (e.g., dashboard appears).
+### Login Process:
+1. **User Submission**: User enters email and password in the login form.
+2. **Frontend Request**: Axios sends credentials to `/auth/login`.
+3. **Backend Validation**: FastAPI checks credentials against the database.
+4. **Token Generation**: If valid, backend generates a JWT token.
+5. **Response**: Backend returns JWT token + user data.
+6. **Token Storage**: Frontend stores token in localStorage.
+7. **Context Update**: AuthContext updates global user state.
+8. **UI Update**: App displays user as logged in (dashboard, profile link, etc.).
 
-### On Refresh:
-- The app checks localStorage for the token.
-- If found, it restores the user session automatically.
+### Session Persistence:
+- On page refresh, the app checks localStorage for the token.
+- If valid, it automatically restores the user session.
+- If expired, the user is redirected to login.
 
 ### Simple Diagram:
-
 ```
-User → Login Form → Frontend → API Call → Backend → Validates → Returns JWT → Frontend Stores → AuthContext → UI Updates
+User Input → Frontend Form → Axios API Call → FastAPI Backend
+→ Database Lookup → JWT Generation → Response
+→ localStorage Storage → AuthContext Update → UI Render
 ```
-
-This flow keeps users logged in even after closing the browser.
 
 ---
 
 ## 🛡️ 6. Authorization (Protected Routes)
 
-Authorization controls who can access certain pages. We use a component called `ProtectedRoute` to check if a user is logged in.
+Protected routes ensure only authenticated users can access certain pages.
 
-### How It Works:
-- If the user has a valid token (stored in localStorage), they can access protected pages.
-- If no token, they are redirected to the login page.
+### Implementation:
+- `ProtectedRoute` component wraps protected pages.
+- It checks for a valid JWT token in localStorage.
+- If token exists and is valid, the route renders normally.
+- If no token or token expired, redirects to `/login`.
 
 ### Protected Pages:
-- **Dashboard**: Shows user stats and quick actions.
-- **Create Room**: Lets users start new battles.
-- **Battle Room**: The actual battle lobby.
-- **Profile**: Personal stats and info.
-
-Example: If a user tries to visit `/dashboard` without logging in, they go to `/login` instead.
+- **/dashboard**: Main user hub
+- **/create-room**: Start a new battle
+- **/battle-room/:roomCode**: Active battle arena
+- **/matchmaking**: Find opponents
+- **/profile**: User stats and settings
 
 ---
 
-## 🏠 7. Room System (Core Feature)
+## 🏠 7. Room & Matchmaking System (Core Features)
 
-The room system lets users create and join battle rooms. It's the heart of the multiplayer experience.
+The room system enables peer-to-peer battles. Matchmaking helps players find opponents automatically.
 
 ### Create Room Flow:
-1. User clicks "Create Room" on the dashboard.
-2. Frontend sends a request to the backend.
-3. Backend creates a new room with a unique code (like "ABC123").
-4. Room data is stored: host (creator), players list, status ("waiting").
-5. Frontend redirects to the battle room page with the code.
+1. User clicks "Create Room" on dashboard.
+2. Frontend sends POST request to `/rooms/create`.
+3. Backend generates unique room code (e.g., "ABC123").
+4. Room stored in database with host info and empty players list.
+5. Frontend redirects to `/battle-room/ABC123`.
 
 ### Join Room Flow:
-1. User enters a room code in the "Join Room" form.
-2. Frontend sends the code to the backend.
-3. Backend checks if the room exists and isn't full.
-4. User is added to the room's players list.
-5. Both users (host and joiner) see the updated lobby.
+1. User enters room code and clicks join.
+2. Frontend sends POST to `/rooms/join` with room code.
+3. Backend verifies room exists and has space.
+4. User added to room's players list.
+5. WebSocket broadcasts update to all room members.
+
+### Matchmaking Flow:
+1. User clicks "Find Match".
+2. Frontend sends request to `/matchmaking/queue`.
+3. Backend adds user to matchmaking queue.
+4. When 2+ players are in queue, backend creates a room.
+5. All matched players receive WebSocket notification.
+6. Frontend redirects to battle room.
 
 ### Room Data Structure:
-A room is an object that looks like this:
-
 ```javascript
 {
-  roomCode: "ABC123",     // Unique code for the room
-  host: {                  // The user who created the room
+  roomCode: "ABC123",
+  host: {
+    userId: 1,
     username: "Coder1",
-    id: 123
   },
-  players: [               // List of users in the room
-    { username: "Coder1", status: "ready" },
-    { username: "Coder2", status: "waiting" }
+  players: [
+    { userId: 1, username: "Coder1", status: "ready", score: 0 },
+    { userId: 2, username: "Coder2", status: "waiting", score: 0 }
   ],
-  status: "waiting"        // Can be "waiting", "active", etc.
+  status: "waiting",  // "waiting" | "active" | "finished"
+  question: { ... },
+  createdAt: "2026-05-21T12:00:00Z",
+  updatedAt: "2026-05-21T12:05:00Z"
 }
 ```
 
 ---
 
-## 🔄 8. Data Flow (Very Important)
+## 🔄 8. Real-Time Battle System (WebSocket)
 
-Data flow shows how information moves through the system. Let's break it down by feature.
+The system uses WebSockets for live, instant communication during battles.
 
-### Login Flow:
-```
-User → Types in Login Form → Frontend → Axios API Call → Backend Server → Checks Database → Returns JWT Token → Frontend Stores in localStorage → Updates AuthContext → Shows Dashboard
-```
+### WebSocket Events:
+- **`join_room`**: User joins a room
+- **`player_joined`**: Broadcast to others when someone joins
+- **`player_left`**: Broadcast when someone leaves
+- **`start_game`**: Host initiates the battle
+- **`code_update`**: Broadcast code changes in real-time
+- **`submit_code`**: Player submits solution
+- **`game_finished`**: Battle ends, results sent
+- **`state_update`**: Sync room state across clients
 
-### Room Flow:
-```
-User A → Clicks "Create Room" → Frontend → API Call to /rooms/create → Backend → Generates Room Code → Stores Room → Returns Room Data → Frontend → Redirects to /battle-room/ABC123
-
-User B → Enters Room Code → Frontend → API Call to /rooms/join → Backend → Adds User B to Room → Returns Updated Room → Frontend → Shows Shared Lobby
-```
-
-This ensures all users see the same room state.
+### Connection Manager:
+- `websocket_manager.py` tracks active WebSocket connections.
+- Associates connections with room codes and user IDs.
+- Broadcasts messages to all clients in a room.
+- Handles disconnections gracefully.
 
 ---
 
-## 🌍 9. Global State Management
+## 💻 9. Code Execution (Safe Sandbox)
 
-Global state is data shared across the entire app. We use React Context for this.
+The backend safely executes user code in isolated environments.
+
+### Execution Flow:
+1. User submits code from the coding interface.
+2. Frontend sends code to `/execution/run` endpoint.
+3. Backend validates code syntax.
+4. Code runs in a timeout-limited sandbox.
+5. Output/errors returned to frontend.
+6. Results displayed to user in real-time.
+
+### Safety Features:
+- **Timeout Limits**: Code execution limited to 5-10 seconds.
+- **Resource Restrictions**: Memory and CPU limits enforced.
+- **Restricted Imports**: Dangerous modules are blocked.
+- **Isolated Environment**: Each execution is sandboxed.
+
+---
+
+## 🌍 10. Global State Management
+
+Global state is shared across the entire app using React Context.
 
 ### AuthContext:
-- **Stores**: Current user info and JWT token.
-- **Provides**: Functions like `login()`, `logout()`.
-- **Syncs**: With localStorage so data persists on refresh.
+- **Stores**: Current user info, JWT token, authentication status
+- **Methods**: `login()`, `logout()`, `refreshToken()`
+- **Persistence**: Syncs with localStorage
 
 ### ThemeContext:
-- **Stores**: Current theme ("dark" or "light").
-- **Provides**: `toggleTheme()` function.
-- **Syncs**: With localStorage and updates the page's CSS.
-
-These contexts make it easy to access user data or theme settings from any component.
+- **Stores**: Current theme ("dark" or "light")
+- **Methods**: `toggleTheme()`
+- **Persistence**: Syncs with localStorage
 
 ---
 
-## 🌐 10. Axios Setup
+## 🌐 11. API Integration (Axios)
 
-Axios is our tool for talking to the backend. We set it up once and use it everywhere.
+Axios handles all HTTP communication with centralized configuration.
 
 ### Key Features:
-- **Centralized**: One main API instance in `src/api/axios.js`.
-- **Base URL**: Points to the backend server (e.g., `http://localhost:5000`).
-- **JWT Interceptor**: Automatically adds the JWT token to every request.
+- **Base URL**: Configured from environment variables
+- **JWT Interceptor**: Automatically adds `Authorization: Bearer <token>` to every request
+- **Error Handling**: Centralized error responses and retry logic
+- **CORS Configuration**: Handles cross-origin requests
 
-Example of how it works:
+### Example Request:
 ```javascript
-// When making a request, Axios adds:
+// Frontend code
+const response = await api.post('/rooms/create', { maxPlayers: 2 });
+
+// What Axios sends:
+POST /rooms/create
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
 ```
 
-This means every API call is automatically authenticated.
-
 ---
 
-## 👤 11. Profile System
+## 👤 12. Profile & Statistics System
 
-The profile page shows user statistics and info.
+Users can view their battle history and performance metrics.
 
 ### Features:
-- **User Info**: Username, email.
-- **Stats**: Games played, wins, losses, ranking (future feature).
+- **Profile Info**: Username, email, join date
+- **Stats**: Games played, wins, losses, win rate, ranking
+- **Battle History**: List of recent battles with results
+- **Achievements**: Badges and milestones
 
 ### Backend Endpoints:
-- `GET /user/profile`: Gets basic user info.
-- `GET /user/stats`: Gets game statistics.
-
-The frontend fetches this data when the profile page loads and displays it in cards.
+- `GET /user/profile`: User information
+- `GET /user/stats`: Aggregate statistics
+- `GET /user/battle-history`: Past battles
 
 ---
 
-## 🌙 12. Dark/Light Mode System
+## 🌙 13. Dark/Light Mode System
 
-Users can switch between dark and light themes.
+Users can switch themes with persistent storage.
 
 ### How It Works:
-- **Theme Stored**: In ThemeContext and localStorage.
-- **Toggle**: Button in the navbar switches modes.
-- **CSS Files**:
-  - `dark.css`: Styles for dark mode (black backgrounds, white text).
-  - `light.css`: Styles for light mode (white backgrounds, dark text).
-
-The app remembers the user's choice even after refresh.
-
----
-
-## ⚡ 13. Future Feature: Real-Time Battle (WebSocket)
-
-For live battles, we'll use WebSockets for instant updates.
-
-### Concept:
-- WebSocket connects users in the same room.
-- Real-time events: Player joined, game started, code changes.
-- Backend manages connections and broadcasts updates.
-
-### Example Events:
-- `join_room`: User enters a room.
-- `leave_room`: User exits.
-- `start_game`: Host begins the battle.
-- `update_state`: Syncs room data.
-
-This will make battles feel live and interactive.
+- **Toggle**: Button in Navbar switches mode
+- **Storage**: Theme preference saved in localStorage
+- **CSS Modules**: Dark/light CSS automatically applied
+- **Persistence**: Theme persists across sessions
 
 ---
 
 ## 🚀 14. How to Run the Project
 
-### Frontend:
-1. Open terminal in the `frontend` folder.
-2. Run `npm install` to install dependencies.
-3. Run `npm run dev` to start the development server.
+### Prerequisites:
+- **Node.js 18+** (for frontend)
+- **Python 3.9+** (for backend)
+- **npm** or **yarn** (for frontend package management)
+- **pip** (for Python packages)
 
-### Backend:
-1. Open terminal in the `backend` folder.
-2. Run `pip install -r requirements.txt` (for Python/FastAPI).
-3. Run `uvicorn app.main:app --reload` to start the server.
+### Frontend Setup:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Visit `http://localhost:5173` in your browser.
 
-Visit `http://localhost:5173` for the frontend and `http://localhost:5000` for the backend.
+### Backend Setup:
+```bash
+cd backend
+python -m venv venv
+
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+Backend runs on `http://localhost:8000` (API) / `ws://localhost:8000` (WebSocket).
+
+### Environment Variables:
+
+**Backend (.env file):**
+```
+DATABASE_URL=sqlite:///./clashofcode.db
+SECRET_KEY=your_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=1440
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+LOG_LEVEL=INFO
+```
+
+**Frontend (.env file):**
+```
+VITE_API_BASE_URL=http://localhost:8000
+VITE_WS_BASE_URL=ws://localhost:8000
+```
 
 ---
 
-## 📚 15. Learning Flow (Beginner Friendly)
+## 📚 15. Learning Path (Beginner Friendly)
 
-Start simple and build up:
+Start with foundational concepts and build up:
 
-1. **Learn Login System**: Understand forms, API calls, and storing data.
-2. **Understand Token Storage**: See how JWT works and localStorage.
-3. **Learn Protected Routes**: How to block pages for non-logged-in users.
-4. **Understand API Calls**: How Axios talks to the backend.
-5. **Learn Room System**: Creating and joining rooms.
-6. **Learn Real-Time Later**: Add WebSockets for live features.
-
-Take it one step at a time!
+1. **Authentication**: Learn login/JWT token flow
+2. **State Management**: Understand React Context
+3. **Protected Routes**: Implement access control
+4. **API Communication**: Master Axios patterns
+5. **Room System**: Create and join rooms
+6. **WebSocket Basics**: Real-time updates
+7. **Code Execution**: Safe code sandbox
+8. **Full Battle Flow**: Put it all together
 
 ---
 
-## 🎯 16. Final Summary
+## 🎯 16. Development Workflow
 
-Clash of Code is a scalable multiplayer coding platform built with clean, modular code. It's designed for competitive coding battles with secure authentication, room-based gameplay, and future real-time features. The architecture separates concerns (frontend for UI, backend for logic) and uses modern tools like React and JWT for a smooth user experience. Ready to expand with WebSockets for live battles!</content>
-<parameter name="filePath">README.md
+### Frontend Development:
+1. Components live in `src/components/`
+2. Pages in `src/pages/`
+3. Use Context API for state
+4. Axios for API calls
+5. CSS Modules for styling
+
+### Backend Development:
+1. Routes in `app/routers/`
+2. Models in `app/models/`
+3. Business logic in `app/services/`
+4. Database in `app/database.py`
+5. WebSocket in `app/websocket_manager.py`
+
+---
+
+## 📝 17. Database Schema
+
+### Key Tables:
+- **users**: User accounts and authentication
+- **rooms**: Battle room instances
+- **questions**: Coding challenge questions
+- **battle_results**: Fight outcomes and scores
+- **leaderboard**: User rankings
+
+---
+
+## 🐛 18. Troubleshooting
+
+### Common Issues:
+
+**CORS Error:**
+- Ensure frontend URL is in `CORS_ORIGINS` in backend .env
+- Frontend and backend use correct URLs
+
+**WebSocket Connection Failed:**
+- Check backend is running with WebSocket support
+- Verify WS URL in frontend .env is correct
+
+**Code Execution Timeout:**
+- Increase timeout in `execution.py` if needed
+- Check for infinite loops in submitted code
+
+---
+
+## 🎯 19. Final Summary
+
+**Clash of Code** is a production-ready, full-stack multiplayer coding platform built with:
+- **React 18** for a modern frontend
+- **FastAPI** for a high-performance backend
+- **WebSockets** for real-time communication
+- **SQLAlchemy** for robust data management
+- **JWT** for secure authentication
+
+The architecture is modular, scalable, and beginner-friendly. Perfect for learning full-stack development or competitive programming!
+
+---
+
+## 📄 License
+
+Open source - feel free to fork and modify!
+
+---
+
+**Last Updated**: May 21, 2026
+**Repository**: [sabinkatwal/clashofcode](https://github.com/sabinkatwal/clashofcode)
