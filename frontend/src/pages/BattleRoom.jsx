@@ -77,7 +77,11 @@ function CountdownTimer({ room, onExpire }) {
   if (remaining === null || remaining === undefined) return <span className="battle-room__timer">--:--</span>;
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
-  return <span className={`battle-room__timer ${remaining <= 60 ? "battle-room__timer--danger" : ""}`}>{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}</span>;
+  return (
+    <span className={`battle-room__timer ${remaining <= 60 ? "battle-room__timer--danger" : ""}`}>
+      {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+    </span>
+  );
 }
 
 function ProblemPane({ question, difficulty, active, onTab }) {
@@ -89,7 +93,14 @@ function ProblemPane({ question, difficulty, active, onTab }) {
     <div className="battle-room__problem-shell">
       <div className="battle-room__panel-tabs" role="tablist" aria-label="Problem sections">
         {["Description", "Examples", "Constraints"].map((tab) => (
-          <button key={tab} type="button" className={`battle-room__panel-tab ${active === tab ? "battle-room__panel-tab--active" : ""}`} onClick={() => onTab(tab)} role="tab" aria-selected={active === tab}>
+          <button
+            key={tab}
+            type="button"
+            className={`battle-room__panel-tab ${active === tab ? "battle-room__panel-tab--active" : ""}`}
+            onClick={() => onTab(tab)}
+            role="tab"
+            aria-selected={active === tab}
+          >
             {tab}
           </button>
         ))}
@@ -123,7 +134,9 @@ function ProblemPane({ question, difficulty, active, onTab }) {
         )}
 
         {active === "Constraints" && (
-          question.constraints ? <div className="battle-room__constraint-box">{question.constraints}</div> : <div className="room-empty">No explicit constraints were provided.</div>
+          question.constraints
+            ? <div className="battle-room__constraint-box">{question.constraints}</div>
+            : <div className="room-empty">No explicit constraints were provided.</div>
         )}
       </div>
     </div>
@@ -135,7 +148,7 @@ function MonacoCodeEditor({ code, language, locked, onChange, onMount }) {
 
   return (
     <div className="battle-room__monaco-shell">
-        <div className="battle-room__editor-bar">
+      <div className="battle-room__editor-bar">
         <div className="battle-room__editor-file">
           <span className="battle-room__editor-pill">{meta.label}</span>
           <span className="battle-room__editor-name">solution.{meta.extension}</span>
@@ -187,7 +200,12 @@ function TestcaseTabs({ cases, result, selected, onSelect }) {
           const itemResult = results[index];
           const status = itemResult?.status ?? (item.passed === true ? "Accepted" : item.passed === false ? "Wrong Answer" : undefined);
           return (
-            <button key={`${item.name || "case"}-${index}`} type="button" className={`battle-room__case-tab ${selected === index ? "battle-room__case-tab--active" : ""}`} onClick={() => onSelect(index)}>
+            <button
+              key={`${item.name || "case"}-${index}`}
+              type="button"
+              className={`battle-room__case-tab ${selected === index ? "battle-room__case-tab--active" : ""}`}
+              onClick={() => onSelect(index)}
+            >
               <span className="battle-room__case-tab-label">{item.name || `Case ${index + 1}`}</span>
               {status && <StatusPill status={status} />}
             </button>
@@ -207,8 +225,8 @@ function TestcaseTabs({ cases, result, selected, onSelect }) {
           <span>Obtained</span>
           <pre>{toDisplay(resultRow?.actual ?? resultRow?.output, resultRow?.error ?? "Not run")}</pre>
         </label>
-        <div style={{gridColumn: "1 / -1"}}>
-          <strong style={{color: resultRow?.passed ? "var(--success)" : resultRow ? "var(--danger)" : "var(--text-muted)"}}>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <strong style={{ color: resultRow?.passed ? "var(--success)" : resultRow ? "var(--danger)" : "var(--text-muted)" }}>
             {resultRow ? (resultRow.passed ? "Passed" : "Failed") : "Not executed"}
           </strong>
         </div>
@@ -225,7 +243,14 @@ function ConsolePane({ active, onActive, runResult, submitResult, running, custo
     <div className="battle-room__console">
       <div className="battle-room__console-tabs" role="tablist" aria-label="Execution console">
         {tabs.map((tab) => (
-          <button key={tab} type="button" className={`battle-room__console-tab ${active === tab ? "battle-room__console-tab--active" : ""}`} onClick={() => onActive(tab)} role="tab" aria-selected={active === tab}>
+          <button
+            key={tab}
+            type="button"
+            className={`battle-room__console-tab ${active === tab ? "battle-room__console-tab--active" : ""}`}
+            onClick={() => onActive(tab)}
+            role="tab"
+            aria-selected={active === tab}
+          >
             {tab}
           </button>
         ))}
@@ -238,15 +263,25 @@ function ConsolePane({ active, onActive, runResult, submitResult, running, custo
         {active === "Testcases" && <TestcaseTabs cases={cases} result={runResult} selected={selectedCase} onSelect={onSelectCase} />}
 
         {active === "Custom Input" && (
-          <textarea className="battle-room__custom-input" value={customInput} onChange={(event) => onCustomInput(event.target.value)} placeholder="stdin for input()-based solutions" aria-label="Custom stdin input" />
+          <textarea
+            className="battle-room__custom-input"
+            value={customInput}
+            onChange={(event) => onCustomInput(event.target.value)}
+            placeholder="stdin for input()-based solutions"
+            aria-label="Custom stdin input"
+          />
         )}
 
         {active === "Console" && (
-          currentResult ? <ExecutionResult result={currentResult} /> : <div className="battle-room__console-empty">Run Code to see stdout, errors, status, and runtime.</div>
+          currentResult
+            ? <ExecutionResult result={currentResult} />
+            : <div className="battle-room__console-empty">Run Code to see stdout, errors, status, and runtime.</div>
         )}
 
         {active === "Submissions" && (
-          submitResult ? <ExecutionResult result={submitResult} /> : <div className="battle-room__console-empty">Submit to run hidden judge validation.</div>
+          submitResult
+            ? <ExecutionResult result={submitResult} />
+            : <div className="battle-room__console-empty">Submit to run hidden judge validation.</div>
         )}
       </div>
     </div>
@@ -305,7 +340,10 @@ function Leaderboard({ players, currentUsername, host }) {
   return (
     <div className="battle-room__leaderboard">
       {ranked.map((player, index) => (
-        <div key={player.username} className={`battle-room__leader-row ${player.username === currentUsername ? "battle-room__leader-row--me" : ""}`}>
+        <div
+          key={player.username}
+          className={`battle-room__leader-row ${player.username === currentUsername ? "battle-room__leader-row--me" : ""}`}
+        >
           <span className="battle-room__rank">#{index + 1}</span>
           <div className="battle-room__player-avatar">{player.username.slice(0, 2).toUpperCase()}</div>
           <div className="battle-room__leader-main">
@@ -375,7 +413,10 @@ function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
         {(messages || []).length ? messages.map((item) => {
           const mine = item.username === currentUsername;
           return (
-            <div key={item.id || `${item.username}-${item.created_at}`} className={`battle-room__chat-message ${mine ? "battle-room__chat-message--me" : ""}`}>
+            <div
+              key={item.id || `${item.username}-${item.created_at}`}
+              className={`battle-room__chat-message ${mine ? "battle-room__chat-message--me" : ""}`}
+            >
               <div className="battle-room__chat-meta">
                 <strong>{mine ? "You" : item.username}</strong>
                 <span>{item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
@@ -416,7 +457,7 @@ function BattleRoom() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [starting, setStarting] = useState(false);
-  const [updatingMatchmaking, setUpdatingMatchmaking] = useState(false);
+  const [readying, setReadying] = useState(false); // ✅ FIX: added ready loading state
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
   const [running, setRunning] = useState(false);
@@ -433,22 +474,40 @@ function BattleRoom() {
   const [columns, setColumns] = useState({ left: 34, right: 19 });
   const [chatDraft, setChatDraft] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
+
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const toastTimeoutRef = useRef(null); // ✅ FIX: track toast timeout for cleanup
   const mobileTabRef = useRef("Code");
   const currentUsernameRef = useRef(user?.username || "");
   const chatSnapshotRef = useRef([]);
+  const isHostRef = useRef(false); // ✅ FIX: ref to avoid stale closure in WS handler
+  const hasJoinedRef = useRef(false); // ✅ FIX: prevent re-joining on every WS reconnect
+  const autoStartingRef = useRef(false); // ✅ FIX: prevent duplicate auto-start calls
 
   const myPlayer = useMemo(() => room?.players?.find((player) => player.username === user?.username), [room, user?.username]);
   const isHost = room?.host === user?.username;
   const visibleCases = useMemo(() => normalizeCases(room?.question), [room?.question]);
+
+  // ✅ FIX: use isLocked consistently everywhere (was mixing locked + isLocked)
   const locked = room?.status === "finished" || myPlayer?.status === "submitted" || myPlayer?.status === "time_up";
-  // treat a round that has ended as locked (but not final game finish)
   const roundLocked = room?.status === "round_finished";
   const isLocked = locked || roundLocked;
+
   const submissions = myPlayer?.submissions || [];
+  const amReady = myPlayer?.status === "ready"; // ✅ FIX: track own ready state
+
+  // ✅ FIX: keep isHostRef in sync so WS handler always has fresh value
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
+
+  // ✅ FIX: keep currentUsernameRef in sync
+  useEffect(() => {
+    currentUsernameRef.current = user?.username || "";
+  }, [user?.username]);
 
   const sendSocket = useCallback((payload) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -456,25 +515,21 @@ function BattleRoom() {
     }
   }, []);
 
+  // ✅ FIX: host also gets a Ready button; HTTP is always called for reliability
   const handleReadyClick = async () => {
+    if (readying || amReady) return;
+    setReadying(true);
     setError("");
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      try {
-        sendSocket({ event: "player_ready" });
-      } catch (err) {
-        setError(extractError(err, "Unable to send ready signal via realtime connection."));
-      }
-      return;
-    }
-
-    // Fallback to HTTP endpoint if websocket is not connected
     try {
       await api.post(`/rooms/${roomCode}/ready`);
-      // refresh room state
       const updated = await api.get(`/rooms/${roomCode}`);
       setRoom(updated.data);
+      // also broadcast via WS so others see the update instantly
+      sendSocket({ event: "player_ready" });
     } catch (err) {
-      setError(extractError(err, "Unable to mark ready via HTTP fallback."));
+      setError(extractError(err, "Unable to mark ready."));
+    } finally {
+      setReadying(false);
     }
   };
 
@@ -483,33 +538,29 @@ function BattleRoom() {
     return () => workerRef.current?.terminate();
   }, []);
 
+  // Load room on mount
   useEffect(() => {
     let cancelled = false;
     api.get(`/rooms/${roomCode}`)
-      .then((response) => {
-        if (!cancelled) setRoom(response.data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(extractError(err, "Unable to load room. Please check the room code."));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((response) => { if (!cancelled) setRoom(response.data); })
+      .catch((err) => { if (!cancelled) setError(extractError(err, "Unable to load room. Please check the room code.")); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [roomCode]);
 
+  // ✅ FIX: load draft only when question is available; also reset selectedCase
   useEffect(() => {
     const questionId = room?.question?.id;
     if (!questionId || previousQuestionId.current === `${questionId}:${language}`) return;
     const stored = localStorage.getItem(getDraftKey(roomCode, language));
     setCode(stored ?? room.question.starter_code ?? "");
+    setSelectedCase(0); // ✅ reset case index when question changes
     previousQuestionId.current = `${questionId}:${language}`;
   }, [language, room?.question, roomCode]);
 
+  // Autosave draft — only when question is loaded and code is non-empty
   useEffect(() => {
-    if (!room?.question?.id || !code) return undefined;
+    if (!room?.question?.id || !code) return undefined; // ✅ guard added
     const id = window.setTimeout(() => {
       localStorage.setItem(getDraftKey(roomCode, language), code);
     }, 700);
@@ -517,26 +568,29 @@ function BattleRoom() {
   }, [code, language, room?.question?.id, roomCode]);
 
   useEffect(() => {
-    if (room?.status === "finished") {
-      setShowLeaderboard(true);
-    }
+    if (room?.status === "finished") setShowLeaderboard(true);
   }, [room?.status]);
 
   useEffect(() => {
     mobileTabRef.current = mobileTab;
-    if (mobileTab === "Chat") {
-      setUnreadMessages(0);
-    }
+    if (mobileTab === "Chat") setUnreadMessages(0);
   }, [mobileTab]);
 
+  // ✅ FIX: cleanup toast timeout on unmount
   useEffect(() => {
-    currentUsernameRef.current = user?.username || "";
-  }, [user?.username]);
+    return () => {
+      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+      if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
 
-  useEffect(() => {
-    chatSnapshotRef.current = room?.chat_messages || [];
-  }, [room?.chat_messages]);
+  const showToast = (message) => {
+    setToast(message);
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = window.setTimeout(() => setToast(""), 1800);
+  };
 
+  // WebSocket connection
   useEffect(() => {
     if (!token || !roomCode) return undefined;
 
@@ -547,15 +601,10 @@ function BattleRoom() {
     const MAX_RECONNECTS = 6;
 
     const clearPing = () => {
-      if (pingTimer) {
-        window.clearInterval(pingTimer);
-        pingTimer = null;
-      }
+      if (pingTimer) { window.clearInterval(pingTimer); pingTimer = null; }
     };
 
     const buildWsUrl = () => {
-      // Prefer the page origin when running locally so websockets connect to the
-      // local backend during development. Otherwise fall back to configured API base.
       const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       const baseUrl = isLocalHost ? window.location.origin : (api.defaults.baseURL || window.location.origin);
       const normalizedBase = baseUrl.replace(/\/$/, "").replace(/^http/i, "ws");
@@ -569,12 +618,16 @@ function BattleRoom() {
         return;
       }
 
-      try {
-        await api.post("/rooms/join", { roomCode });
-      } catch (err) {
-        setError(extractError(err, "Unable to join room before websocket connect."));
-        console.log("WS JOIN FAILED", err);
-        return;
+      // ✅ FIX: only join once, not on every reconnect
+      if (!hasJoinedRef.current) {
+        try {
+          await api.post("/rooms/join", { roomCode });
+          hasJoinedRef.current = true;
+        } catch (err) {
+          setError(extractError(err, "Unable to join room before websocket connect."));
+          console.log("WS JOIN FAILED", err);
+          return;
+        }
       }
 
       const wsUrl = buildWsUrl();
@@ -602,13 +655,30 @@ function BattleRoom() {
               const newFromOthers = nextMessages.filter((item, index) => (
                 !previousKeys.has(messageKey(item, index)) && item?.username !== currentUsernameRef.current
               ));
-              if (newFromOthers.length) {
-                setUnreadMessages((prev) => prev + newFromOthers.length);
-              }
+              if (newFromOthers.length) setUnreadMessages((prev) => prev + newFromOthers.length);
             }
 
             chatSnapshotRef.current = nextMessages;
             setRoom(data.room);
+
+            // ✅ FIX: auto-start when all players are ready (host only, no duplicate calls)
+            if (
+              data.room?.status === "waiting" &&
+              isHostRef.current &&
+              !autoStartingRef.current
+            ) {
+              const players = data.room?.players || [];
+              const allReady = players.length >= 2 && players.every((p) => p.status === "ready");
+              if (allReady) {
+                autoStartingRef.current = true;
+                api.post(`/rooms/${roomCode}/start`)
+                  .then((res) => setRoom(res.data))
+                  .catch((err) => {
+                    console.warn("Auto-start failed", err);
+                    autoStartingRef.current = false; // allow retry on next update
+                  });
+              }
+            }
           }
           if (data.event === "chat_error") setError(data.message || "Unable to send chat message.");
         } catch {
@@ -630,9 +700,7 @@ function BattleRoom() {
         reconnectTimer = window.setTimeout(connect, delay);
       };
 
-      socket.onerror = (event) => {
-        console.log("WS ERROR", event);
-      };
+      socket.onerror = (event) => { console.log("WS ERROR", event); };
     };
 
     connect();
@@ -644,6 +712,11 @@ function BattleRoom() {
       wsRef.current = null;
     };
   }, [roomCode, sendSocket, token]);
+
+  // ✅ FIX: reset autoStartingRef when room status changes away from waiting
+  useEffect(() => {
+    if (room?.status !== "waiting") autoStartingRef.current = false;
+  }, [room?.status]);
 
   const handleCodeChange = useCallback((value) => {
     setCode(value);
@@ -663,12 +736,6 @@ function BattleRoom() {
     } finally {
       setStarting(false);
     }
-  };
-
-  const handleSetInviteOnly = async () => {
-    // Deprecated: server-side room-based matchmaking mode is removed in favor of global queue.
-    setToast("This feature is deprecated — use Find Match instead.");
-    window.setTimeout(() => setToast(""), 1800);
   };
 
   const handleFinish = async () => {
@@ -696,16 +763,13 @@ function BattleRoom() {
     workerRef.current.postMessage(payload);
   });
 
+  // ✅ FIX: consistently use isLocked (was using `locked` in body but `isLocked` in deps)
   const handleRun = useCallback(async () => {
-    if (locked) return;
-    if (!code.trim()) {
-      setError("Write some code before running.");
-      return;
-    }
+    if (isLocked) return;
+    if (!code.trim()) { setError("Write some code before running."); return; }
     setRunning(true);
     setError("");
     sendSocket({ event: "run_code" });
-
     try {
       let result;
       if (language === "python" && workerRef.current) {
@@ -734,12 +798,10 @@ function BattleRoom() {
     }
   }, [code, customInput, language, isLocked, sendSocket, visibleCases]);
 
+  // ✅ FIX: consistently use isLocked
   const handleSubmit = useCallback(async () => {
-    if (locked) return;
-    if (!code.trim()) {
-      setError("Write some code before submitting.");
-      return;
-    }
+    if (isLocked) return;
+    if (!code.trim()) { setError("Write some code before submitting."); return; }
     setSubmitting(true);
     setError("");
     try {
@@ -770,16 +832,14 @@ function BattleRoom() {
       } else if (event.key.toLowerCase() === "s") {
         event.preventDefault();
         localStorage.setItem(getDraftKey(roomCode, language), code);
-        setToast("Draft saved");
+        showToast("Draft saved");
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [code, handleRun, handleSubmit, language, roomCode]);
 
-  const handleEditorMount = useCallback((editor) => {
-    editor.focus();
-  }, []);
+  const handleEditorMount = useCallback((editor) => { editor.focus(); }, []);
 
   const resetCode = () => {
     setCode(room?.question?.starter_code || "");
@@ -790,8 +850,7 @@ function BattleRoom() {
   const copyInvite = async () => {
     const url = `${window.location.origin}/battle-room/${roomCode}`;
     await navigator.clipboard.writeText(url);
-    setToast("Invite link copied");
-    window.setTimeout(() => setToast(""), 1800);
+    showToast("Invite link copied");
   };
 
   const handleSendChat = (event) => {
@@ -826,7 +885,10 @@ function BattleRoom() {
       <section className="page-shell">
         <div className="page-container battle-room">
           <div className="skeleton loading-slab loading-slab--banner" />
-          <div className="battle-room__workspace"><div className="skeleton loading-slab loading-slab--panel" /><div className="skeleton loading-slab loading-slab--panel" /></div>
+          <div className="battle-room__workspace">
+            <div className="skeleton loading-slab loading-slab--panel" />
+            <div className="skeleton loading-slab loading-slab--panel" />
+          </div>
         </div>
       </section>
     );
@@ -852,13 +914,17 @@ function BattleRoom() {
                 <p className="label-text">Battle Room</p>
                 <h1 className="battle-room__title">{room?.question?.title || "Battle Workspace"}</h1>
               </div>
-              <button type="button" className="battle-room__room-code" onClick={copyInvite}>#{roomCode} · Copy invite</button>
+              <button type="button" className="battle-room__room-code" onClick={copyInvite}>
+                #{roomCode} · Copy invite
+              </button>
             </div>
 
             <div className="battle-room__status-strip">
               <div className="battle-room__status-card battle-room__status-card--timer">
                 <span className="battle-room__status-label">{roomStatus === "finished" ? "Battle" : "Time Left"}</span>
-                {roomStatus === "active" ? <CountdownTimer room={room} /> : <strong>{roomStatus === "finished" ? "Time Up" : "--:--"}</strong>}
+                {roomStatus === "active"
+                  ? <CountdownTimer room={room} />
+                  : <strong>{roomStatus === "finished" ? "Time Up" : "--:--"}</strong>}
               </div>
               <div className="battle-room__status-card"><span className="battle-room__status-label">Status</span><strong>{roomStatus}</strong></div>
               <div className="battle-room__status-card"><span className="battle-room__status-label">Difficulty</span><strong>{difficultyLabel}</strong></div>
@@ -882,22 +948,28 @@ function BattleRoom() {
                 </span>
               </div>
             </div>
+
             <div className="battle-room__waiting-actions">
               <span className="battle-room__chip battle-room__chip--ghost">{room?.players?.length ?? 0} players</span>
+
+              {/* ✅ FIX: BOTH host and non-host get a Ready button */}
+              <Button
+                onClick={handleReadyClick}
+                disabled={readying || amReady}
+                size="lg"
+                variant={amReady ? "secondary" : "primary"}
+              >
+                {readying ? "Marking ready..." : amReady ? "✓ Ready" : "Ready"}
+              </Button>
+
+              {/* ✅ Host can also manually start at any time */}
               {isHost && (
-                <Button onClick={handleSetInviteOnly} disabled={updatingMatchmaking} size="lg" variant="secondary">
-                  {updatingMatchmaking
-                    ? "Updating..."
-                    : room?.matchmaking === "open"
-                      ? "Turn Off Global Matchmaking"
-                      : "Turn On Global Matchmaking"}
+                <Button onClick={handleStart} disabled={starting} size="lg" variant="secondary">
+                  {starting ? "Starting..." : "Start Now"}
                 </Button>
               )}
-              {isHost && <Button onClick={handleStart} disabled={starting} size="lg">{starting ? "Starting..." : "Start Battle"}</Button>}
-              {!isHost && (
-                <Button onClick={handleReadyClick} size="lg">Ready</Button>
-              )}
             </div>
+
             <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
           </Card>
         ) : (
@@ -906,15 +978,12 @@ function BattleRoom() {
               <div className="battle-room__finished-overlay">
                 <Card className="battle-room__finished-panel">
                   <div className="battle-room__finished-header">
-                    <div>
-                      <p className="label-text">Final leaderboard</p>
-                      <h2>Results</h2>
-                    </div>
+                    <div><p className="label-text">Final leaderboard</p><h2>Results</h2></div>
                   </div>
                   <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
                   <div className="battle-room__finished-actions">
                     <Button onClick={() => setShowLeaderboard(false)} size="sm" variant="secondary">Close</Button>
-                    <Button onClick={() => navigate('/dashboard')} size="sm">Return to Dashboard</Button>
+                    <Button onClick={() => navigate("/dashboard")} size="sm">Return to Dashboard</Button>
                   </div>
                 </Card>
               </div>
@@ -924,10 +993,7 @@ function BattleRoom() {
               <div className="battle-room__finished-overlay">
                 <Card className="battle-room__finished-panel">
                   <div className="battle-room__finished-header">
-                    <div>
-                      <p className="label-text">Round results</p>
-                      <h2>Round complete</h2>
-                    </div>
+                    <div><p className="label-text">Round results</p><h2>Round complete</h2></div>
                   </div>
                   <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
                   <div className="battle-room__finished-actions">
@@ -948,28 +1014,26 @@ function BattleRoom() {
               <div className="battle-room__all-done-overlay">
                 <Card className="battle-room__all-done-panel">
                   <div className="battle-room__finished-header">
-                    <div>
-                      <p className="label-text">All Questions Finished</p>
-                      <h2>No more questions</h2>
-                    </div>
+                    <div><p className="label-text">All Questions Finished</p><h2>No more questions</h2></div>
                   </div>
-                  <p className="muted-text">All questions for this difficulty have been used. Click Finish to finalize the competition and store results.</p>
+                  <p className="muted-text">All questions for this difficulty have been used. Click Finish to finalize.</p>
                   <div className="battle-room__finished-actions">
-                    {isHost ? <Button onClick={handleFinish} size="sm">Finish</Button> : <Button size="sm" variant="secondary" disabled>Waiting for host</Button>}
-                    <Button onClick={() => navigate('/dashboard')} size="sm" variant="secondary">Leave</Button>
+                    {isHost
+                      ? <Button onClick={handleFinish} size="sm">Finish</Button>
+                      : <Button size="sm" variant="secondary" disabled>Waiting for host</Button>}
+                    <Button onClick={() => navigate("/dashboard")} size="sm" variant="secondary">Leave</Button>
                   </div>
                 </Card>
               </div>
             )}
+
             <div className="battle-room__mobile-tabs" role="tablist" aria-label="Battle workspace">
               {MOBILE_TABS.map((tab) => (
-                <button 
-                  key={tab} 
-                  type="button" 
-                  className={mobileTab === tab ? "is-active" : ""} 
-                  onClick={() => {
-                    setMobileTab(tab);
-                  }}
+                <button
+                  key={tab}
+                  type="button"
+                  className={mobileTab === tab ? "is-active" : ""}
+                  onClick={() => setMobileTab(tab)}
                 >
                   {tab}
                   {tab === "Chat" && unreadMessages > 0 && (
@@ -985,23 +1049,35 @@ function BattleRoom() {
                   <ProblemPane question={room?.question} difficulty={room?.difficulty} active={problemTab} onTab={setProblemTab} />
                 </Card>
               )}
-              {showProblem && <button type="button" className="battle-room__resize-handle battle-room__resize-handle--left" onPointerDown={(event) => startResize("left", event)} aria-label="Resize problem panel" />}
+              {showProblem && (
+                <button
+                  type="button"
+                  className="battle-room__resize-handle battle-room__resize-handle--left"
+                  onPointerDown={(event) => startResize("left", event)}
+                  aria-label="Resize problem panel"
+                />
+              )}
 
               <Card className={`battle-room__editor-panel battle-room__leetcode-card battle-room__mobile-pane ${mobileTab === "Code" || mobileTab === "Console" ? "is-active" : ""}`}>
                 <div className="battle-room__editor-top battle-room__editor-top--leetcode">
-                    <div className="battle-room__editor-heading">
+                  <div className="battle-room__editor-heading">
                     <span className="battle-room__panel-tab battle-room__panel-tab--active">Code</span>
                     <StatusPill status={isLocked ? (myPlayer?.status === "time_up" ? "Time Up" : "Locked") : "Editing"} />
                   </div>
-
                   <div className="battle-room__editor-controls">
                     <select value={language} onChange={(event) => setLanguage(event.target.value)} className="battle-room__language-select" aria-label="Language">
                       {Object.entries(LANGUAGE_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
                     </select>
                     <Button onClick={resetCode} disabled={isLocked} size="sm" variant="secondary">Reset</Button>
-                    <Button onClick={() => setFocusMode((current) => ({ ...current, problem: !current.problem }))} size="sm" variant="secondary">{focusMode.problem ? "Show Problem" : "Focus"}</Button>
-                    <Button onClick={handleRun} disabled={running || isLocked} size="sm" variant="secondary">{running ? "Running..." : "Run Code"}</Button>
-                    <Button onClick={handleSubmit} disabled={submitting || isLocked} size="sm">{submitting ? "Submitting..." : "Submit"}</Button>
+                    <Button onClick={() => setFocusMode((current) => ({ ...current, problem: !current.problem }))} size="sm" variant="secondary">
+                      {focusMode.problem ? "Show Problem" : "Focus"}
+                    </Button>
+                    <Button onClick={handleRun} disabled={running || isLocked} size="sm" variant="secondary">
+                      {running ? "Running..." : "Run Code"}
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={submitting || isLocked} size="sm">
+                      {submitting ? "Submitting..." : "Submit"}
+                    </Button>
                   </div>
                 </div>
 
@@ -1029,7 +1105,14 @@ function BattleRoom() {
                 </div>
               </Card>
 
-              {showSidebar && <button type="button" className="battle-room__resize-handle battle-room__resize-handle--right" onPointerDown={(event) => startResize("right", event)} aria-label="Resize sidebar" />}
+              {showSidebar && (
+                <button
+                  type="button"
+                  className="battle-room__resize-handle battle-room__resize-handle--right"
+                  onPointerDown={(event) => startResize("right", event)}
+                  aria-label="Resize sidebar"
+                />
+              )}
               {showSidebar && (
                 <aside className={`battle-room__right-column battle-room__mobile-pane ${mobileTab === "Players" || mobileTab === "Chat" ? "is-active" : ""}`}>
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
