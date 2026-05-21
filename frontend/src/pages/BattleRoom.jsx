@@ -936,19 +936,17 @@ function BattleRoom() {
       chat_messages: [...(prev.chat_messages || []), optimisticMsg],
     } : prev);
 
-    // Try WebSocket first (instant delivery to others if WS is connected)
+    // If WS is connected, send via WebSocket (server will persist & broadcast).
+    // Otherwise fall back to the reliable HTTP POST path.
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       sendSocket({ event: "chat_message", message });
-    }
-
-    // Always also POST via HTTP — this is the reliable path that persists the
-    // message server-side and triggers a broadcast to all WS clients.
-    // If WS is broken, HTTP is the only way the message reaches others.
-    try {
-      await api.post(`/rooms/${roomCode}/chat`, { message });
-    } catch (err) {
-      // If HTTP also fails, show an error but keep the optimistic message visible
-      setError(extractError(err, "Failed to send message."));
+    } else {
+      try {
+        await api.post(`/rooms/${roomCode}/chat`, { message });
+      } catch (err) {
+        // If HTTP fails, show an error but keep the optimistic message visible
+        setError(extractError(err, "Failed to send message."));
+      }
     }
   };
 
