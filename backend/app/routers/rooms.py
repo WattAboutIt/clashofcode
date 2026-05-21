@@ -457,6 +457,21 @@ async def join_room(
         pending_redirects.pop(username, None)
 
     payload = await _broadcast_room(room, db)
+    # Schedule a short delayed broadcast to cover timing races where a
+    # websocket connection may not be fully registered on other clients yet.
+    # This makes the UI resilient so hosts see newly-joined players without
+    # needing a manual page refresh.
+    async def _delayed_broadcast(code: str):
+        await asyncio.sleep(0.25)
+        r = room_store.get(code)
+        if r:
+            try:
+                async with AsyncSessionLocal() as _db:
+                    await _broadcast_room(r, _db)
+            except Exception:
+                logger.exception("Delayed broadcast failed for room=%s", code)
+
+    asyncio.create_task(_delayed_broadcast(room.get("room_code")))
     return {"roomCode": payload["roomCode"]}
 
 
