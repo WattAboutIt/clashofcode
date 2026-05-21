@@ -29,6 +29,8 @@ function MatchmakingLobby() {
     if (pollRef.current) return;
     let stopped = false;
     pollRef.current = { stopped };
+    const backoffRef = { failures: 0 };
+    const MAX_BACKOFF = 30000; // 30s max
 
     (async function pollLoop() {
       while (!pollRef.current || !pollRef.current.stopped) {
@@ -37,12 +39,21 @@ function MatchmakingLobby() {
           // await checkStatus to ensure requests don't overlap
           // eslint-disable-next-line no-await-in-loop
           await checkStatus();
+          // success -> reset failures
+          backoffRef.failures = 0;
         } catch (e) {
-          // swallow — checkStatus sets error state
+          // increment failure counter to increase backoff
+          backoffRef.failures = Math.min(backoffRef.failures + 1, 6); // cap exponent
         }
+
+        // compute delay with exponential backoff + jitter
+        const base = POLL_INTERVAL * Math.pow(2, backoffRef.failures);
+        const delay = Math.min(base, MAX_BACKOFF);
+        const jitter = Math.floor(Math.random() * 300); // up to 300ms jitter
+
         // wait interval but allow early exit
         // eslint-disable-next-line no-await-in-loop
-        await new Promise((res) => setTimeout(res, POLL_INTERVAL));
+        await new Promise((res) => setTimeout(res, delay + jitter));
       }
     })();
   };
