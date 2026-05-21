@@ -621,7 +621,10 @@ function BattleRoom() {
       // ✅ FIX: only join once, not on every reconnect
       if (!hasJoinedRef.current) {
         try {
-          await api.post("/rooms/join", { roomCode });
+          // Explicitly pass the current auth token to ensure the backend
+          // authenticates the join request even if localStorage/interceptors
+          // aren't populated yet (hot-reload / dev UX).
+          await api.post("/rooms/join", { roomCode }, { headers: { Authorization: token ? `Bearer ${token}` : undefined } });
           hasJoinedRef.current = true;
         } catch (err) {
           setError(extractError(err, "Unable to join room before websocket connect."));

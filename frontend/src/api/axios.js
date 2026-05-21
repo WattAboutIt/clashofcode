@@ -18,10 +18,17 @@ export const API_BASE_URL = RAILWAY_API;
  */
 function chooseApiInstance(url) {
     const lower = String(url).toLowerCase();
-    // Route matchmaking/coordination to the deployed backend (Railway) by default.
-    // If Railway is unavailable, `requestAPI` will attempt a local fallback.
+    // If the app is running locally, prefer the local backend for matchmaking
+    // and join/ready flows so dev UX doesn't hit the deployed Railway server first.
+    const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
     if (lower.includes("/ready") || lower.includes("/matchmake") || lower.includes("matchmake") || lower.includes("matchmaking") || lower.includes("find") || lower.includes("queue")) {
-        return railwayAPI;
+        return isLocalHost ? localAPI : railwayAPI;
+    }
+
+    // Explicitly route the simple join endpoint to local in dev (the deployed
+    // Railway backend may return unexpected 400s during development).
+    if (lower.includes("/rooms/join")) {
+        return isLocalHost ? localAPI : railwayAPI;
     }
 
     // Room-specific routes (e.g. /rooms/:roomCode/...) are room CRUD and must go to Railway

@@ -3,16 +3,12 @@
  *
  * Tries Railway (production) first, then falls back to local on network/timeouts.
  */
-/**
- * Send matchmaking 'find' request.
- * @param {Object} data
- * @returns {Promise<any>}
- */
 import { requestAPI } from "./axios";
 
 /**
  * Trigger matchmaking (join queue)
  * @param {{difficulty: string}} payload
+ * @returns {Promise<{status: string, roomCode?: string}>}
  */
 export async function findMatch(payload) {
   const res = await requestAPI("/rooms/matchmake", { method: "post", data: payload });
@@ -20,7 +16,8 @@ export async function findMatch(payload) {
 }
 
 /**
- * Get matchmaking status
+ * Get current matchmaking status
+ * @returns {Promise<{status: string, roomCode?: string, players_in_queue?: number}>}
  */
 export async function getMatchStatus() {
   const res = await requestAPI("/rooms/matchmake/status", { method: "get" });
@@ -30,6 +27,7 @@ export async function getMatchStatus() {
 /**
  * Request to join a specific room (used after matchmaking finds a match)
  * @param {string} roomCode
+ * @returns {Promise<{roomCode: string}>}
  */
 export async function requestJoin(roomCode) {
   const res = await requestAPI("/rooms/join", { method: "post", data: { roomCode } });
@@ -38,6 +36,7 @@ export async function requestJoin(roomCode) {
 
 /**
  * Cancel matchmaking / leave queue
+ * @returns {Promise<{status: string}>}
  */
 export async function cancelMatchmaking() {
   const res = await requestAPI("/rooms/matchmake/cancel", { method: "post" });
@@ -45,11 +44,14 @@ export async function cancelMatchmaking() {
 }
 
 /**
- * Mark player ready in a room
+ * Mark the current player as ready in a room via HTTP.
+ * If all players are ready the backend will auto-start the battle.
+ * @param {string} roomCode
+ * @returns {Promise<{status: string, all_ready: boolean, roomCode?: string}>}
  */
 export async function setPlayerReady(roomCode) {
-  // Deprecated: ready should be sent via WebSocket. Throw to prevent accidental HTTP calls.
-  throw new Error("Deprecated: use WebSocket PLAYER_READY instead of HTTP /ready");
+  const res = await requestAPI(`/rooms/${roomCode}/ready`, { method: "post" });
+  return res.data;
 }
 
 export default {
@@ -57,4 +59,5 @@ export default {
   getMatchStatus,
   cancelMatchmaking,
   requestJoin,
+  setPlayerReady,
 };
