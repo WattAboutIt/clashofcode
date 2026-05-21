@@ -1141,7 +1141,16 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, token: str = 
 
     manager.connect(room_id, websocket, username)
     async with AsyncSessionLocal() as db:
-        await _broadcast_room(room, db)
+        # Broadcast to all connected clients AND send the current room state
+        # directly to this socket. This ensures a late-joining player (who
+        # connected after the battle started and missed the earlier broadcast)
+        # immediately receives the active room state without waiting for the
+        # next event.
+        payload = await _broadcast_room(room, db)
+        try:
+            await websocket.send_json({"event": "room_updated", "room": payload})
+        except Exception:
+            pass  # socket may have closed; the broadcast above already tried
 
     try:
         while True:

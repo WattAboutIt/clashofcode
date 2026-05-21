@@ -644,6 +644,16 @@ function BattleRoom() {
         setError("");
         clearPing();
         pingTimer = window.setInterval(() => sendSocket({ event: "ping" }), 15000);
+
+        // Fetch current room state immediately on connect.
+        // The server broadcasts room_updated when a WS connects, but there is a
+        // timing race where the second player connects after the battle has already
+        // started and the broadcast was already sent to connected sockets only.
+        // An HTTP fetch here guarantees the second player always gets the latest
+        // room state (active, question, etc.) regardless of WS broadcast timing.
+        api.get(`/rooms/${roomCode}`)
+          .then((res) => { if (!closedByCleanup) setRoom(res.data); })
+          .catch(() => {}); // WS will keep retrying; silently ignore HTTP fetch errors
       };
 
       socket.onmessage = (event) => {
