@@ -18,9 +18,10 @@ export const API_BASE_URL = RAILWAY_API;
  */
 function chooseApiInstance(url) {
     const lower = String(url).toLowerCase();
-    // Certain room actions (coordination) should be routed to local backend
+    // Route matchmaking/coordination to the deployed backend (Railway) by default.
+    // If Railway is unavailable, `requestAPI` will attempt a local fallback.
     if (lower.includes("/ready") || lower.includes("/matchmake") || lower.includes("matchmake") || lower.includes("matchmaking") || lower.includes("find") || lower.includes("queue")) {
-        return localAPI;
+        return railwayAPI;
     }
 
     // Room-specific routes (e.g. /rooms/:roomCode/...) are room CRUD and must go to Railway
@@ -71,15 +72,28 @@ export async function requestAPI(url, options = {}) {
         // for post/put/patch/delete, axios expects (url, data, config)
         return await instance[method](url, data, config);
     } catch (err) {
-        // If routing to local and it fails, give a helpful matchmaking-specific error
         const isLocal = instance === localAPI;
-        if (isLocal) {
-            console.warn(`⚠ Local backend failed for ${url}`, err?.message || err);
-            const customErr = new Error("Matchmaking service unavailable (local server not running)");
-            customErr.response = { data: { detail: "Matchmaking service unavailable (local server not running)" } };
-            throw customErr;
+        // If the primary (Railway) failed and this was not explicitly a local request, try local fallback.
+        if (!isLocal) {
+            console.warn(`⚠ Primary backend failed for ${url}, attempting local fallback`, err?.message || err);
+            try {
+                if (method === "get") {
+                    return await localAPI.get(url, { params: data, ...config });
+                }
+                return await localAPI[method](url, data, config);
+            } catch (localErr) {
+                console.error(`❌ Both Railway and Local backend failed for ${url}`, localErr?.message || localErr);
+                const customErr = new Error("Matchmaking service unavailable (both Railway and local failed)");
+                customErr.response = { data: { detail: "Matchmaking service unavailable (both Railway and local failed)" } };
+                throw customErr;
+            }
         }
-        throw err;
+
+        // If we were already trying local, give a friendly matchmaking-specific error
+        console.warn(`⚠ Local backend failed for ${url}`, err?.message || err);
+        const customErr = new Error("Matchmaking service unavailable (local server not running)");
+        customErr.response = { data: { detail: "Matchmaking service unavailable (local server not running)" } };
+        throw customErr;
     }
 }
 

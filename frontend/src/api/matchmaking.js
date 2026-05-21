@@ -15,7 +15,7 @@ import { requestAPI } from "./axios";
  * @param {{difficulty: string}} payload
  */
 export async function findMatch(payload) {
-  const res = await requestAPI("/rooms/matchmake", { method: "post", data: payload, forceLocal: true });
+  const res = await requestAPI("/rooms/matchmake", { method: "post", data: payload });
   return res.data;
 }
 
@@ -23,7 +23,7 @@ export async function findMatch(payload) {
  * Get matchmaking status
  */
 export async function getMatchStatus() {
-  const res = await requestAPI("/rooms/matchmake/status", { method: "get", forceLocal: true });
+  const res = await requestAPI("/rooms/matchmake/status", { method: "get" });
   return res.data;
 }
 
@@ -40,7 +40,7 @@ export async function requestJoin(roomCode) {
  * Cancel matchmaking / leave queue
  */
 export async function cancelMatchmaking() {
-  const res = await requestAPI("/rooms/matchmake/cancel", { method: "post", forceLocal: true });
+  const res = await requestAPI("/rooms/matchmake/cancel", { method: "post" });
   return res.data;
 }
 

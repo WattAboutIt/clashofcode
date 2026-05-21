@@ -1,6 +1,8 @@
 import os
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy import text
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -25,25 +27,78 @@ def normalize_database_url(url: str | None) -> str:
     return url
 
 
-# Allow a simple hard override for demo/testing: set MAIN_DATABASE_URL to a full SQLAlchemy URL
-# Example: export MAIN_DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/dbname"
+# Environment precedence: RAILWAY_DATABASE_URL -> MAIN_DATABASE_URL -> DATABASE_URL -> DEFAULT (sqlite)
+RAILWAY_DATABASE_URL = os.getenv("RAILWAY_DATABASE_URL")
 MAIN_DATABASE_URL = os.getenv("MAIN_DATABASE_URL")
-# For manual editing, follow the example below:
-# Local Postgres: "postgresql+asyncpg://user:pass@127.0.0.1:5432/dbname"
-# Railway: "postgresql+asyncpg://user:pass@xxx.railway.app:5432/dbname"
-HARDCODED_DATABASE_URL = None  # <- Edit this value directly to switch DB
+HARDCODED_DATABASE_URL = None  # <- Edit this value directly to switch DB when debugging
 
+
+async def _test_connect(url: str) -> bool:
+    try:
+        engine = create_async_engine(url, echo=False)
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        await engine.dispose()
+        return True
+    except Exception:
+        return False
+
+
+# Build candidate list
+candidates: list[str] = []
 if HARDCODED_DATABASE_URL:
-    DATABASE_URL = HARDCODED_DATABASE_URL
-elif MAIN_DATABASE_URL:
-    DATABASE_URL = MAIN_DATABASE_URL
-else:
-    DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
+    candidates.append(HARDCODED_DATABASE_URL)
+if RAILWAY_DATABASE_URL:
+    try:
+        candidates.append(normalize_database_url(RAILWAY_DATABASE_URL))
+    except Exception:
+        pass
+if MAIN_DATABASE_URL:
+    try:
+        candidates.append(normalize_database_url(MAIN_DATABASE_URL))
+    except Exception:
+        pass
+env_db = os.getenv("DATABASE_URL")
+if env_db:
+    try:
+        candidates.append(normalize_database_url(env_db))
+    except Exception:
+        pass
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=True,
-)
+# always consider default sqlite as last resort
+candidates.append(DEFAULT_DATABASE_URL)
+
+
+DATABASE_URL = None
+engine = None
+
+# Try candidates in order and pick first that successfully connects.
+for candidate in candidates:
+    try:
+        norm = normalize_database_url(candidate)
+    except Exception:
+        continue
+    # Attempt a short async connection test
+    try:
+        ok = asyncio.get_event_loop().run_until_complete(_test_connect(norm))
+    except RuntimeError:
+        # No running loop — create a new temporary loop
+        loop = asyncio.new_event_loop()
+        try:
+            ok = loop.run_until_complete(_test_connect(norm))
+        finally:
+            loop.close()
+
+    if ok:
+        DATABASE_URL = norm
+        engine = create_async_engine(DATABASE_URL, echo=True)
+        break
+
+if engine is None:
+    # fallback: use sqlite default
+    DATABASE_URL = DEFAULT_DATABASE_URL
+    engine = create_async_engine(DATABASE_URL, echo=True)
+
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,
