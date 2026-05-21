@@ -1,15 +1,16 @@
 import os
-import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from sqlalchemy import text
 from dotenv import load_dotenv
 from pathlib import Path
+import logging
 
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./clashofcode.db"
 
@@ -32,72 +33,31 @@ RAILWAY_DATABASE_URL = os.getenv("RAILWAY_DATABASE_URL")
 MAIN_DATABASE_URL = os.getenv("MAIN_DATABASE_URL")
 HARDCODED_DATABASE_URL = None  # <- Edit this value directly to switch DB when debugging
 
-
-async def _test_connect(url: str) -> bool:
-    try:
-        engine = create_async_engine(url, echo=False)
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        await engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
-# Build candidate list
-candidates: list[str] = []
+# Choose DATABASE_URL deterministically — do not run async checks at import time.
 if HARDCODED_DATABASE_URL:
-    candidates.append(HARDCODED_DATABASE_URL)
-if RAILWAY_DATABASE_URL:
+    DATABASE_URL = HARDCODED_DATABASE_URL
+elif RAILWAY_DATABASE_URL:
     try:
-        candidates.append(normalize_database_url(RAILWAY_DATABASE_URL))
+        DATABASE_URL = normalize_database_url(RAILWAY_DATABASE_URL)
     except Exception:
-        pass
-if MAIN_DATABASE_URL:
+        DATABASE_URL = None
+elif MAIN_DATABASE_URL:
     try:
-        candidates.append(normalize_database_url(MAIN_DATABASE_URL))
+        DATABASE_URL = normalize_database_url(MAIN_DATABASE_URL)
     except Exception:
-        pass
-env_db = os.getenv("DATABASE_URL")
-if env_db:
+        DATABASE_URL = None
+else:
     try:
-        candidates.append(normalize_database_url(env_db))
+        DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
     except Exception:
-        pass
+        DATABASE_URL = DEFAULT_DATABASE_URL
 
-# always consider default sqlite as last resort
-candidates.append(DEFAULT_DATABASE_URL)
-
-
-DATABASE_URL = None
-engine = None
-
-# Try candidates in order and pick first that successfully connects.
-for candidate in candidates:
-    try:
-        norm = normalize_database_url(candidate)
-    except Exception:
-        continue
-    # Attempt a short async connection test
-    try:
-        ok = asyncio.get_event_loop().run_until_complete(_test_connect(norm))
-    except RuntimeError:
-        # No running loop — create a new temporary loop
-        loop = asyncio.new_event_loop()
-        try:
-            ok = loop.run_until_complete(_test_connect(norm))
-        finally:
-            loop.close()
-
-    if ok:
-        DATABASE_URL = norm
-        engine = create_async_engine(DATABASE_URL, echo=True)
-        break
-
-if engine is None:
-    # fallback: use sqlite default
+if not DATABASE_URL:
     DATABASE_URL = DEFAULT_DATABASE_URL
-    engine = create_async_engine(DATABASE_URL, echo=True)
+
+logger.info("Selected DATABASE_URL: %s", DATABASE_URL if DATABASE_URL else "<default sqlite>")
+
+engine = create_async_engine(DATABASE_URL, echo=True)
 
 
 AsyncSessionLocal = sessionmaker(
