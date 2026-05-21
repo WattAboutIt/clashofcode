@@ -4,7 +4,7 @@
 
 **Clash of Code** is a multiplayer coding battle platform where developers compete in real-time coding challenges. Users can create rooms, join battles, and climb the leaderboard in a competitive coding arena.
 
----
+-----
 
 ## 📖 2. Overview
 
