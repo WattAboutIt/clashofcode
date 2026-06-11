@@ -16,6 +16,7 @@ import FindMatch from "./pages/FindMatch";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import DeveloperQuestions from "./pages/DeveloperQuestions";
+import Chat from "./pages/Chat";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
                       <Route path="/coding-interface" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/developer/questions" element={<DeveloperQuestions />} />
+                      <Route path="/chat" element={<Chat />} />
                     </Route>
                   </Routes>
                 </ErrorBoundary>

@@ -17,10 +17,12 @@ from .routers import questions
 from .routers import user
 from .routers import rooms
 from .routers import execution
+from .routers import chat
 from .websocket_manager import manager
 
-logger = logging.getLogger(__name__)
+# basicConfig must be called BEFORE getLogger so the handler is in place.
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger(__name__)
 logger.debug("Main module touched to trigger reload if running with --reload")
 
 
@@ -110,6 +112,7 @@ app.include_router(user.router)
 app.include_router(leaderboard.router)
 app.include_router(rooms.router)
 app.include_router(execution.router)
+app.include_router(chat.router)
 
 
 # ---------------------------------------------------------------------------
@@ -127,9 +130,11 @@ def health():
 
 @app.get("/debug/routes")
 async def debug_routes():
+    # Compute once to avoid calling route_table(app) twice.
+    routes = route_table(app)
     return {
-        "routes": route_table(app),
-        "websockets": [r for r in route_table(app) if r["type"] == "websocket"],
+        "routes": routes,
+        "websockets": [r for r in routes if r["type"] == "websocket"],
         "active_websockets": manager.snapshot(),
     }
 

@@ -8,6 +8,7 @@ import "../styles/navbar.css";
 const guestLinks = [
   { label: "Home", to: "/" },
   { label: "Leaderboard", to: "/leaderboard" },
+  { label: "AI Chat", to: "/chat" },
 ];
 
 const authLinks = [
@@ -15,6 +16,7 @@ const authLinks = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Create Room", to: "/create-room" },
   { label: "Profile", to: "/profile" },
+  { label: "AI Chat", to: "/chat" },
 ];
 
 function Icon({ children }) {

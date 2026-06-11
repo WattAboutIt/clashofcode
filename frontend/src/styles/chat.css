@@ -1,0 +1,44 @@
+.chatbox {
+  border: 1px solid var(--muted-2);
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 760px;
+}
+.chatbox__window {
+  min-height: 200px;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chatbox__empty {
+  color: var(--muted-3);
+}
+.chatbox__message {
+  display: flex;
+}
+.chatbox__message--user {
+  justify-content: flex-end;
+}
+.chatbox__message--ai {
+  justify-content: flex-start;
+}
+.chatbox__bubble {
+  background: var(--bg-2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  max-width: 80%;
+}
+.chatbox__form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.chatbox__input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--muted-2);
+}
