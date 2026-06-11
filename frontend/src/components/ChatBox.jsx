@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 
-const RAILWAY_URL = "https://your-backend.up.railway.app";
+const RAILWAY_URL = "https://clashofcode-production.up.railway.app";
 const LOCAL_URL = "http://localhost:8000";
 
-const API_URL = import.meta.env.VITE_API_URL ?? (
-  import.meta.env.DEV ? LOCAL_URL : RAILWAY_URL
-);
+// Probe once on module load — result is cached for all subsequent sends
+const apiURLPromise = fetch(`${LOCAL_URL}/health`, {
+  method: "HEAD",
+  signal: AbortSignal.timeout(800),
+})
+  .then(() => LOCAL_URL)
+  .catch(() => RAILWAY_URL);
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([
@@ -16,7 +20,6 @@ export default function ChatBox() {
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
 
-  // Scroll to latest message whenever messages change.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -31,7 +34,8 @@ export default function ChatBox() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/chat/`, {
+      const apiURL = await apiURLPromise; // instant after first resolution
+      const res = await fetch(`${apiURL}/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),

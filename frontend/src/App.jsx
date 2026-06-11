@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import DeveloperQuestions from "./pages/DeveloperQuestions";
 import Chat from "./pages/Chat";
+import AIChatWidget from "./components/AIChatWidget";
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
                 </ErrorBoundary>
               </div>
             </AppShell>
+            <AIChatWidget />
           </div>
         </AuthProvider>
       </ThemeProvider>
