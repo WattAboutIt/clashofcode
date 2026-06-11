@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const RAILWAY_URL = "https://your-backend.up.railway.app";
+const LOCAL_URL = "http://localhost:8000";
+
+const API_URL = import.meta.env.VITE_API_URL ?? (
+  import.meta.env.DEV ? LOCAL_URL : RAILWAY_URL
+);
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([
