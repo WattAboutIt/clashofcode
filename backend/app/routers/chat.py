@@ -161,3 +161,46 @@ async def groq_debug():
         result["init_error"] = str(e)
 
     return result
+
+
+@router.get("/debug/groq_raw")
+async def groq_debug_raw():
+    """Perform a raw HTTPS GET to Groq's models endpoint to detect network/egress issues.
+
+    This avoids the SDK and uses a simple HTTP fetch with the Authorization header.
+    """
+    api_key = get_groq_api_key()
+    if not api_key:
+        return {"ok": False, "reason": "GROQ_API_KEY missing"}
+
+    url = os.environ.get("GROQ_RAW_CHECK_URL", "https://api.groq.com/v1/models")
+
+    import json
+    import urllib.request
+    import urllib.error
+
+    def fetch():
+        req = urllib.request.Request(url, headers={
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+            "User-Agent": "clashofcode-debug/1.0",
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            status = resp.getcode()
+            body = resp.read(4096)
+            return status, body
+
+    try:
+        status, body = await __import__("asyncio").to_thread(fetch)
+        safe_body = None
+        try:
+            safe_body = json.loads(body.decode("utf-8", errors="replace"))
+        except Exception:
+            safe_body = body.decode("utf-8", errors="replace")[:1024]
+        return {"ok": True, "status": status, "body_sample": safe_body}
+    except urllib.error.HTTPError as e:
+        logger.exception("Raw Groq HTTPError: %s", e)
+        return {"ok": False, "status": getattr(e, "code", None), "reason": str(e)}
+    except Exception as e:
+        logger.exception("Raw Groq request failed: %s", e)
+        return {"ok": False, "reason": str(e)}
