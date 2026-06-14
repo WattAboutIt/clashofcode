@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import "../styles/chat.css";
 
 const RAILWAY_URL = "https://clashofcode-production.up.railway.app";
 const LOCAL_URL = "http://localhost:8000";
 
-// Probe once on module load — result is cached for all subsequent sends
 const apiURLPromise = fetch(`${LOCAL_URL}/health`, {
   method: "HEAD",
   signal: AbortSignal.timeout(800),
@@ -11,10 +11,13 @@ const apiURLPromise = fetch(`${LOCAL_URL}/health`, {
   .then(() => LOCAL_URL)
   .catch(() => RAILWAY_URL);
 
+const SUGGESTIONS = [
+  "What can I ask you to do?",
+  "What projects should I be concerned about right now?",
+];
+
 export default function ChatBox() {
-  const [messages, setMessages] = useState([
-    { role: "assistant", text: "Hi! Ask me anything about coding, debugging, or the challenges." }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,17 +27,17 @@ export default function ChatBox() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  async function sendMessage() {
-    const text = input.trim();
+  async function sendMessage(overrideText) {
+    const text = (overrideText ?? input).trim();
     if (!text || loading) return;
 
     setInput("");
     setError(null);
-    setMessages(prev => [...prev, { role: "user", text }]);
+    setMessages((prev) => [...prev, { role: "user", text }]);
     setLoading(true);
 
     try {
-      const apiURL = await apiURLPromise; // instant after first resolution
+      const apiURL = await apiURLPromise;
       const res = await fetch(`${apiURL}/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,7 +50,7 @@ export default function ChatBox() {
       }
 
       const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", text: data.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,141 +65,85 @@ export default function ChatBox() {
     }
   }
 
+  const isEmpty = messages.length === 0 && !loading;
+
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.messageList}>
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              ...styles.bubble,
-              ...(msg.role === "user" ? styles.userBubble : styles.assistantBubble),
-            }}
-          >
-            {msg.text}
-          </div>
-        ))}
+    <div className="cb-root">
 
-        {loading && (
-          <div style={{ ...styles.bubble, ...styles.assistantBubble, opacity: 0.5 }}>
-            Thinking…
+      {/* ── Message list ── */}
+      <div className="cb-messages">
+        {isEmpty ? (
+          <div className="cb-empty">
+            <span className="cb-sparkle" aria-hidden="true">✦</span>
+            <p className="cb-empty-title">Ask our AI anything</p>
           </div>
+        ) : (
+          <>
+            {messages.map((msg, i) => (
+              <div key={i} className={`cb-row cb-row--${msg.role}`}>
+                <div className={`cb-bubble cb-bubble--${msg.role}`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="cb-row cb-row--assistant">
+                <div className="cb-bubble cb-bubble--assistant cb-bubble--thinking">
+                  <span className="cb-dot" />
+                  <span className="cb-dot" />
+                  <span className="cb-dot" />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="cb-error">{error}</div>
+            )}
+          </>
         )}
-
-        {error && (
-          <div style={styles.error}>
-            {error}
-          </div>
-        )}
-
         <div ref={bottomRef} />
       </div>
 
-      <div style={styles.inputRow}>
+      {/* ── Suggestion chips — only when no messages ── */}
+      {isEmpty && (
+        <div className="cb-suggestions">
+          <p className="cb-suggestions-label">Suggestions on what to ask Our AI</p>
+          <div className="cb-suggestion-row">
+            {SUGGESTIONS.map((s) => (
+              <button key={s} className="cb-chip" onClick={() => sendMessage(s)}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Input bar ── */}
+      <div className="cb-input-wrap">
         <textarea
-          style={styles.textarea}
-          rows={2}
-          placeholder="Ask anything… (Enter to send)"
+          className="cb-input"
+          rows={1}
+          placeholder="Ask me anything about your projects"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={loading}
         />
         <button
-          style={{
-            ...styles.sendBtn,
-            ...(loading || !input.trim() ? styles.sendBtnDisabled : {}),
-          }}
-          onClick={sendMessage}
+          className="cb-send"
+          onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
+          aria-label="Send"
         >
-          Send
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.2"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </div>
+
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    display: "flex",
-    flexDirection: "column",
-    height: "480px",
-    border: "1px solid #2a2a3a",
-    borderRadius: "8px",
-    overflow: "hidden",
-    background: "#0f0f1a",
-    fontFamily: "inherit",
-  },
-  messageList: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-  bubble: {
-    maxWidth: "75%",
-    padding: "10px 14px",
-    borderRadius: "12px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-  },
-  userBubble: {
-    alignSelf: "flex-end",
-    background: "#4f46e5",
-    color: "#fff",
-    borderBottomRightRadius: "2px",
-  },
-  assistantBubble: {
-    alignSelf: "flex-start",
-    background: "#1e1e2e",
-    color: "#e2e8f0",
-    borderBottomLeftRadius: "2px",
-  },
-  error: {
-    alignSelf: "center",
-    color: "#f87171",
-    fontSize: "13px",
-    padding: "6px 12px",
-    background: "#2d1515",
-    borderRadius: "6px",
-  },
-  inputRow: {
-    display: "flex",
-    gap: "8px",
-    padding: "12px",
-    borderTop: "1px solid #2a2a3a",
-    background: "#0f0f1a",
-  },
-  textarea: {
-    flex: 1,
-    resize: "none",
-    padding: "8px 12px",
-    borderRadius: "6px",
-    border: "1px solid #2a2a3a",
-    background: "#1e1e2e",
-    color: "#e2e8f0",
-    fontSize: "14px",
-    outline: "none",
-    fontFamily: "inherit",
-  },
-  sendBtn: {
-    padding: "0 20px",
-    borderRadius: "6px",
-    border: "none",
-    background: "#4f46e5",
-    color: "#fff",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-    transition: "opacity 0.15s",
-  },
-  sendBtnDisabled: {
-    opacity: 0.4,
-    cursor: "not-allowed",
-  },
-};
