@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AppShell from "./layouts/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -18,6 +18,11 @@ import Leaderboard from "./pages/Leaderboard";
 import DeveloperQuestions from "./pages/DeveloperQuestions";
 import Chat from "./pages/Chat";
 import AIChatWidget from "./components/AIChatWidget";
+
+function AuthenticatedExtras() {
+  const { user } = useAuth();
+  return user ? <AIChatWidget /> : null;
+}
 
 function App() {
   return (
@@ -49,7 +54,7 @@ function App() {
                 </ErrorBoundary>
               </div>
             </AppShell>
-            <AIChatWidget />
+            <AuthenticatedExtras />
           </div>
         </AuthProvider>
       </ThemeProvider>
