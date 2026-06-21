@@ -401,6 +401,62 @@ function SubmissionHistory({ submissions }) {
   );
 }
 
+function SidePanelRail({ active, onSelect, unreadMessages, eventCount }) {
+  return (
+    <nav className="battle-room__side-rail" aria-label="Chat and battle feed">
+      <button
+        type="button"
+        className={`battle-room__side-rail-btn ${active === "chat" ? "battle-room__side-rail-btn--active" : ""}`}
+        onClick={() => onSelect(active === "chat" ? null : "chat")}
+        aria-pressed={active === "chat"}
+        aria-label="Toggle room chat"
+        title="Chat"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        </svg>
+        {unreadMessages > 0 && active !== "chat" && (
+          <span className="battle-room__side-rail-badge">{unreadMessages > 9 ? "9+" : unreadMessages}</span>
+        )}
+      </button>
+
+      <button
+        type="button"
+        className={`battle-room__side-rail-btn ${active === "feed" ? "battle-room__side-rail-btn--active" : ""}`}
+        onClick={() => onSelect(active === "feed" ? null : "feed")}
+        aria-pressed={active === "feed"}
+        aria-label="Toggle battle feed"
+        title="Battle feed"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M13 2L3 14h7l-1 8 11-13h-7l1-7z" />
+        </svg>
+        {eventCount > 0 && (
+          <span className="battle-room__side-rail-dot" aria-hidden="true" />
+        )}
+      </button>
+    </nav>
+  );
+}
+
+function SidePanelDrawer({ active, onClose, chatProps, events }) {
+  if (!active) return null;
+
+  return (
+    <div className="battle-room__side-drawer">
+      <div className="battle-room__side-drawer-header">
+        <h3>{active === "chat" ? "Room messages" : "Battle feed"}</h3>
+        <button type="button" className="battle-room__side-drawer-close" onClick={onClose} aria-label="Close panel">
+          ✕
+        </button>
+      </div>
+      <div className="battle-room__side-drawer-body">
+        {active === "chat" ? <ChatPanel {...chatProps} /> : <EventFeed events={events} />}
+      </div>
+    </div>
+  );
+}
+
 function ChatPanel({ messages, currentUsername, draft, onDraft, onSend }) {
   const listRef = useRef(null);
   const prevCountRef = useRef(0);
@@ -495,6 +551,7 @@ function BattleRoom() {
   const [columns, setColumns] = useState({ left: 34, right: 19 });
   const [chatDraft, setChatDraft] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [activeSidePanel, setActiveSidePanel] = useState(null); // null | "chat" | "feed"
 
 
   const previousQuestionId = useRef(null);
@@ -595,8 +652,15 @@ function BattleRoom() {
 
   useEffect(() => {
     mobileTabRef.current = mobileTab;
-    if (mobileTab === "Chat") setUnreadMessages(0);
+    if (mobileTab === "Chat") {
+      setUnreadMessages(0);
+      setActiveSidePanel("chat");
+    }
   }, [mobileTab]);
+
+  useEffect(() => {
+    if (activeSidePanel === "chat") setUnreadMessages(0);
+  }, [activeSidePanel]);
 
   // ✅ FIX: cleanup toast timeout on unmount
   useEffect(() => {
@@ -999,6 +1063,7 @@ function BattleRoom() {
   const gridStyle = {
     "--battle-left": showProblem ? `${columns.left}%` : "0px",
     "--battle-right": showSidebar ? `${columns.right}%` : "0px",
+    "--battle-drawer": activeSidePanel ? "300px" : "0px",
   };
 
   return (
@@ -1141,6 +1206,25 @@ function BattleRoom() {
             </div>
 
             <div className="battle-room__workspace battle-room__workspace--pro" style={gridStyle}>
+              <SidePanelRail
+                active={activeSidePanel}
+                onSelect={setActiveSidePanel}
+                unreadMessages={unreadMessages}
+                eventCount={(room?.events || []).length}
+              />
+              <SidePanelDrawer
+                active={activeSidePanel}
+                onClose={() => setActiveSidePanel(null)}
+                chatProps={{
+                  messages: room?.chat_messages,
+                  currentUsername: user?.username,
+                  draft: chatDraft,
+                  onDraft: setChatDraft,
+                  onSend: handleSendChat,
+                }}
+                events={room?.events}
+              />
+
               {showProblem && (
                 <Card className={`battle-room__problem-panel battle-room__leetcode-card battle-room__mobile-pane ${mobileTab === "Problem" ? "is-active" : ""}`}>
                   <ProblemPane question={room?.question} difficulty={room?.difficulty} active={problemTab} onTab={setProblemTab} />
@@ -1227,22 +1311,6 @@ function BattleRoom() {
                   {submitResult && (
                     <AIAnalysisCard submitResult={submitResult} />
                   )}
-
-                  <Card className="battle-room__dock-card battle-room__leetcode-card">
-                    <div className="battle-room__dock-header"><div><p className="label-text">Chat</p><h3>Room messages</h3></div></div>
-                    <ChatPanel
-                      messages={room?.chat_messages}
-                      currentUsername={user?.username}
-                      draft={chatDraft}
-                      onDraft={setChatDraft}
-                      onSend={handleSendChat}
-                    />
-                  </Card>
-
-                  <Card className="battle-room__dock-card battle-room__leetcode-card">
-                    <div className="battle-room__dock-header"><div><p className="label-text">Events</p><h3>Battle feed</h3></div></div>
-                    <EventFeed events={room?.events} />
-                  </Card>
                 </aside>
               )}
             </div>

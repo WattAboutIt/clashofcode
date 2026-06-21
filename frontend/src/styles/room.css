@@ -1722,17 +1722,41 @@
 
 .battle-room__workspace--pro {
   display: grid;
-  grid-template-columns: var(--battle-left, 34%) 6px minmax(420px, 1fr) 6px var(--battle-right, 19%);
+  grid-template-columns:
+    44px
+    var(--battle-drawer, 0px)
+    var(--battle-left, 34%) 6px minmax(420px, 1fr) 6px var(--battle-right, 19%);
   gap: 0.55rem;
   min-height: calc(100vh - 13.5rem);
+  transition: grid-template-columns 220ms ease;
 }
 
-.battle-room__workspace--pro > .battle-room__editor-panel {
+.battle-room__workspace--pro > .battle-room__side-rail {
+  grid-column: 1;
+}
+
+.battle-room__workspace--pro > .battle-room__side-drawer {
+  grid-column: 2;
+}
+
+.battle-room__workspace--pro > .battle-room__problem-panel {
   grid-column: 3;
 }
 
-.battle-room__workspace--pro > .battle-room__right-column {
+.battle-room__workspace--pro > .battle-room__resize-handle--left {
+  grid-column: 4;
+}
+
+.battle-room__workspace--pro > .battle-room__editor-panel {
   grid-column: 5;
+}
+
+.battle-room__workspace--pro > .battle-room__resize-handle--right {
+  grid-column: 6;
+}
+
+.battle-room__workspace--pro > .battle-room__right-column {
+  grid-column: 7;
 }
 
 .battle-room__resize-handle {
@@ -1754,6 +1778,129 @@
 
 .battle-room__resize-handle--right {
   grid-column: 4;
+}
+
+.battle-room__side-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+}
+
+.battle-room__side-rail-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.battle-room__side-rail-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.battle-room__side-rail-btn--active {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.battle-room__side-rail-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--danger, #e6645a);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.battle-room__side-rail-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent-gold, #ffd34f);
+}
+
+.battle-room__side-drawer {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+}
+
+.battle-room__side-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+  flex-shrink: 0;
+}
+
+.battle-room__side-drawer-header h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.battle-room__side-drawer-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+
+.battle-room__side-drawer-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.battle-room__side-drawer-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.battle-room__side-drawer-body .battle-room__chat,
+.battle-room__side-drawer-body .battle-room__event-feed {
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .battle-room__side-rail {
+    display: none;
+  }
+
+  .battle-room__side-drawer {
+    display: none;
+  }
 }
 
 .battle-room__editor-console-grid {
@@ -2215,8 +2362,16 @@
   }
 
   .battle-room__workspace--pro > .battle-room__editor-panel,
-  .battle-room__workspace--pro > .battle-room__right-column {
+  .battle-room__workspace--pro > .battle-room__right-column,
+  .battle-room__workspace--pro > .battle-room__problem-panel,
+  .battle-room__workspace--pro > .battle-room__side-rail,
+  .battle-room__workspace--pro > .battle-room__side-drawer {
     grid-column: auto;
+  }
+
+  .battle-room__workspace--pro > .battle-room__side-rail,
+  .battle-room__workspace--pro > .battle-room__side-drawer {
+    display: none;
   }
 
   .battle-room__resize-handle {

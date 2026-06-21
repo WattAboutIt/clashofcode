@@ -43,6 +43,31 @@
   text-transform: uppercase;
 }
 
+.ai-analysis-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-analysis-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--ai-muted);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ai-analysis-expand:hover {
+  color: var(--ai-accent-purple);
+  background: var(--ai-surface);
+}
+
 .ai-analysis-dismiss {
   background: none;
   border: none;
@@ -58,6 +83,99 @@
 .ai-analysis-dismiss:hover {
   color: var(--ai-text);
   background: var(--ai-surface);
+}
+
+/* Fullscreen mode */
+.ai-analysis-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 18, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 998;
+  animation: ai-fade-in 180ms ease both;
+}
+
+@keyframes ai-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ai-analysis-card--fullscreen {
+  position: fixed;
+  inset: 4vh 50%;
+  transform: translateX(-50%);
+  top: 4vh;
+  bottom: 4vh;
+  width: min(720px, 92vw);
+  max-height: 92vh;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+.ai-analysis-card--fullscreen .ai-analysis-header {
+  flex-shrink: 0;
+  padding: 16px 20px 14px;
+}
+
+.ai-analysis-card--fullscreen .ai-analysis-eyebrow {
+  font-size: 13px;
+}
+
+.ai-analysis-card--fullscreen .ai-analysis-body,
+.ai-analysis-card--fullscreen .ai-analysis-loading,
+.ai-analysis-card--fullscreen .ai-analysis-error {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 26px;
+}
+
+.ai-analysis-card--fullscreen .ai-divider {
+  margin: 0 -26px;
+}
+
+.ai-analysis-card--fullscreen .ai-top-row {
+  gap: 20px;
+}
+
+.ai-analysis-card--fullscreen .ai-rating-ring {
+  width: 72px;
+  height: 72px;
+}
+
+.ai-analysis-card--fullscreen .ai-rating-ring svg {
+  width: 72px;
+  height: 72px;
+}
+
+.ai-analysis-card--fullscreen .ai-rating-number {
+  font-size: 19px;
+}
+
+@media (max-width: 640px) {
+  .ai-analysis-card--fullscreen {
+    inset: 0;
+    top: 0;
+    bottom: 0;
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .ai-analysis-card--fullscreen .ai-analysis-body,
+  .ai-analysis-card--fullscreen .ai-analysis-loading,
+  .ai-analysis-card--fullscreen .ai-analysis-error {
+    padding: 18px 16px;
+  }
+
+  .ai-analysis-card--fullscreen .ai-divider {
+    margin: 0 -16px;
+  }
 }
 
 /* Loading */
