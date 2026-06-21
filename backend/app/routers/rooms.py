@@ -3,6 +3,11 @@ import random
 import string
 import asyncio
 import logging
+import os
+import urllib.request
+import urllib.error
+import ssl
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from sqlalchemy import select
@@ -879,6 +884,17 @@ async def submit_solution(
 
     await _broadcast_room(room, db)
 
+    # Start AI analysis in background — does not block the submission response.
+    try:
+        jr = judge_result.model_dump() if hasattr(judge_result, "model_dump") else (judge_result if isinstance(judge_result, dict) else {})
+        asyncio.create_task(_analyze_submission(room["room_code"], current_username, submission_record["id"], question and {
+            "title": question.title if hasattr(question, "title") else question.get("title") if isinstance(question, dict) else None,
+            "description": question.description if hasattr(question, "description") else question.get("description") if isinstance(question, dict) else None,
+            "constraints": question.constraints if hasattr(question, "constraints") else question.get("constraints") if isinstance(question, dict) else None,
+        } else None, request.code, request.language, jr))
+    except Exception:
+        logger.exception("Failed to schedule AI analysis task for room=%s user=%s", room_code, current_username)
+
     return {
         "passed": passed,
         "status": status_label,
@@ -890,6 +906,74 @@ async def submit_solution(
         "test_results": [result.model_dump() for result in judge_result.results],
         "message": "Accepted." if passed else status_label,
     }
+
+
+async def _analyze_submission(
+    room_code: str,
+    username: str,
+    submission_id: str,
+    question: dict | None,
+    code: str,
+    language: str,
+    judge_result: dict,
+):
+    """Call the Grok API to analyze a submission and attach the analysis
+    to the matching submission record in the in-memory room state, then
+    broadcast the updated room state to connected clients.
+    """
+    room = room_store.get(room_code)
+    if not room:
+        return
+
+    api_url = os.getenv("GROK_API_URL", "https://api.grok.ai/v1/analyze")
+    api_key = os.getenv("GROK_API_KEY")
+
+    payload = {
+        "problem_title": (question.title if hasattr(question, "title") else (question.get("title") if isinstance(question, dict) else "Unknown Challenge")),
+        "problem_description": (question.description if hasattr(question, "description") else (question.get("description") if isinstance(question, dict) else "")),
+        "source_code": code,
+        "language": language,
+        "submission_result": judge_result.get("status"),
+        "execution_time_ms": judge_result.get("runtime_ms"),
+        "memory_kb": judge_result.get("memory_kb"),
+        "passed": f"{judge_result.get('passed')}/{judge_result.get('total')}",
+        "constraints": (question.constraints if isinstance(question, dict) else getattr(question, "constraints", None)),
+    }
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    # perform blocking HTTP call in threadpool
+    try:
+        def do_request():
+            req = urllib.request.Request(api_url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+                return resp.read().decode("utf-8")
+
+        raw = await asyncio.to_thread(do_request)
+        resp = json.loads(raw or "{}")
+    except Exception as exc:
+        logger.exception("AI analysis failed for room=%s user=%s", room_code, username)
+        resp = {"error": f"analysis failed: {str(exc)}"}
+
+    # attach analysis to the matching submission in the room state
+    player = room.get("players", {}).get(username)
+    if not player:
+        return
+
+    for submission in player.setdefault("submissions", []):
+        if submission.get("id") == submission_id:
+            submission["analysis"] = resp
+            break
+
+    # broadcast updated room state to clients
+    try:
+        async with AsyncSessionLocal() as db:
+            await _broadcast_room(room, db)
+    except Exception:
+        logger.exception("Failed to broadcast room after AI analysis room=%s", room_code)
 
 
 # Algorithmic Matchmaking state

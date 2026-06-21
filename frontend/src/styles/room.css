@@ -2058,6 +2058,23 @@
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
+
+.ai-analysis-card {
+  border: 1px solid #e6edf3;
+  background: #fbfdff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 0.5rem 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+.ai-analysis-header {
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+.ai-analysis-row { display:flex; justify-content:space-between; gap:1rem; margin:0.45rem 0; }
+.ai-analysis-section { display:flex; gap:1.25rem; margin:0.45rem 0; }
+.ai-analysis-pill { background:#eef2ff; padding:0.2rem 0.5rem; border-radius:6px; font-weight:700; }
+.ai-analysis-verdict { margin-top:0.6rem; font-weight:700; }
 }
 
 .battle-room__event p {

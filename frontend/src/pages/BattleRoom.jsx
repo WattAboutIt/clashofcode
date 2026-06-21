@@ -396,6 +396,33 @@ function SubmissionHistory({ submissions }) {
           </div>
         </div>
       )) : <div className="room-empty">No submissions yet.</div>}
+      {(submissions || []).map((submission) => (
+        submission.analysis ? (
+          <div key={(submission.id || submission.submitted_at) + "-analysis"} className="ai-analysis-card">
+            <div className="ai-analysis-header">🧠 AI Code Analysis</div>
+            <div className="ai-analysis-row"><strong>⭐ Overall Rating:</strong> {submission.analysis.rating ?? submission.analysis.score ?? "—"}/10</div>
+            <div className="ai-analysis-row"><strong>Status</strong><div className="ai-analysis-pill">{submission.analysis.status || submission.status}</div></div>
+            <div className="ai-analysis-section">
+              <div><strong>Complexity</strong>
+                <div>Your: Time: {submission.analysis.timeComplexity || submission.analysis.time || "—"} · Space: {submission.analysis.spaceComplexity || submission.analysis.space || "—"}</div>
+                <div>Best: Time: {submission.analysis.bestTimeComplexity || "—"} · Space: {submission.analysis.bestSpaceComplexity || "—"}</div>
+              </div>
+              <div><strong>Optimal</strong><div>{submission.analysis.isOptimal ? "🟢 Yes" : "🔴 No"}</div></div>
+            </div>
+            <div className="ai-analysis-section">
+              <div><strong>Strengths</strong>
+                <ul>{(submission.analysis.strengths || []).slice(0,5).map((s, i) => <li key={i}>{s}</li>)}</ul>
+              </div>
+              <div><strong>Issues</strong>
+                <ul>{(submission.analysis.issues || []).slice(0,5).map((s, i) => <li key={i}>{s}</li>)}</ul>
+              </div>
+            </div>
+            <div className="ai-analysis-row"><strong>Recommendation</strong><div>{submission.analysis.recommendation || submission.analysis.suggestion || ""}</div></div>
+            <div className="ai-analysis-row"><strong>Concepts</strong><div>{(submission.analysis.concepts || []).join(" • ")}</div></div>
+            <div className="ai-analysis-verdict">{submission.analysis.verdict || submission.analysis.summary || ""}</div>
+          </div>
+        ) : null
+      ))}
     </div>
   );
 }
