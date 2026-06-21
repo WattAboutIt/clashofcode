@@ -6,7 +6,6 @@ import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
-import { useAIAnalysis } from "../components/useAIAnalysis";
 import AIAnalysisCard from "../components/AIAnalysisCard";
 import "../styles/room.css";
 
@@ -497,7 +496,6 @@ function BattleRoom() {
   const [chatDraft, setChatDraft] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
 
-  const { analysis, analysisLoading, analysisError, analyze, clearAnalysis } = useAIAnalysis();
 
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
@@ -873,30 +871,27 @@ function BattleRoom() {
     if (!code.trim()) { setError("Write some code before submitting."); return; }
     setSubmitting(true);
     setError("");
-    clearAnalysis();
     try {
       const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
-      setSubmitResult(response.data);
+      setSubmitResult({
+        ...response.data,
+        // Snapshot the exact code/language/question this result belongs to,
+        // so AIAnalysisCard's fetch effect only fires once per submission —
+        // not on every keystroke or unrelated room broadcast.
+        _analysisContext: { code, language, question: room?.question ?? null },
+      });
       setConsoleTab("Submissions");
       const updated = await api.get(`/rooms/${roomCode}`);
       setRoom(updated.data);
-
-      // Trigger AI analysis after submission
-      analyze({
-        problem: updated.data?.question || room?.question,
-        code,
-        language,
-        result: response.data,
-      });
     } catch (err) {
       const message = extractError(err, "Submission failed.");
-      setSubmitResult({ status: "Runtime Error", error: message, stdout: "", stderr: message, passed: 0, total: 0, results: [] });
+      setSubmitResult({ status: "Runtime Error", error: message, stdout: "", stderr: message, passed: 0, total: 0, results: [], _analysisContext: null });
       setConsoleTab("Submissions");
       setError(message);
     } finally {
       setSubmitting(false);
     }
-  }, [code, language, isLocked, roomCode, analyze, clearAnalysis]);
+  }, [code, language, isLocked, roomCode, room?.question]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -1229,13 +1224,8 @@ function BattleRoom() {
                     <SubmissionHistory submissions={submissions} />
                   </Card>
 
-                  {(analysisLoading || analysis || analysisError) && (
-                    <AIAnalysisCard
-                      analysis={analysis}
-                      loading={analysisLoading}
-                      error={analysisError}
-                      onDismiss={clearAnalysis}
-                    />
+                  {submitResult && (
+                    <AIAnalysisCard submitResult={submitResult} />
                   )}
 
                   <Card className="battle-room__dock-card battle-room__leetcode-card">

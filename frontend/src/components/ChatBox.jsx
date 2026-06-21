@@ -1,15 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "../styles/chat.css";
-
-const RAILWAY_URL = "https://clashofcode-production.up.railway.app";
-const LOCAL_URL = "http://localhost:8000";
-
-const apiURLPromise = fetch(`${LOCAL_URL}/health`, {
-  method: "HEAD",
-  signal: AbortSignal.timeout(800),
-})
-  .then(() => LOCAL_URL)
-  .catch(() => RAILWAY_URL);
+import { apiURLPromise } from "../api/aiBaseUrl";
 
 const SUGGESTIONS = [
   "What can I ask you to do?",

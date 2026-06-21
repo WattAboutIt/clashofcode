@@ -3,11 +3,6 @@ import random
 import string
 import asyncio
 import logging
-import os
-import urllib.request
-import urllib.error
-import ssl
-import json
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from sqlalchemy import select
@@ -251,10 +246,7 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
                 "memory_kb": player.get("memory_kb"),
                 "passed": player.get("passed", 0),
                 "total": player.get("total", 0),
-                "submissions": [
-                        {**sub, "analysis": sub.get("analysis")}
-                        for sub in player.get("submissions", [])
-                    ],
+                "submissions": player.get("submissions", []),
             }
             for player in players
         ],
@@ -887,30 +879,6 @@ async def submit_solution(
 
     await _broadcast_room(room, db)
 
-    # Start AI analysis in background — does not block the submission response.
-    try:
-        question_dict: dict | None = None
-        if question:
-            question_dict = {
-                "title": question.title,
-                "description": question.description,
-                "constraints": question.constraints,
-            }
-        judge_dict = judge_result.model_dump() if hasattr(judge_result, "model_dump") else dict(judge_result)
-        asyncio.create_task(
-            _analyze_submission(
-                room["room_code"],
-                current_username,
-                submission_record["id"],
-                question_dict,
-                request.code,
-                request.language,
-                judge_dict,
-            )
-        )
-    except Exception:
-        logger.exception("Failed to schedule AI analysis task for room=%s user=%s", room_code, current_username)
-
     return {
         "passed": passed,
         "status": status_label,
@@ -922,130 +890,6 @@ async def submit_solution(
         "test_results": [result.model_dump() for result in judge_result.results],
         "message": "Accepted." if passed else status_label,
     }
-
-
-def _build_analysis_prompt(question: dict | None, code: str, language: str, judge_result: dict) -> str:
-    title = (question or {}).get("title") or "Unknown Challenge"
-    description = (question or {}).get("description") or ""
-    constraints = (question or {}).get("constraints") or "Not specified"
-    passed = judge_result.get("passed", 0)
-    total = judge_result.get("total", 0)
-    passed_str = f"{passed}/{total}"
-    submission_status = judge_result.get("status", "Unknown")
-    runtime_ms = judge_result.get("runtime_ms", "N/A")
-    memory_kb = judge_result.get("memory_kb")
-    memory_str = f"{memory_kb} KB" if memory_kb else "N/A"
-
-    return (
-        f"You are an expert competitive programming judge. Analyze this code submission concisely.\n\n"
-        f"Problem: {title}\n"
-        f"Description: {description}\n"
-        f"Constraints: {constraints}\n"
-        f"Language: {language}\n"
-        f"Status: {submission_status}\n"
-        f"Passed Tests: {passed_str}\n"
-        f"Execution Time: {runtime_ms} ms\n"
-        f"Memory: {memory_str}\n\n"
-        f"User's Code:\n```{language}\n{code}\n```\n\n"
-        f"Return ONLY a valid JSON object — no markdown fences, no preamble, no trailing text:\n"
-        f'{{\n'
-        f'  "rating": <number 0-10 one decimal>,\n'
-        f'  "status": "{submission_status}",\n'
-        f'  "passedTests": "{passed_str}",\n'
-        f'  "timeComplexity": "<your estimate>",\n'
-        f'  "spaceComplexity": "<your estimate>",\n'
-        f'  "bestTimeComplexity": "<optimal for this problem>",\n'
-        f'  "bestSpaceComplexity": "<optimal for this problem>",\n'
-        f'  "isOptimal": <true|false>,\n'
-        f'  "strengths": ["<max 3 short points>"],\n'
-        f'  "issues": ["<max 3 short points, empty if none>"],\n'
-        f'  "recommendation": "<1-2 sentences>",\n'
-        f'  "concepts": ["<DSA concept>"],\n'
-        f'  "verdict": "<1 sentence>"\n'
-        f"}}\n\n"
-        f"Rules: Keep total word count under 200. Be specific to this code — no generic advice."
-    )
-
-
-async def _analyze_submission(
-    room_code: str,
-    username: str,
-    submission_id: str,
-    question: dict | None,
-    code: str,
-    language: str,
-    judge_result: dict,
-) -> None:
-    """Call the Grok API (xAI /v1/chat/completions) to analyze a submission,
-    attach the parsed JSON to the matching submission record, and broadcast
-    the updated room state so clients receive it automatically.
-    """
-    room = room_store.get(room_code)
-    if not room:
-        return
-
-    api_key = os.getenv("GROK_API_KEY", "")
-    if not api_key:
-        logger.warning("GROK_API_KEY not set — skipping AI analysis for room=%s", room_code)
-        return
-
-    grok_url = "https://api.x.ai/v1/chat/completions"
-    prompt = _build_analysis_prompt(question, code, language, judge_result)
-
-    request_body = json.dumps({
-        "model": "grok-3-mini",
-        "max_tokens": 600,
-        "temperature": 0.3,
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode("utf-8")
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-
-    analysis: dict
-    try:
-        def do_request() -> str:
-            req = urllib.request.Request(
-                grok_url,
-                data=request_body,
-                headers=headers,
-                method="POST",
-            )
-            ctx = ssl.create_default_context()
-            with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
-                return resp.read().decode("utf-8")
-
-        raw = await asyncio.to_thread(do_request)
-        grok_resp = json.loads(raw)
-        content = grok_resp["choices"][0]["message"]["content"]
-        # Strip accidental markdown fences if the model added them
-        clean = content.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        analysis = json.loads(clean)
-    except json.JSONDecodeError as exc:
-        logger.warning("AI analysis JSON parse error room=%s user=%s: %s", room_code, username, exc)
-        analysis = {"error": f"Invalid JSON from Grok: {exc}"}
-    except Exception as exc:
-        logger.exception("AI analysis request failed for room=%s user=%s", room_code, username)
-        analysis = {"error": f"Analysis unavailable: {exc}"}
-
-    # Attach analysis to the matching submission record
-    player = room.get("players", {}).get(username)
-    if not player:
-        return
-
-    for submission in player.get("submissions", []):
-        if submission.get("id") == submission_id:
-            submission["analysis"] = analysis
-            break
-
-    # Broadcast so clients get the analysis without polling
-    try:
-        async with AsyncSessionLocal() as db:
-            await _broadcast_room(room, db)
-    except Exception:
-        logger.exception("Failed to broadcast room after AI analysis room=%s", room_code)
 
 
 # Algorithmic Matchmaking state

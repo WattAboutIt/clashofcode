@@ -1,4 +1,8 @@
+import { useState, useEffect } from "react";
 import "../styles/ai-analysis.css";
+import { apiURLPromise } from "../api/aiBaseUrl";
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function RatingRing({ rating }) {
   const pct = (rating / 10) * 100;
@@ -46,23 +50,104 @@ function Tag({ children }) {
   return <span className="ai-tag">{children}</span>;
 }
 
-export default function AIAnalysisCard({ analysis, loading, error, onDismiss }) {
-  if (!loading && !analysis && !error) return null;
+// ─── Main component ───────────────────────────────────────────────────────────
+
+/**
+ * Calls /chat/analyze directly after a submission — same request pattern
+ * as ChatBox.jsx (resolve the health-checked API base via apiURLPromise,
+ * POST, parse the JSON response). No WebSocket round-trip and no reliance
+ * on the room broadcast.
+ *
+ * Props:
+ *   submitResult – the immediate HTTP response from POST /submit, with a
+ *                  `_analysisContext: { code, language, question }`
+ *                  snapshot attached by BattleRoom at submit time. Using a
+ *                  snapshot (rather than live code/language/question props)
+ *                  means the fetch only fires once per submission — not on
+ *                  every keystroke or unrelated room broadcast.
+ */
+export default function AIAnalysisCard({ submitResult }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+
+  const context = submitResult?._analysisContext ?? null;
+
+  useEffect(() => {
+    setDismissed(false);
+    setAnalysis(null);
+    setFetchError(null);
+
+    // No context means submit failed client-side before the server ever
+    // judged the code — nothing meaningful to analyze.
+    if (!submitResult || !context) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const apiURL = await apiURLPromise;
+        const res = await fetch(`${apiURL}/chat/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: context.code,
+            language: context.language,
+            question: context.question
+              ? {
+                  title: context.question.title,
+                  description: context.question.description,
+                  constraints: context.question.constraints,
+                }
+              : null,
+            judge_result: {
+              status: submitResult.status,
+              passed: submitResult.passed_count ?? 0,
+              total: submitResult.total_count ?? 0,
+              runtime_ms: submitResult.runtime_ms ?? null,
+              memory_kb: submitResult.memory_kb ?? null,
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail ?? `Server error ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!cancelled) setAnalysis(data);
+      } catch (err) {
+        if (!cancelled) setFetchError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [submitResult, context]);
+
+  if (!submitResult || !context || dismissed) return null;
+
+  const error = fetchError ?? analysis?.error ?? null;
+  const data = error ? null : analysis;
 
   return (
     <div className="ai-analysis-card" role="region" aria-label="AI Code Analysis" aria-live="polite">
       <div className="ai-analysis-header">
         <span className="ai-analysis-eyebrow">🧠 AI Code Analysis</span>
-        {onDismiss && (
-          <button
-            type="button"
-            className="ai-analysis-dismiss"
-            onClick={onDismiss}
-            aria-label="Dismiss analysis"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          type="button"
+          className="ai-analysis-dismiss"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss analysis"
+        >
+          ✕
+        </button>
       </div>
 
       {loading && (
@@ -81,23 +166,23 @@ export default function AIAnalysisCard({ analysis, loading, error, onDismiss }) 
         </div>
       )}
 
-      {analysis && !loading && (
+      {data && !loading && (
         <div className="ai-analysis-body">
 
           {/* Rating + Status */}
           <div className="ai-top-row">
-            <RatingRing rating={analysis.rating} />
+            <RatingRing rating={data.rating} />
             <div className="ai-top-meta">
               <p className="ai-section-label">Overall Rating</p>
-              <p className="ai-rating-text"><strong>{analysis.rating}</strong> / 10</p>
+              <p className="ai-rating-text"><strong>{data.rating}</strong> / 10</p>
               <p className="ai-section-label" style={{ marginTop: "6px" }}>Status</p>
-              <p className={`ai-status ai-status--${String(analysis.status).toLowerCase().replace(/\s+/g, "-")}`}>
-                {analysis.status === "Accepted" ? "✅" :
-                 analysis.status?.includes("Wrong") ? "❌" :
-                 analysis.status?.includes("TLE") ? "⏱" :
-                 analysis.status?.includes("MLE") ? "💾" : "⚠"
+              <p className={`ai-status ai-status--${String(data.status).toLowerCase().replace(/\s+/g, "-")}`}>
+                {data.status === "Accepted" ? "✅" :
+                 data.status?.includes("Wrong") ? "❌" :
+                 data.status?.includes("TLE") ? "⏱" :
+                 data.status?.includes("MLE") ? "💾" : "⚠"
                 }{" "}
-                {analysis.status} ({analysis.passedTests})
+                {data.status} ({data.passedTests})
               </p>
             </div>
           </div>
@@ -107,65 +192,65 @@ export default function AIAnalysisCard({ analysis, loading, error, onDismiss }) 
           {/* Complexity */}
           <div className="ai-section">
             <p className="ai-section-label">Complexity</p>
-            <ComplexityRow label="Yours" time={analysis.timeComplexity} space={analysis.spaceComplexity} />
-            <ComplexityRow label="Best" time={analysis.bestTimeComplexity} space={analysis.bestSpaceComplexity} isBest />
+            <ComplexityRow label="Yours" time={data.timeComplexity} space={data.spaceComplexity} />
+            <ComplexityRow label="Best"  time={data.bestTimeComplexity} space={data.bestSpaceComplexity} isBest />
           </div>
 
           {/* Optimal badge */}
           <div className="ai-optimal-row">
             <span className="ai-section-label">Optimal</span>
-            <span className={`ai-optimal-badge ${analysis.isOptimal ? "ai-optimal-badge--yes" : "ai-optimal-badge--no"}`}>
-              {analysis.isOptimal ? "🟢 Yes" : "🔴 No"}
+            <span className={`ai-optimal-badge ${data.isOptimal ? "ai-optimal-badge--yes" : "ai-optimal-badge--no"}`}>
+              {data.isOptimal ? "🟢 Yes" : "🔴 No"}
             </span>
           </div>
 
           <div className="ai-divider" />
 
           {/* Strengths */}
-          {analysis.strengths?.length > 0 && (
+          {data.strengths?.length > 0 && (
             <div className="ai-section">
               <p className="ai-section-label">Strengths</p>
               <ul className="ai-list ai-list--strengths">
-                {analysis.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                {data.strengths.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
 
           {/* Issues */}
-          {analysis.issues?.length > 0 && (
+          {data.issues?.length > 0 && (
             <div className="ai-section">
               <p className="ai-section-label">Issues</p>
               <ul className="ai-list ai-list--issues">
-                {analysis.issues.map((s, i) => <li key={i}>{s}</li>)}
+                {data.issues.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
 
           {/* Recommendation */}
-          {analysis.recommendation && (
+          {data.recommendation && (
             <div className="ai-section">
               <p className="ai-section-label">Recommendation</p>
-              <p className="ai-recommendation">{analysis.recommendation}</p>
+              <p className="ai-recommendation">{data.recommendation}</p>
             </div>
           )}
 
           <div className="ai-divider" />
 
           {/* Concepts */}
-          {analysis.concepts?.length > 0 && (
+          {data.concepts?.length > 0 && (
             <div className="ai-section">
               <p className="ai-section-label">Concepts</p>
               <div className="ai-tags-row">
-                {analysis.concepts.map((c, i) => <Tag key={i}>{c}</Tag>)}
+                {data.concepts.map((c, i) => <Tag key={i}>{c}</Tag>)}
               </div>
             </div>
           )}
 
           {/* Verdict */}
-          {analysis.verdict && (
+          {data.verdict && (
             <div className="ai-verdict">
               <p className="ai-section-label">Verdict</p>
-              <p>{analysis.verdict}</p>
+              <p>{data.verdict}</p>
             </div>
           )}
 
