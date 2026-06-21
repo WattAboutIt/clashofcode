@@ -251,7 +251,10 @@ async def _serialize_room(room: dict, db: AsyncSession) -> dict:
                 "memory_kb": player.get("memory_kb"),
                 "passed": player.get("passed", 0),
                 "total": player.get("total", 0),
-                "submissions": player.get("submissions", []),
+                "submissions": [
+                        {**sub, "analysis": sub.get("analysis")}
+                        for sub in player.get("submissions", [])
+                    ],
             }
             for player in players
         ],
@@ -886,15 +889,25 @@ async def submit_solution(
 
     # Start AI analysis in background — does not block the submission response.
     try:
-        jr = judge_result.model_dump() if hasattr(judge_result, "model_dump") else (judge_result if isinstance(judge_result, dict) else {})
-        qpayload = None
+        question_dict: dict | None = None
         if question:
-            qpayload = {
-                "title": question.title if hasattr(question, "title") else (question.get("title") if isinstance(question, dict) else None),
-                "description": question.description if hasattr(question, "description") else (question.get("description") if isinstance(question, dict) else None),
-                "constraints": question.constraints if hasattr(question, "constraints") else (question.get("constraints") if isinstance(question, dict) else None),
+            question_dict = {
+                "title": question.title,
+                "description": question.description,
+                "constraints": question.constraints,
             }
-        asyncio.create_task(_analyze_submission(room["room_code"], current_username, submission_record["id"], qpayload, request.code, request.language, jr))
+        judge_dict = judge_result.model_dump() if hasattr(judge_result, "model_dump") else dict(judge_result)
+        asyncio.create_task(
+            _analyze_submission(
+                room["room_code"],
+                current_username,
+                submission_record["id"],
+                question_dict,
+                request.code,
+                request.language,
+                judge_dict,
+            )
+        )
     except Exception:
         logger.exception("Failed to schedule AI analysis task for room=%s user=%s", room_code, current_username)
 
@@ -911,6 +924,49 @@ async def submit_solution(
     }
 
 
+def _build_analysis_prompt(question: dict | None, code: str, language: str, judge_result: dict) -> str:
+    title = (question or {}).get("title") or "Unknown Challenge"
+    description = (question or {}).get("description") or ""
+    constraints = (question or {}).get("constraints") or "Not specified"
+    passed = judge_result.get("passed", 0)
+    total = judge_result.get("total", 0)
+    passed_str = f"{passed}/{total}"
+    submission_status = judge_result.get("status", "Unknown")
+    runtime_ms = judge_result.get("runtime_ms", "N/A")
+    memory_kb = judge_result.get("memory_kb")
+    memory_str = f"{memory_kb} KB" if memory_kb else "N/A"
+
+    return (
+        f"You are an expert competitive programming judge. Analyze this code submission concisely.\n\n"
+        f"Problem: {title}\n"
+        f"Description: {description}\n"
+        f"Constraints: {constraints}\n"
+        f"Language: {language}\n"
+        f"Status: {submission_status}\n"
+        f"Passed Tests: {passed_str}\n"
+        f"Execution Time: {runtime_ms} ms\n"
+        f"Memory: {memory_str}\n\n"
+        f"User's Code:\n```{language}\n{code}\n```\n\n"
+        f"Return ONLY a valid JSON object — no markdown fences, no preamble, no trailing text:\n"
+        f'{{\n'
+        f'  "rating": <number 0-10 one decimal>,\n'
+        f'  "status": "{submission_status}",\n'
+        f'  "passedTests": "{passed_str}",\n'
+        f'  "timeComplexity": "<your estimate>",\n'
+        f'  "spaceComplexity": "<your estimate>",\n'
+        f'  "bestTimeComplexity": "<optimal for this problem>",\n'
+        f'  "bestSpaceComplexity": "<optimal for this problem>",\n'
+        f'  "isOptimal": <true|false>,\n'
+        f'  "strengths": ["<max 3 short points>"],\n'
+        f'  "issues": ["<max 3 short points, empty if none>"],\n'
+        f'  "recommendation": "<1-2 sentences>",\n'
+        f'  "concepts": ["<DSA concept>"],\n'
+        f'  "verdict": "<1 sentence>"\n'
+        f"}}\n\n"
+        f"Rules: Keep total word count under 200. Be specific to this code — no generic advice."
+    )
+
+
 async def _analyze_submission(
     room_code: str,
     username: str,
@@ -919,59 +975,72 @@ async def _analyze_submission(
     code: str,
     language: str,
     judge_result: dict,
-):
-    """Call the Grok API to analyze a submission and attach the analysis
-    to the matching submission record in the in-memory room state, then
-    broadcast the updated room state to connected clients.
+) -> None:
+    """Call the Grok API (xAI /v1/chat/completions) to analyze a submission,
+    attach the parsed JSON to the matching submission record, and broadcast
+    the updated room state so clients receive it automatically.
     """
     room = room_store.get(room_code)
     if not room:
         return
 
-    api_url = os.getenv("GROK_API_URL", "https://api.grok.ai/v1/analyze")
-    api_key = os.getenv("GROK_API_KEY")
+    api_key = os.getenv("GROK_API_KEY", "")
+    if not api_key:
+        logger.warning("GROK_API_KEY not set — skipping AI analysis for room=%s", room_code)
+        return
 
-    payload = {
-        "problem_title": (question.title if hasattr(question, "title") else (question.get("title") if isinstance(question, dict) else "Unknown Challenge")),
-        "problem_description": (question.description if hasattr(question, "description") else (question.get("description") if isinstance(question, dict) else "")),
-        "source_code": code,
-        "language": language,
-        "submission_result": judge_result.get("status"),
-        "execution_time_ms": judge_result.get("runtime_ms"),
-        "memory_kb": judge_result.get("memory_kb"),
-        "passed": f"{judge_result.get('passed')}/{judge_result.get('total')}",
-        "constraints": (question.constraints if isinstance(question, dict) else getattr(question, "constraints", None)),
+    grok_url = "https://api.x.ai/v1/chat/completions"
+    prompt = _build_analysis_prompt(question, code, language, judge_result)
+
+    request_body = json.dumps({
+        "model": "grok-3-mini",
+        "max_tokens": 600,
+        "temperature": 0.3,
+        "messages": [{"role": "user", "content": prompt}],
+    }).encode("utf-8")
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
     }
 
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-
-    # perform blocking HTTP call in threadpool
+    analysis: dict
     try:
-        def do_request():
-            req = urllib.request.Request(api_url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        def do_request() -> str:
+            req = urllib.request.Request(
+                grok_url,
+                data=request_body,
+                headers=headers,
+                method="POST",
+            )
             ctx = ssl.create_default_context()
-            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+            with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
                 return resp.read().decode("utf-8")
 
         raw = await asyncio.to_thread(do_request)
-        resp = json.loads(raw or "{}")
+        grok_resp = json.loads(raw)
+        content = grok_resp["choices"][0]["message"]["content"]
+        # Strip accidental markdown fences if the model added them
+        clean = content.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        analysis = json.loads(clean)
+    except json.JSONDecodeError as exc:
+        logger.warning("AI analysis JSON parse error room=%s user=%s: %s", room_code, username, exc)
+        analysis = {"error": f"Invalid JSON from Grok: {exc}"}
     except Exception as exc:
-        logger.exception("AI analysis failed for room=%s user=%s", room_code, username)
-        resp = {"error": f"analysis failed: {str(exc)}"}
+        logger.exception("AI analysis request failed for room=%s user=%s", room_code, username)
+        analysis = {"error": f"Analysis unavailable: {exc}"}
 
-    # attach analysis to the matching submission in the room state
+    # Attach analysis to the matching submission record
     player = room.get("players", {}).get(username)
     if not player:
         return
 
-    for submission in player.setdefault("submissions", []):
+    for submission in player.get("submissions", []):
         if submission.get("id") == submission_id:
-            submission["analysis"] = resp
+            submission["analysis"] = analysis
             break
 
-    # broadcast updated room state to clients
+    # Broadcast so clients get the analysis without polling
     try:
         async with AsyncSessionLocal() as db:
             await _broadcast_room(room, db)

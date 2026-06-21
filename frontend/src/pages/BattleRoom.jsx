@@ -6,6 +6,8 @@ import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
+import { useAIAnalysis } from "../components/useAIAnalysis";
+import AIAnalysisCard from "../components/AIAnalysisCard";
 import "../styles/room.css";
 
 const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
@@ -396,33 +398,6 @@ function SubmissionHistory({ submissions }) {
           </div>
         </div>
       )) : <div className="room-empty">No submissions yet.</div>}
-      {(submissions || []).map((submission) => (
-        submission.analysis ? (
-          <div key={(submission.id || submission.submitted_at) + "-analysis"} className="ai-analysis-card">
-            <div className="ai-analysis-header">🧠 AI Code Analysis</div>
-            <div className="ai-analysis-row"><strong>⭐ Overall Rating:</strong> {submission.analysis.rating ?? submission.analysis.score ?? "—"}/10</div>
-            <div className="ai-analysis-row"><strong>Status</strong><div className="ai-analysis-pill">{submission.analysis.status || submission.status}</div></div>
-            <div className="ai-analysis-section">
-              <div><strong>Complexity</strong>
-                <div>Your: Time: {submission.analysis.timeComplexity || submission.analysis.time || "—"} · Space: {submission.analysis.spaceComplexity || submission.analysis.space || "—"}</div>
-                <div>Best: Time: {submission.analysis.bestTimeComplexity || "—"} · Space: {submission.analysis.bestSpaceComplexity || "—"}</div>
-              </div>
-              <div><strong>Optimal</strong><div>{submission.analysis.isOptimal ? "🟢 Yes" : "🔴 No"}</div></div>
-            </div>
-            <div className="ai-analysis-section">
-              <div><strong>Strengths</strong>
-                <ul>{(submission.analysis.strengths || []).slice(0,5).map((s, i) => <li key={i}>{s}</li>)}</ul>
-              </div>
-              <div><strong>Issues</strong>
-                <ul>{(submission.analysis.issues || []).slice(0,5).map((s, i) => <li key={i}>{s}</li>)}</ul>
-              </div>
-            </div>
-            <div className="ai-analysis-row"><strong>Recommendation</strong><div>{submission.analysis.recommendation || submission.analysis.suggestion || ""}</div></div>
-            <div className="ai-analysis-row"><strong>Concepts</strong><div>{(submission.analysis.concepts || []).join(" • ")}</div></div>
-            <div className="ai-analysis-verdict">{submission.analysis.verdict || submission.analysis.summary || ""}</div>
-          </div>
-        ) : null
-      ))}
     </div>
   );
 }
@@ -521,6 +496,8 @@ function BattleRoom() {
   const [columns, setColumns] = useState({ left: 34, right: 19 });
   const [chatDraft, setChatDraft] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
+
+  const { analysis, analysisLoading, analysisError, analyze, clearAnalysis } = useAIAnalysis();
 
   const previousQuestionId = useRef(null);
   const workerRef = useRef(null);
@@ -896,12 +873,21 @@ function BattleRoom() {
     if (!code.trim()) { setError("Write some code before submitting."); return; }
     setSubmitting(true);
     setError("");
+    clearAnalysis();
     try {
       const response = await api.post(`/rooms/${roomCode}/submit`, { code, language });
       setSubmitResult(response.data);
       setConsoleTab("Submissions");
       const updated = await api.get(`/rooms/${roomCode}`);
       setRoom(updated.data);
+
+      // Trigger AI analysis after submission
+      analyze({
+        problem: updated.data?.question || room?.question,
+        code,
+        language,
+        result: response.data,
+      });
     } catch (err) {
       const message = extractError(err, "Submission failed.");
       setSubmitResult({ status: "Runtime Error", error: message, stdout: "", stderr: message, passed: 0, total: 0, results: [] });
@@ -910,7 +896,7 @@ function BattleRoom() {
     } finally {
       setSubmitting(false);
     }
-  }, [code, language, isLocked, roomCode]);
+  }, [code, language, isLocked, roomCode, analyze, clearAnalysis]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -1242,6 +1228,15 @@ function BattleRoom() {
                     <div className="battle-room__dock-header"><div><p className="label-text">Submissions</p><h3>History</h3></div></div>
                     <SubmissionHistory submissions={submissions} />
                   </Card>
+
+                  {(analysisLoading || analysis || analysisError) && (
+                    <AIAnalysisCard
+                      analysis={analysis}
+                      loading={analysisLoading}
+                      error={analysisError}
+                      onDismiss={clearAnalysis}
+                    />
+                  )}
 
                   <Card className="battle-room__dock-card battle-room__leetcode-card">
                     <div className="battle-room__dock-header"><div><p className="label-text">Chat</p><h3>Room messages</h3></div></div>
