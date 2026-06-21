@@ -887,11 +887,14 @@ async def submit_solution(
     # Start AI analysis in background — does not block the submission response.
     try:
         jr = judge_result.model_dump() if hasattr(judge_result, "model_dump") else (judge_result if isinstance(judge_result, dict) else {})
-        asyncio.create_task(_analyze_submission(room["room_code"], current_username, submission_record["id"], question and {
-            "title": question.title if hasattr(question, "title") else question.get("title") if isinstance(question, dict) else None,
-            "description": question.description if hasattr(question, "description") else question.get("description") if isinstance(question, dict) else None,
-            "constraints": question.constraints if hasattr(question, "constraints") else question.get("constraints") if isinstance(question, dict) else None,
-        } else None, request.code, request.language, jr))
+        qpayload = None
+        if question:
+            qpayload = {
+                "title": question.title if hasattr(question, "title") else (question.get("title") if isinstance(question, dict) else None),
+                "description": question.description if hasattr(question, "description") else (question.get("description") if isinstance(question, dict) else None),
+                "constraints": question.constraints if hasattr(question, "constraints") else (question.get("constraints") if isinstance(question, dict) else None),
+            }
+        asyncio.create_task(_analyze_submission(room["room_code"], current_username, submission_record["id"], qpayload, request.code, request.language, jr))
     except Exception:
         logger.exception("Failed to schedule AI analysis task for room=%s user=%s", room_code, current_username)
 
