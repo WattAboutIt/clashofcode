@@ -1832,6 +1832,10 @@
   text-align: center;
 }
 
+.battle-room__side-rail-badge--neutral {
+  background: var(--accent, #ff6f3c);
+}
+
 .battle-room__side-rail-dot {
   position: absolute;
   top: 2px;

@@ -401,9 +401,9 @@ function SubmissionHistory({ submissions }) {
   );
 }
 
-function SidePanelRail({ active, onSelect, unreadMessages, eventCount }) {
+function SidePanelRail({ active, onSelect, unreadMessages, eventCount, submissionCount }) {
   return (
-    <nav className="battle-room__side-rail" aria-label="Chat and battle feed">
+    <nav className="battle-room__side-rail" aria-label="Chat, battle feed, and submissions">
       <button
         type="button"
         className={`battle-room__side-rail-btn ${active === "chat" ? "battle-room__side-rail-btn--active" : ""}`}
@@ -435,23 +435,46 @@ function SidePanelRail({ active, onSelect, unreadMessages, eventCount }) {
           <span className="battle-room__side-rail-dot" aria-hidden="true" />
         )}
       </button>
+
+      <button
+        type="button"
+        className={`battle-room__side-rail-btn ${active === "submissions" ? "battle-room__side-rail-btn--active" : ""}`}
+        onClick={() => onSelect(active === "submissions" ? null : "submissions")}
+        aria-pressed={active === "submissions"}
+        aria-label="Toggle submission history"
+        title="Submissions"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 11l3 3L22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+        {submissionCount > 0 && (
+          <span className="battle-room__side-rail-badge battle-room__side-rail-badge--neutral">
+            {submissionCount > 9 ? "9+" : submissionCount}
+          </span>
+        )}
+      </button>
     </nav>
   );
 }
 
-function SidePanelDrawer({ active, onClose, chatProps, events }) {
+function SidePanelDrawer({ active, onClose, chatProps, events, submissions }) {
   if (!active) return null;
+
+  const titles = { chat: "Room messages", feed: "Battle feed", submissions: "Submission history" };
 
   return (
     <div className="battle-room__side-drawer">
       <div className="battle-room__side-drawer-header">
-        <h3>{active === "chat" ? "Room messages" : "Battle feed"}</h3>
+        <h3>{titles[active]}</h3>
         <button type="button" className="battle-room__side-drawer-close" onClick={onClose} aria-label="Close panel">
           ✕
         </button>
       </div>
       <div className="battle-room__side-drawer-body">
-        {active === "chat" ? <ChatPanel {...chatProps} /> : <EventFeed events={events} />}
+        {active === "chat" && <ChatPanel {...chatProps} />}
+        {active === "feed" && <EventFeed events={events} />}
+        {active === "submissions" && <SubmissionHistory submissions={submissions} />}
       </div>
     </div>
   );
@@ -1211,6 +1234,7 @@ function BattleRoom() {
                 onSelect={setActiveSidePanel}
                 unreadMessages={unreadMessages}
                 eventCount={(room?.events || []).length}
+                submissionCount={submissions.length}
               />
               <SidePanelDrawer
                 active={activeSidePanel}
@@ -1223,6 +1247,7 @@ function BattleRoom() {
                   onSend: handleSendChat,
                 }}
                 events={room?.events}
+                submissions={submissions}
               />
 
               {showProblem && (
@@ -1301,11 +1326,6 @@ function BattleRoom() {
                       <div><p className="label-text">Leaderboard</p><h3>Live battle</h3></div>
                     </div>
                     <Leaderboard players={room?.players} currentUsername={user?.username} host={room?.host} />
-                  </Card>
-
-                  <Card className="battle-room__dock-card battle-room__leetcode-card">
-                    <div className="battle-room__dock-header"><div><p className="label-text">Submissions</p><h3>History</h3></div></div>
-                    <SubmissionHistory submissions={submissions} />
                   </Card>
 
                   {submitResult && (
