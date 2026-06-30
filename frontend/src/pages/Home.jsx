@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import { useAuth } from "../context/AuthContext";
 import PixelAvatar from "../components/PixelAvatar";
 import "../styles/landing.css";
 
@@ -39,6 +40,7 @@ function FeatureCard({ feature }) {
 }
 
 function Home() {
+    const { user } = useAuth();
   return (
     <section className="landing-page page-enter">
       {/* Stein World-style hero banner — Greek Olympus reskin */}
@@ -78,8 +80,9 @@ function Home() {
       </header>
 
       {/* Tan "Free to Play" strip — matches reference proportions below banner */}
-      <div className="olympus-cta-strip">
-        <div className="olympus-cta-box">
+      {!user && (
+        <div className="olympus-cta-strip">
+          <div className="olympus-cta-box">
           <p className="olympus-cta-box__label">FREE TO PLAY</p>
           <div className="olympus-cta-box__preview" aria-hidden="true">
             <div className="olympus-cta-box__preview-scene" />
@@ -96,8 +99,9 @@ function Home() {
               <Link to="/leaderboard">Leaderboard</Link>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="page-container landing-page__body">
         <Card className="landing-features">
