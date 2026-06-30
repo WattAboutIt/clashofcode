@@ -1,31 +1,41 @@
+/* Greek mythology pixel-art theme — warm (default dark) palette */
 :root[data-theme="warm"],
 :root {
-  --bg: #07061c;
-  --bg-muted: #0c0a28;
-  --bg-secondary: #100e2f;
-  --surface: rgba(21, 18, 55, 0.88);
-  --surface-soft: rgba(17, 15, 47, 0.94);
-  --surface-border: rgba(129, 120, 206, 0.28);
-  --surface-border-hover: rgba(255, 209, 102, 0.55);
-  --text: #f8f3ef;
-  --text-muted: #9189bb;
-  --text-secondary: #b5aed8;
-  --accent: #ff5d2e;
-  --accent-strong: #ff6f3c;
-  --accent-soft: #ffb27a;
-  --accent-rgb: 255, 111, 60;
-  --accent-gold: #ffd34f;
-  --accent-pink: #ff8f66;
+  --bg: #0f0a1f;
+  --bg-muted: #1a1236;
+  --bg-secondary: #2e1a47;
+  --surface: rgba(26, 18, 54, 0.94);
+  --surface-soft: rgba(20, 14, 42, 0.96);
+  --surface-border: rgba(255, 215, 0, 0.45);
+  --surface-border-hover: rgba(255, 215, 0, 0.75);
+  --text: #e0d8f0;
+  --text-muted: #a898c8;
+  --text-secondary: #c4b8e0;
+  --accent: #ffd700;
+  --accent-strong: #ffaa00;
+  --accent-soft: #ffe566;
+  --accent-rgb: 255, 215, 0;
+  --accent-gold: #ffd700;
+  --accent-pink: #c77dff;
   --success: #3ac77d;
   --warning: #f4b43f;
   --danger: #ea6a67;
-  --shadow: rgba(2, 2, 10, 0.55);
-  --input-bg: rgba(31, 27, 76, 0.92);
-  --card-shadow: 0 24px 60px -44px rgba(5, 4, 22, 0.95);
-  --card-shadow-hover: 0 34px 70px -40px rgba(5, 4, 22, 1);
-  --hero-gradient: linear-gradient(145deg, rgba(17, 15, 47, 0.96), rgba(13, 11, 38, 0.96));
-  --accent-gradient: linear-gradient(135deg, #ff5d2e, #ff7e32);
-  --gold-gradient: linear-gradient(135deg, #ffe27d, #f7b840);
+  --shadow: rgba(0, 0, 0, 0.65);
+  --input-bg: rgba(46, 26, 71, 0.95);
+  --card-shadow: 6px 6px 0 rgba(0, 0, 0, 0.85);
+  --card-shadow-hover: 8px 8px 0 rgba(0, 0, 0, 0.9);
+  --hero-gradient: linear-gradient(180deg, #2a1854 0%, #1a1236 55%, #0f0a1f 100%);
+  --accent-gradient: linear-gradient(135deg, #ffd700, #ffaa00);
+  --gold-gradient: linear-gradient(135deg, #ffe566, #ffd700);
+  --pixel-border-width: 4px;
+  --pixel-border-color: #ffd700;
+  --pixel-shadow: 4px 4px 0 #000;
+  --olympus-sky-top: #2a1854;
+  --olympus-sky-mid: #5a3d8a;
+  --olympus-sky-low: #1a0f30;
+  --olympus-grass: #2d6b2d;
+  --olympus-tan: #c4a574;
+  --olympus-cta-green: #3d8b3d;
 }
 
 :root[data-theme="warm"] .auth-dev-login,
