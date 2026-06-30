@@ -13,7 +13,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.15.2",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.53.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
