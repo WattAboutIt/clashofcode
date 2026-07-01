@@ -13,6 +13,16 @@ function StatBadge({ label, value, loading }) {
   );
 }
 
+const MYTH_RANK_ICONS = {
+  Satyr: "🐐",
+  Minotaur: "🐂",
+  Medusa: "🐍",
+  Hercules: "💪",
+  Ares: "⚔️",
+  Zeus: "⚡",
+  Developer: "🛠️",
+};
+
 function Profile() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
@@ -33,7 +43,7 @@ function Profile() {
   const initials = username.slice(0, 2).toUpperCase();
   const winRate = stats?.winRate ?? 0;
   const email = user?.email || stats?.email || "—";
-  const rankIcon = stats?.rank === "Diamond" ? "💎" : stats?.rank === "Gold" ? "🥇" : stats?.rank === "Silver" ? "🥈" : "🏅";
+  const rankIcon = MYTH_RANK_ICONS[stats?.rank] ?? "🏛️";
 
   return (
     <section className="page-shell page-enter">

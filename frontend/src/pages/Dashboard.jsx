@@ -89,7 +89,7 @@ function Dashboard() {
                 Welcome back, <span className="gradient-text">{user?.username || "Champion"}</span>
               </h1>
               <p className="section-subtitle">
-                Your live stats, battle history, and question pool all in one calm, polished command center.
+                Your live stats, battle history, and question pool
               </p>
               <div className="dashboard-actions" style={{ marginTop: '1.5rem' }}>
                 <Button onClick={handleFindMatch} className="battle-room__chip--difficulty">Find Match</Button>
