@@ -56,8 +56,7 @@ function Home() {
 
         <div className="olympus-hero__content">
           <h1 className="olympus-hero__title" aria-label="Clash of Code">
-            <span className="olympus-hero__title-line" data-text="CLASH">CLASH</span>
-            <span className="olympus-hero__title-line" data-text="OF CODE">OF CODE</span>
+            <span className="olympus-hero__title-line">CLASH OF CODE</span>
           </h1>
           <div className="olympus-hero__sign">
             <span className="olympus-hero__sign-text">OLYMPUS EDITION</span>
