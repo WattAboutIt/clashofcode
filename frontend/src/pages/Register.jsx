@@ -34,10 +34,6 @@ function Register() {
     <section className="page-shell auth-page page-enter">
       <div className="auth-wrap">
         <Card className="auth-intro">
-          <span className="eyebrow">
-            <span className="eyebrow__dot" />
-            Join the arena
-          </span>
           <h1 className="section-title">Create your account</h1>
           <p className="section-subtitle">Start competing in ranked matches with a warm, premium onboarding flow.</p>
         </Card>
