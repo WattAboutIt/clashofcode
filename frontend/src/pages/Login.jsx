@@ -46,10 +46,6 @@ function Login() {
     <section className="page-shell auth-page page-enter">
       <div className="auth-wrap">
         <Card className="auth-intro">
-          <span className="eyebrow">
-            <span className="eyebrow__dot" />
-            Clash of Code
-          </span>
           <h1 className="section-title">Welcome back</h1>
           <p className="section-subtitle">Access your battle rooms and live duels from a calmer, sharper workspace.</p>
         </Card>
